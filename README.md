@@ -17,30 +17,118 @@
 *   **[Privacy Policy Template](docs/PRIVACY_POLICY.md):** Pripravený text pre Zásady ochrany súkromia (potrebné pre Play Store).
 *   **[Release Checklist](docs/RELEASE_CHECKLIST.md):** Finálny checklist pred publikovaním.
 *   **[Demo Account Setup](docs/DEMO_ACCOUNT_SETUP.md):** Návod na vytvorenie demo účtu pre Google Play review.
+*   **[Testovacia stratégia](docs/TESTING_STRATEGY.md):** Čo testovať a ako.
+*   **[Finálny stav testov](TESTING_FINAL_STATUS.md):** Štatistiky a prehľad testov (262+ prechádza).
 
 ---
 
-## 🚀 Rýchly Štart (Development)
+## 🚀 Ako to všetko spustiť a otestovať
 
-1.  **Prerekvizity:**
-    *   Flutter SDK (3.13+)
-    *   Firebase CLI (`npm install -g firebase-tools`)
-    *   Melos (voliteľné pre monorepo, tu stačí `flutter pub get`)
+### Prerekvizity
 
-2.  **Inštalácia:**
-    ```bash
-    flutter pub get
-    ```
+*   **Flutter SDK** 3.13+ ([flutter.dev](https://flutter.dev))
+*   **Firebase CLI** (voliteľné pre emulator / deploy): `npm install -g firebase-tools`
+*   **Node.js** (pre Cloud Functions): odporúča sa LTS (napr. 20.x)
 
-3.  **Spustenie (Web PWA):**
-    ```bash
-    flutter run -d chrome --web-renderer canvaskit
-    ```
+### 1. Inštalácia
 
-4.  **Spustenie (Android):**
-    ```bash
-    flutter run -d android
-    ```
+```bash
+# Závislosti Flutter
+flutter pub get
+
+# Cloud Functions (ak budeš spúšťať alebo testovať funkcie)
+cd functions && npm install && npm run build && cd ..
+```
+
+### 2. Spustenie aplikácie
+
+**Web (Chrome):**
+```bash
+flutter run -d chrome --web-renderer canvaskit
+```
+
+**Android (emulátor alebo zariadenie):**
+```bash
+flutter run -d android
+```
+
+**iOS (Mac + Xcode):**
+```bash
+flutter run -d ios
+```
+
+### 3. Spustenie unit testov
+
+**Všetky unit/widget testy (odporúčané pred každým release):**
+```bash
+flutter test
+```
+
+**Len konkrétna skupina (rýchle overenie):**
+```bash
+# Billing + Receipt Storage
+flutter test test/features/billing/ test/features/expenses/receipt_storage_service_test.dart
+
+# Auth
+flutter test test/features/auth/
+
+# Core služby
+flutter test test/core/
+```
+
+**S coverage reportom:**
+```bash
+flutter test --coverage
+# Otvor coverage: open coverage/lcov.info (alebo použiť napr. lcov/genhtml)
+```
+
+### 4. Komplexná kontrola (skript)
+
+Skript overí súbory, konfiguráciu a odporúčané kroky pred release:
+
+```bash
+./comprehensive_test.sh
+```
+
+### 5. Integračné testy (E2E)
+
+Vyžadujú spustenú aplikáciu alebo emulátor:
+
+```bash
+flutter test integration_test/
+```
+
+### 6. Firebase Emulator (voliteľné)
+
+Pre lokálne testovanie Firestore / Storage / Functions bez produkčných dát:
+
+```bash
+firebase emulators:start --only firestore,storage,functions
+```
+
+V aplikácii potom treba smerovať na emulator (napr. cez `FIRESTORE_EMULATOR_HOST` alebo konfig v kóde).  
+Plný upload napr. Receipt Storage sa dá otestovať s `--only storage`.
+
+### 7. Rýchle príkazy – súhrn
+
+| Úloha | Príkaz |
+|-------|--------|
+| Spustiť web | `flutter run -d chrome --web-renderer canvaskit` |
+| Spustiť Android | `flutter run -d android` |
+| Všetky testy | `flutter test` |
+| Komplexná kontrola | `./comprehensive_test.sh` |
+| Build AAB (release) | `flutter build appbundle --release --obfuscate --split-debug-info=build/symbols` |
+| Viac testovacích príkazov | Pozri [QUICK_TEST_COMMANDS.md](QUICK_TEST_COMMANDS.md) |
+
+---
+
+## 🚀 Rýchly Štart (Development) – skrátený
+
+1.  **Prerekvizity:** Flutter 3.13+, voliteľne Firebase CLI a Node.js (pre functions).
+2.  **Inštalácia:** `flutter pub get` (a v `functions/` pri potrebe `npm install && npm run build`).
+3.  **Spustenie (Web):** `flutter run -d chrome --web-renderer canvaskit`.
+4.  **Spustenie (Android):** `flutter run -d android`.
+5.  **Testy:** `flutter test` (pred release odporúčané).
 
 ---
 

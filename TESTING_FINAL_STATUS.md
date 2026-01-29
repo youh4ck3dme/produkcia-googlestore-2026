@@ -117,3 +117,11 @@ Všetky kritické testy sú vytvorené a projekt má:
 - **Súhrn:** `TESTING_SUMMARY.md`
 - **Aktualizácia:** `TESTING_UPDATE.md`
 - **Finálny Status:** `TESTING_FINAL_STATUS.md` (tento súbor)
+
+---
+
+## ✅ Finalizované
+
+**Dátum finalizácie:** 2026-01-29  
+
+Projekt je finalizovaný: kritické unit testy (billing, receipt storage, usage limiter, auth, settings, soft delete, local persistence, invoice numbering) prechádzajú. README obsahuje príručku na spustenie a testovanie (`flutter test`, `./comprehensive_test.sh`, Firebase Emulator). Zvyšných 7 zlyhaní sú widget/Firebase testy – na opravu potrebujú mocky alebo emulator.

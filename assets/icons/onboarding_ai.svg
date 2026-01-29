@@ -1,0 +1,41 @@
+<svg width="400" height="400" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<filter id="filter_glow" x="50" y="50" width="300" height="300" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+<feOffset dy="0"/>
+<feGaussianBlur stdDeviation="30"/>
+<feComposite in2="hardAlpha" operator="out"/>
+<feColorMatrix type="matrix" values="0 0 0 0 0.486275 0 0 0 0 0.227451 0 0 0 0 0.929412 0 0 0 0.3 0"/>
+<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow"/>
+<feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow" result="shape"/>
+</filter>
+<linearGradient id="paint_ai_bg" x1="200" y1="100" x2="200" y2="300" gradientUnits="userSpaceOnUse">
+<stop stop-color="#7C3AED"/>
+<stop offset="1" stop-color="#4C1D95"/>
+</linearGradient>
+<linearGradient id="paint_sparkle" x1="0" y1="0" x2="1" y2="1">
+<stop stop-color="#FDE047"/>
+<stop offset="1" stop-color="#F59E0B"/>
+</linearGradient>
+</defs>
+
+<!-- Glowing Brain/Chip Background -->
+<g filter="url(#filter_glow)">
+<circle cx="200" cy="200" r="100" fill="url(#paint_ai_bg)" fill-opacity="0.1"/>
+<path d="M200 120 C 160 120, 130 150, 130 190 C 130 230, 160 260, 200 260 C 240 260, 270 230, 270 190 C 270 150, 240 120, 200 120" stroke="url(#paint_ai_bg)" stroke-width="3" stroke-linecap="round"/>
+</g>
+
+<!-- Neural Connections -->
+<circle cx="200" cy="190" r="15" fill="#C4B5FD"/>
+<circle cx="160" cy="220" r="10" fill="#DDD6FE"/>
+<circle cx="240" cy="220" r="10" fill="#DDD6FE"/>
+<circle cx="200" cy="240" r="8" fill="#EDE9FE"/>
+
+<path d="M200 190 L160 220 M200 190 L240 220 M200 190 L200 240 M160 220 L200 240 M240 220 L200 240" stroke="#8B5CF6" stroke-width="3"/>
+
+<!-- Magic Sparkles -->
+<path d="M280 140 L290 120 L300 140 L320 150 L300 160 L290 180 L280 160 L260 150 Z" fill="url(#paint_sparkle)"/>
+<path d="M120 280 L125 270 L130 280 L140 285 L130 290 L125 300 L120 290 L110 285 Z" fill="url(#paint_sparkle)"/>
+
+</svg>

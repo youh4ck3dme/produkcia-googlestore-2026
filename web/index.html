@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+  <head>
+
+    <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+    <base href="$FLUTTER_BASE_HREF">
+    <meta charset="UTF-8">
+    <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+    <!-- iOS Meta Tags & PWA -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="BizAgent">
+
+    <!-- SEO & Open Graph -->
+    <meta name="description" content="BizAgent - Inteligentný Business Asistent pre SZČO a malé firmy. Faktúry, výdavky a AI nástroje na jednom mieste.">
+    
+    <!-- Facebook / Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://bizagent-live-2026.web.app/">
+    <meta property="og:title" content="BizAgent - Smart Business Assistant">
+    <meta property="og:description" content="Inteligentná správa podnikania pre SZČO. Faktúry zadarmo, AI analýza výdavkov a automatické upomienky.">
+    <meta property="og:image" content="assets/og_image_modern.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://bizagent-live-2026.web.app/">
+    <meta property="twitter:title" content="BizAgent - Smart Business Assistant">
+    <meta property="twitter:description" content="Inteligentná správa podnikania pre SZČO. Faktúry zadarmo, AI analýza výdavkov a automatické upomienky.">
+    <meta property="twitter:image" content="assets/og_image_modern.png">
+
+    <!-- Icons -->
+    <link rel="apple-touch-icon" href="icons/Icon-192.png">
+    <link rel="icon" type="image/png" href="favicon.png"/>
+
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#F0F4F8">
+
+    <!-- Google Sign-In -->
+    <meta name="google-signin-client_id" content="542280140779-fnbgni0vvqb9dgpl6q4k64p6s91s6jdi.apps.googleusercontent.com">
+    
+    <!-- ReCaptcha Enterprise -->
+    <script src="https://www.google.com/recaptcha/enterprise.js?render=6Lf7dFQsAAAAALJbTSS5yaomUSvSNTpP4nr6GzlA"></script>
+
+    <script src="flutter.js" defer></script>
+  </head>
+  <body style="background-color: #F0F4F8;">
+    <!-- Loading Indicator -->
+    <div id="loading-indicator" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background-color: #F0F4F8; z-index: 9999; transition: opacity 0.5s ease;">
+      <div style="width: 50px; height: 50px; border: 3px solid #e2e8f0; border-top: 3px solid #2563EB; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+    </div>
+    <style>
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
+
+    <!-- Custom PWA Update Toast -->
+    <div id="pwa-update-toast" style="display: none; position: fixed; bottom: 24px; right: 24px; background-color: #1F2937; color: white; padding: 16px 24px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); z-index: 10000; align-items: center; gap: 16px; font-family: 'Inter', sans-serif; max-width: 90vw;">
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <span style="font-weight: 600; font-size: 14px;">Nová verzia je dostupná</span>
+        <span style="font-size: 12px; color: #9CA3AF;">Kliknutím aktualizujete aplikáciu</span>
+      </div>
+      <button id="pwa-update-button" style="background-color: #2563EB; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; transition: background-color 0.2s;">
+        Aktualizovať
+      </button>
+    </div>
+
+    <script>
+      window.addEventListener('load', function(ev) {
+        // 1. Initialize Flutter Engine
+        _flutter.loader.loadEntrypoint({
+          onEntrypointLoaded: function(engineInitializer) {
+            engineInitializer.initializeEngine({
+              renderer: "auto"
+            }).then(function(appRunner) {
+              appRunner.runApp();
+              
+              // Fade out loading indicator
+              var loader = document.querySelector('#loading-indicator');
+              if (loader) {
+                loader.style.opacity = '0';
+                setTimeout(function() {
+                  loader.remove();
+                }, 500);
+              }
+            });
+          }
+        });
+
+        // Custom "Na Mieru" Service Worker Logic
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.register('flutter_service_worker.js')
+            .then(function(reg) {
+              
+              function showUpdateToast(worker) {
+                const toast = document.getElementById('pwa-update-toast');
+                const btn = document.getElementById('pwa-update-button');
+                toast.style.display = 'flex';
+                
+                btn.onclick = function() {
+                  btn.innerText = 'Inštalujem...';
+                  btn.style.opacity = '0.7';
+                  worker.postMessage({ type: 'SKIP_WAITING' });
+                };
+              }
+
+              if (reg.waiting) {
+                showUpdateToast(reg.waiting);
+                return;
+              }
+
+              reg.onupdatefound = function () {
+                const installingWorker = reg.installing;
+                installingWorker.onstatechange = function () {
+                  if (installingWorker.state === 'installed') {
+                    if (navigator.serviceWorker.controller) {
+                      console.log('✨ [PWA] Update installed. Waiting for user...');
+                      showUpdateToast(installingWorker);
+                    } else {
+                      console.log('✅ [PWA] Initial cache complete.');
+                    }
+                  }
+                };
+              };
+            })
+            .catch(function(err) {
+              console.error('❌ [PWA] Registration failed:', err);
+            });
+
+          navigator.serviceWorker.addEventListener('controllerchange', function () {
+            window.location.reload();
+          });
+        }
+      });
+    </script>
+  </body>
+</html>

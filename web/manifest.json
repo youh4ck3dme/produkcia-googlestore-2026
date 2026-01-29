@@ -1,0 +1,82 @@
+{
+    "name": "BizAgent - Inteligentný biznis asistent",
+    "short_name": "BizAgent",
+    "start_url": ".",
+    "id": "com.bizagent.app",
+    "display": "standalone",
+    "background_color": "#2563EB",
+    "theme_color": "#2563EB",
+    "description": "Inteligentná fakturácia a správa výdavkov pre živnostníkov a malé firmy.",
+    "orientation": "portrait",
+    "prefer_related_applications": false,
+    "lang": "sk-SK",
+    "categories": [
+        "business",
+        "finance",
+        "productivity"
+    ],
+    "shortcuts": [
+        {
+            "name": "Nová faktúra",
+            "short_name": "Faktúra",
+            "description": "Vytvoriť novú faktúru",
+            "url": "/create-invoice",
+            "icons": [
+                {
+                    "src": "icons/manifest-icon-192.maskable.png",
+                    "sizes": "192x192"
+                }
+            ]
+        },
+        {
+            "name": "Nový výdavok",
+            "short_name": "Výdavok",
+            "description": "Pridať nový výdavok",
+            "url": "/create-expense",
+            "icons": [
+                {
+                    "src": "icons/manifest-icon-192.maskable.png",
+                    "sizes": "192x192"
+                }
+            ]
+        }
+    ],
+    "screenshots": [
+        {
+            "src": "assets/screenshots/mobile_1.png",
+            "sizes": "1080x1920",
+            "type": "image/png",
+            "form_factor": "narrow"
+        },
+        {
+            "src": "assets/screenshots/desktop_1.png",
+            "sizes": "1920x1080",
+            "type": "image/png",
+            "form_factor": "wide"
+        }
+    ],
+    "icons": [
+        {
+            "src": "icons/Icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-maskable-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "icons/Icon-maskable-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ]
+}

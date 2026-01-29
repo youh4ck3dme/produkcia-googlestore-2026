@@ -1,0 +1,62 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+    
+    function isValidInvoice() {
+      let data = request.resource.data;
+      return data.clientName is string && data.clientName.size() > 0
+             && data.totalAmount is number && data.totalAmount >= 0
+             && data.items is list;
+    }
+    
+    function isValidExpense() {
+      let data = request.resource.data;
+      return data.description is string && data.description.size() > 0
+             && data.amount is number && data.amount >= 0;
+    }
+
+    // User Settings
+    match /users/{userId}/{document=**} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // Invoices - Strict Schema Validation
+    match /invoices/{userId}/{document=**} {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId) && isValidInvoice();
+    }
+
+    // Soft Deleted Items - Special collections for trash/recycle bin
+    match /soft_deleted_invoices/{userId}/items/{itemId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    match /soft_deleted_bizbot_conversations/{userId}/items/{itemId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    match /soft_deleted_notepad_items/{userId}/items/{itemId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // Expenses - Strict Schema Validation
+    match /expenses/{userId}/{document=**} {
+      allow read, write: if isOwner(userId);
+      allow write: if isOwner(userId) && isValidExpense();
+    }
+
+    // Receipt Storage metadata
+    match /receipts/{userId}/{document=**} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // Global numbering state
+    match /invoice_numbering/{userId}/{document=**} {
+      allow read, write: if isOwner(userId);
+    }
+  }
+}

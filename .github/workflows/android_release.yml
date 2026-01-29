@@ -1,0 +1,59 @@
+name: Android Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Android App Bundle
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.7'
+          channel: 'stable'
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Analyze Code
+        run: flutter analyze
+
+      - name: Run Tests
+        run: flutter test
+
+      - name: Decode Keystore
+        env:
+          KEYSTORE_BASE64: "${{ secrets.ANDROID_KEYSTORE_BASE64 }}"
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
+
+      - name: Create key.properties
+        env:
+          KEY_PROPS: "${{ secrets.ANDROID_KEY_PROPERTIES }}"
+        run: |
+          echo "$KEY_PROPS" > android/key.properties
+
+      - name: Build App Bundle
+        run: flutter build appbundle --release
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-bundle
+          path: build/app/outputs/bundle/release/app-release.aab
+          retention-days: 7

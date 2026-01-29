@@ -5,15 +5,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as path;
 import '../../auth/providers/auth_repository.dart';
 
+/// Injectable for tests; production uses [FirebaseStorage.instance].
+final firebaseStorageProvider = Provider<FirebaseStorage>((ref) {
+  return FirebaseStorage.instance;
+});
+
 final receiptStorageServiceProvider = Provider<ReceiptStorageService>((ref) {
-  return ReceiptStorageService(ref);
+  return ReceiptStorageService(ref, ref.read(firebaseStorageProvider));
 });
 
 class ReceiptStorageService {
   final Ref _ref;
-  final FirebaseStorage _storage = FirebaseStorage.instance;
+  final FirebaseStorage _storage;
 
-  ReceiptStorageService(this._ref);
+  ReceiptStorageService(this._ref, this._storage);
 
   Future<String?> uploadReceipt(String filePath) async {
     try {

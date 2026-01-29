@@ -1,17 +1,17 @@
 # ✅ Finálny Stav Testov - BizAgent
 
 **Dátum:** 2026-01-29  
-**Status:** ✅ **Všetky kritické testy vytvorené**
+**Status:** ✅ **Kritické testy dokončené a finalizované**
 
 ---
 
 ## 📊 Aktuálne Štatistiky
 
-- **Celkový počet testov:** 205
-- **Prešlo:** 196 ✅
-- **Preskočené:** 1 ⏭️
-- **Zlyhalo:** 9 ❌ (niektoré môžu byť flaky alebo vyžadujú Firebase)
-- **Testovacích súborov:** 54
+- **Celkový počet testov:** 271
+- **Prešlo:** 262 ✅
+- **Preskočené:** 2 ⏭️
+- **Zlyhalo:** 7 ❌ (widget/Firebase – export_service, rate_limiting, error_handling, settings_screen_lookup, create_invoice_screen_ai, dashboard_first_run_banner, dashboard_quick_actions)
+- **Testovacích súborov:** 60
 
 ---
 
@@ -49,10 +49,10 @@
 
 ### 7. **Billing & Subscription** ✅
 - **Súbory:**
-  - `test/features/billing/billing_service_test.dart`
-  - `test/features/billing/subscription_guard_test.dart`
-  - `test/features/billing/usage_limiter_test.dart`
-- **Status:** ✅ Existujú
+  - `test/features/billing/billing_service_test.dart` (BillingState, UserEntitlements)
+  - `test/features/billing/subscription_guard_test.dart` (canWatchCompanies, getUpgradeMessage)
+  - `test/features/billing/usage_limiter_test.dart` (UsageLimiter + SharedPreferences)
+- **Status:** ✅ Všetky prechádzajú
 
 ### 8. **Firebase Functions Error Handling** ✅
 - **Súbor:** `test/firebase_functions/error_handling_test.dart`
@@ -81,16 +81,17 @@
 
 ### Čo je hotové:
 - ✅ Všetky kritické služby majú testy
-- ✅ 205+ testov celkovo
-- ✅ Vysoké pokrytie kritických oblastí
+- ✅ 262+ testov prechádza (271 celkom, 2 skip, 7 fail z widget/Firebase)
+- ✅ Billing: BillingState, UserEntitlements, SubscriptionGuard (canWatchCompanies, getUpgradeMessage), UsageLimiter
+- ✅ Receipt Storage: auth validácia, file validácia, delete grace, FakeFirebaseStorage
 - ✅ Testy pre GDPR compliance (Soft Delete)
 - ✅ Testy pre offline funkcionalitu
 - ✅ Testy pre state management (Auth Provider)
 
 ### Čo možno ešte potrebuje:
-- ⚠️ Opraviť 9 zlyhaných testov (môžu byť flaky alebo vyžadujú Firebase Emulator)
-- ⚠️ Receipt Storage Service testy (stredná priorita)
-- ⚠️ Rozšírenie Firebase Functions testov (rate limiting, CORS)
+- ⚠️ Opraviť 7 zlyhaných testov (widget/Firebase – export_service, dashboard, settings lookup, Firebase Functions load)
+- ✅ Receipt Storage Service – unit testy hotové (auth, file validation, delete grace)
+- ⚠️ Rozšírenie Firebase Functions testov (rate limiting, CORS) – súbory existujú, niektoré vyžadujú úpravy
 
 ---
 

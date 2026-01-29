@@ -42,12 +42,18 @@ final billingProvider = StateNotifierProvider<BillingService, BillingState>((ref
 });
 
 class BillingService extends StateNotifier<BillingState> {
-  final InAppPurchase _iap = InAppPurchase.instance;
+  late final InAppPurchase _iap;
   final UsageLimiter _usageLimiter;
   late StreamSubscription<List<PurchaseDetails>> _subscription;
 
   BillingService(this._usageLimiter) : super(BillingState(entitlements: UserEntitlements.free())) {
+    _iap = InAppPurchase.instance;
     _init();
+  }
+
+  /// Test-only: fixed state, no IAP or async init. Caller must provide a UsageLimiter (e.g. from mock prefs).
+  BillingService.forTest(BillingState state, this._usageLimiter) : super(state) {
+    _subscription = Stream<List<PurchaseDetails>>.empty().listen((_) {});
   }
 
   Future<void> _init() async {

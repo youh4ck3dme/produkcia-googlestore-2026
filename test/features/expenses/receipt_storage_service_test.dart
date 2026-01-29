@@ -1,21 +1,36 @@
 import 'dart:io';
 
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:bizagent/features/auth/providers/auth_repository.dart';
 import 'package:bizagent/features/auth/models/user_model.dart';
 import 'package:bizagent/features/expenses/services/receipt_storage_service.dart';
 
-/// ReceiptStorageService unit tests.
-/// Tests that don't require Firebase use ProviderContainer overrides for auth.
-/// Full upload/download flow can be tested with Firebase Emulator:
-///   firebase emulators:start --only storage
+/// Fake storage so tests run without Firebase; throws on any storage call.
+class FakeFirebaseStorage extends Fake implements FirebaseStorage {
+  @override
+  Reference ref([String? path]) => throw Exception('Fake storage');
+  @override
+  Reference refFromURL(String url) => throw Exception('Fake storage');
+}
+
+/// ReceiptStorageService unit tests (auth + file validation + delete grace).
+/// Full upload flow: run with Firebase Emulator (firebase emulators:start --only storage).
 void main() {
+  late FakeFirebaseStorage fakeStorage;
+
+  setUp(() {
+    fakeStorage = FakeFirebaseStorage();
+  });
+
   group('ReceiptStorageService', () {
     group('uploadReceipt - Authentication & Validation', () {
       test('throws when user is not logged in', () async {
         final container = ProviderContainer(
           overrides: [
+            firebaseStorageProvider.overrideWithValue(fakeStorage),
             authStateProvider.overrideWith((ref) => Stream.value(null)),
           ],
         );
@@ -37,11 +52,13 @@ void main() {
         const user = UserModel(id: 'user123', email: 'test@example.com');
         final container = ProviderContainer(
           overrides: [
+            firebaseStorageProvider.overrideWithValue(fakeStorage),
             authStateProvider.overrideWith((ref) => Stream.value(user)),
           ],
         );
         addTearDown(container.dispose);
 
+        await container.read(authStateProvider.future);
         final service = container.read(receiptStorageServiceProvider);
 
         await expectLater(
@@ -58,11 +75,13 @@ void main() {
         const user = UserModel(id: 'user123', email: 'test@example.com');
         final container = ProviderContainer(
           overrides: [
+            firebaseStorageProvider.overrideWithValue(fakeStorage),
             authStateProvider.overrideWith((ref) => Stream.value(user)),
           ],
         );
         addTearDown(container.dispose);
 
+        await container.read(authStateProvider.future);
         final service = container.read(receiptStorageServiceProvider);
 
         await expectLater(
@@ -81,11 +100,13 @@ void main() {
         const user = UserModel(id: 'user123', email: 'test@example.com');
         final container = ProviderContainer(
           overrides: [
+            firebaseStorageProvider.overrideWithValue(fakeStorage),
             authStateProvider.overrideWith((ref) => Stream.value(user)),
           ],
         );
         addTearDown(container.dispose);
 
+        await container.read(authStateProvider.future);
         final tempDir = await Directory.systemTemp.createTemp('receipt_test');
         addTearDown(() => tempDir.deleteSync(recursive: true));
         final file = File('${tempDir.path}/receipt.jpg');
@@ -103,7 +124,11 @@ void main() {
 
     group('deleteReceipt - Error Handling', () {
       test('does not throw on invalid URL (handles errors gracefully)', () async {
-        final container = ProviderContainer();
+        final container = ProviderContainer(
+          overrides: [
+            firebaseStorageProvider.overrideWithValue(fakeStorage),
+          ],
+        );
         addTearDown(container.dispose);
 
         final service = container.read(receiptStorageServiceProvider);
@@ -115,7 +140,11 @@ void main() {
       });
 
       test('does not throw on empty URL', () async {
-        final container = ProviderContainer();
+        final container = ProviderContainer(
+          overrides: [
+            firebaseStorageProvider.overrideWithValue(fakeStorage),
+          ],
+        );
         addTearDown(container.dispose);
 
         final service = container.read(receiptStorageServiceProvider);

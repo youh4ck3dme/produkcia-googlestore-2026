@@ -108,7 +108,7 @@ void main() {
         findsOneWidget);
     expect(
         find.widgetWithText(
-            TextFormField, 'Karadžičova 8/A, 821 08 Bratislava'),
+            TextFormField, 'Karadžičova 8/A, 821 08, Bratislava'),
         findsOneWidget);
     expect(find.widgetWithText(TextFormField, '2020102636'),
         findsOneWidget); // DIČ

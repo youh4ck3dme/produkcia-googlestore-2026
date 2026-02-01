@@ -9,6 +9,6 @@ if [ ! -f "$CHROME_EXECUTABLE" ]; then
 fi
 
 # 2. Spustenie Flutteru s HTML rendererom (rýchlejší štart, menej náročný, ale horší blur)
-# Používame port 5000 aby sme nemuseli hladať
+# Používame port 5050 aby sme nemuseli hladať
 echo "🚀 Spúšťam BizAgent lokálne (HTML Renderer)..."
-flutter run -d chrome --web-port=5000
+flutter run -d chrome --web-port=5050

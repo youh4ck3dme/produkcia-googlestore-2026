@@ -3,13 +3,12 @@ import 'package:integration_test/integration_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
 import 'package:bizagent/core/services/gemini_service.dart';
 import 'package:bizagent/core/services/icoatlas_service.dart';
 import 'package:bizagent/core/ui/biz_theme.dart';
-import 'package:bizagent/lib/firebase_options.dart';
+import 'package:bizagent/firebase_options.dart';
 
 /// Integrity Tests - Verify data consistency, API connectivity, and system health
 void main() {
@@ -69,7 +68,9 @@ void main() {
 
     test('IcoAtlas Service Configuration', () {
       // Verify IcoAtlas service is properly configured
-      final service = IcoAtlasService();
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final service = container.read(icoAtlasServiceProvider);
       expect(service, isNotNull);
       // Service should handle API key validation internally
     });
@@ -83,14 +84,14 @@ void main() {
       expect(BizTheme.silverMist, isNotNull);
       
       // Verify colors are valid
-      expect(BizTheme.slovakBlue.value, greaterThan(0));
-      expect(BizTheme.nationalRed.value, greaterThan(0));
+      expect(BizTheme.slovakBlue.toARGB32(), greaterThan(0));
+      expect(BizTheme.nationalRed.toARGB32(), greaterThan(0));
     });
 
     test('Theme Accessibility', () {
       // Verify theme provides both light and dark variants
-      final lightTheme = BizTheme.lightTheme;
-      final darkTheme = BizTheme.darkTheme;
+      final lightTheme = BizTheme.light();
+      final darkTheme = BizTheme.dark();
       
       expect(lightTheme, isNotNull);
       expect(darkTheme, isNotNull);

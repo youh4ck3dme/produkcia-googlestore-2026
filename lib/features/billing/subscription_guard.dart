@@ -5,6 +5,7 @@ import '../billing/billing_service.dart';
 enum BizFeature {
   createInvoice,
   icoLookup,
+  icoPremiumProfile,
   aiAnalysis,
   exportExcel,
   removeWatermark,
@@ -20,13 +21,13 @@ class SubscriptionGuard {
     final billingState = ref.read(billingProvider);
     final isPro = billingState.entitlements.isPro;
     final isBusiness = billingState.entitlements.isBusiness;
-    final remoteConfig = BizRemoteConfig();
 
     if (isBusiness) return true; // Business has everything
 
     switch (feature) {
       case BizFeature.createInvoice:
         if (isPro) return true;
+        final remoteConfig = BizRemoteConfig();
         // Check local usage limit (mocked for now, needs persistent storage)
         // ideally usage is tracked in a separate provider
         return billingState.entitlements.invoiceCount < remoteConfig.invoiceLimit;
@@ -34,6 +35,9 @@ class SubscriptionGuard {
       case BizFeature.icoLookup:
          if (isPro) return true; // Pro has high limits, effectively unlimited for casual use
          return billingState.entitlements.icoLookupsCount < 5;
+
+      case BizFeature.icoPremiumProfile:
+        return isPro || isBusiness;
 
       case BizFeature.aiAnalysis:
         if (isBusiness) return true;
@@ -77,6 +81,8 @@ class SubscriptionGuard {
         return "Dosiahli ste limit faktúr vo verzii ZDARMA.";
       case BizFeature.icoLookup:
         return "IČO Lookup je obmedzený vo verzii ZDARMA.";
+      case BizFeature.icoPremiumProfile:
+        return "Rozšírený profil firmy je dostupný v PRO verzii.";
       case BizFeature.aiAnalysis:
         return "AI Analýza je prémiová funkcia.";
       case BizFeature.exportExcel:

@@ -13,6 +13,18 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+val keystorePropertiesFile = rootProject.file("key.properties")
+val keystoreProperties = Properties().apply {
+    if (keystorePropertiesFile.exists()) {
+        load(FileInputStream(keystorePropertiesFile))
+    }
+}
+
+val hasReleaseKeystore =
+    keystorePropertiesFile.exists() &&
+        (keystoreProperties["storeFile"] as? String).orEmpty().isNotBlank() &&
+        (keystoreProperties["keyAlias"] as? String).orEmpty().isNotBlank()
+
 android {
     namespace = "com.bizagent.live"
     compileSdk = 36
@@ -41,13 +53,10 @@ android {
 
     signingConfigs {
         create("release") {
-            val keystorePropertiesFile = rootProject.file("key.properties")
-            val keystoreProperties = Properties()
-            if (keystorePropertiesFile.exists()) {
-                keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+            if (hasReleaseKeystore) {
                 keyAlias = keystoreProperties["keyAlias"] as? String ?: ""
                 keyPassword = keystoreProperties["keyPassword"] as? String ?: ""
-                storeFile = if (keystoreProperties["storeFile"] != null) file(keystoreProperties["storeFile"] as String) else null
+                storeFile = file(keystoreProperties["storeFile"] as String)
                 storePassword = keystoreProperties["storePassword"] as? String ?: ""
             }
         }
@@ -59,7 +68,15 @@ android {
             isDebuggable = true
         }
         release {
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig = if (hasReleaseKeystore) {
+                signingConfigs.getByName("release")
+            } else {
+                logger.warn(
+                    "android/key.properties not found or incomplete; falling back to debug signing. " +
+                        "For Google Play, create android/key.properties + keystore and re-run the build.",
+                )
+                signingConfigs.getByName("debug")
+            }
             isMinifyEnabled = true
             isShrinkResources = true
             isDebuggable = false

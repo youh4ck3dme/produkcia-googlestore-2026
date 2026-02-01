@@ -7,7 +7,7 @@
 
 ### 1. Demo Účet v Firebase
 - [ ] **Účet existuje:** `bizbizagent@bizbizagent.com`
-- [ ] **Heslo:** `1369#1369#1369#`
+- [ ] **Heslo:** *(drž lokálne v `DEMO_ACCOUNT_SECRETS.txt`, necommitovať)*
 - [ ] **Provider:** Email/Password (nie Google Sign-In!)
 - [ ] **Overenie:** Skús sa prihlásiť v aplikácii s týmito údajmi
 - [ ] **Pozri:** [DEMO_ACCOUNT_SETUP.md](./docs/DEMO_ACCOUNT_SETUP.md) pre podrobnosti
@@ -62,7 +62,7 @@
 #### 3.3 App Access (DÔLEŽITÉ!)
 - [ ] **All or some functionality is restricted?** → **Yes**
 - [ ] **Username:** `bizbizagent@bizbizagent.com`
-- [ ] **Password:** `1369#1369#1369#`
+- [ ] **Password:** *(demo heslo; neuvádzať do repozitára)*
 - [ ] **Notes:** `This is a test account strictly for review purposes. It comes with pre-populated dummy data.`
 
 #### 3.4 Data Safety (KRITICKÉ!)

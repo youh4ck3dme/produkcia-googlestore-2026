@@ -220,6 +220,35 @@ class IcoLookupResult {
     );
   }
 
+  /// Current icoatlas.sk API format:
+  /// {
+  ///   "ico": "31333532",
+  ///   "name": "...",
+  ///   "status": "...",
+  ///   "address": "...",
+  ///   "city": "...",
+  ///   "zip": "...",
+  ///   "dic": "...",
+  ///   "ic_dph": "..."
+  /// }
+  factory IcoLookupResult.fromIcoAtlasApi(Map<String, dynamic> json) {
+    final rawIco = json['ico']?.toString() ?? '';
+    final normIco = rawIco.replaceAll(RegExp(r'\D'), '');
+
+    return IcoLookupResult(
+      ico: rawIco,
+      icoNorm: normIco,
+      name: (json['name'] ?? '').toString(),
+      status: (json['status'] ?? '').toString(),
+      street: (json['address'] ?? '').toString(),
+      city: (json['city'] ?? '').toString(),
+      postalCode: (json['zip'] ?? '').toString(),
+      dic: json['dic']?.toString(),
+      icDph: json['ic_dph']?.toString(),
+      cachedAt: DateTime.now(),
+    );
+  }
+
   // --- Getters ---
 
   bool get isValid => name.isNotEmpty;

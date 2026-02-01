@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/ui/biz_theme.dart';
 import '../../../core/services/company_lookup_service.dart';
 import '../../../core/models/ico_lookup_result.dart';
+import '../../../core/models/ico_premium_profile.dart';
 import '../../../shared/widgets/watched_company_button.dart';
 import '../../billing/subscription_guard.dart';
 import '../../billing/paywall_screen.dart';
@@ -31,6 +33,27 @@ final icoLookupFutureProvider = FutureProvider<IcoLookupResult?>((ref) async {
   }
 });
 
+/// Premium profile payload (closest to icoatlas.sk).
+/// Only fetch when user is Pro/Business (UI gates this).
+final icoPremiumProfileProvider =
+    FutureProvider.family<IcoPremiumProfile?, String>((ref, icoNorm) async {
+  if (icoNorm.trim().isEmpty) return null;
+
+  final callable = FirebaseFunctions.instance.httpsCallable('lookupCompany');
+  final result = await callable.call({'ico': icoNorm, 'full': true});
+
+  final raw = result.data;
+  if (raw is! Map) return null;
+
+  final map = Map<String, dynamic>.from(raw);
+
+  // If backend returns the "basic" shape (older versions), treat as not available.
+  if (map['ok'] != true) return null;
+  if (map['data'] is! Map) return null;
+
+  return IcoPremiumProfile.fromCallable(map);
+});
+
 class IcoLookupScreen extends ConsumerStatefulWidget {
   const IcoLookupScreen({super.key});
 
@@ -43,14 +66,16 @@ class _IcoLookupScreenState extends ConsumerState<IcoLookupScreen> {
   // bool _isSearching = false;
 
   void _handleSearch() {
-    final query = _controller.text.trim();
-    if (query.length == 8) {
+    final queryDigits = _controller.text.replaceAll(RegExp(r'\D'), '');
+    if (queryDigits.length == 8) {
       final guard = ref.read(subscriptionGuardProvider);
       if (guard.canAccess(BizFeature.icoLookup)) {
         // Debounce protection: Check if already loading
         if (ref.read(icoLookupFutureProvider).isLoading) return;
 
-        ref.read(icoSearchQueryProvider.notifier).state = query;
+        // Force refresh even if the same IČO is searched again.
+        ref.read(icoSearchQueryProvider.notifier).state = queryDigits;
+        ref.invalidate(icoLookupFutureProvider);
         ref.read(usageLimiterProvider).incrementIco();
         ref.read(billingProvider.notifier).refreshUsage();
       } else {
@@ -173,6 +198,8 @@ class _IcoLookupScreenState extends ConsumerState<IcoLookupScreen> {
   Widget _buildResultCard(IcoLookupResult result) {
     final theme = Theme.of(context);
     final isReliable = result.status.toLowerCase().contains('aktív') || result.status.toLowerCase().contains('pôsob');
+    final guard = ref.read(subscriptionGuardProvider);
+    final canSeePremium = guard.canAccess(BizFeature.icoPremiumProfile);
     
     return Card(
       child: Padding(
@@ -285,6 +312,13 @@ class _IcoLookupScreenState extends ConsumerState<IcoLookupScreen> {
               const SizedBox(height: BizTheme.spacingMd),
               _buildRiskBadge(result.riskLevel, result.riskHint),
             ],
+
+            const SizedBox(height: BizTheme.spacingXl),
+            _buildPremiumSection(
+              icoNorm: result.icoNorm,
+              enabled: canSeePremium,
+            ),
+            
             const SizedBox(height: BizTheme.spacingXl),
             Row(
               children: [
@@ -326,6 +360,161 @@ class _IcoLookupScreenState extends ConsumerState<IcoLookupScreen> {
         ),
       ),
     ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.05);
+  }
+
+  Widget _buildPremiumSection({
+    required String icoNorm,
+    required bool enabled,
+  }) {
+    final theme = Theme.of(context);
+
+    if (!enabled) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(BizTheme.spacingLg),
+        decoration: BoxDecoration(
+          color: BizTheme.slovakBlue.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(BizTheme.radiusLg),
+          border: Border.all(color: BizTheme.slovakBlue.withValues(alpha: 0.15)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.lock_outline, color: BizTheme.slovakBlue, size: 18),
+                const SizedBox(width: 8),
+                Text(
+                  'Rozšírený profil firmy (Premium)',
+                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const SizedBox(height: BizTheme.spacingSm),
+            Text(
+              'Zobraziť viac údajov ako na icoatlas.sk: právna forma, registrácia, predmety činnosti, prepojenia a ďalšie.',
+              style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: BizTheme.spacingMd),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const PaywallScreen()),
+                ),
+                child: const Text('ODOMKNÚŤ PREMIUM PROFIL'),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final async = ref.watch(icoPremiumProfileProvider(icoNorm));
+    return async.when(
+      loading: () => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(BizTheme.spacingLg),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+          borderRadius: BorderRadius.circular(BizTheme.radiusLg),
+          border: Border.all(color: theme.colorScheme.outlineVariant),
+        ),
+        child: Row(
+          children: [
+            const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+            const SizedBox(width: 12),
+            Text('Načítavam rozšírené údaje…', style: theme.textTheme.bodyMedium),
+          ],
+        ),
+      ),
+      error: (e, _) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(BizTheme.spacingLg),
+        decoration: BoxDecoration(
+          color: BizTheme.nationalRed.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(BizTheme.radiusLg),
+          border: Border.all(color: BizTheme.nationalRed.withValues(alpha: 0.15)),
+        ),
+        child: Text(
+          'Rozšírené údaje sa nepodarilo načítať.',
+          style: theme.textTheme.bodyMedium?.copyWith(color: BizTheme.nationalRed),
+        ),
+      ),
+      data: (profile) {
+        if (profile == null) {
+          return Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(BizTheme.spacingLg),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+              borderRadius: BorderRadius.circular(BizTheme.radiusLg),
+              border: Border.all(color: theme.colorScheme.outlineVariant),
+            ),
+            child: Text(
+              'Rozšírené údaje nie sú k dispozícii pre túto firmu.',
+              style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            ),
+          );
+        }
+
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(BizTheme.spacingLg),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+            borderRadius: BorderRadius.circular(BizTheme.radiusLg),
+            border: Border.all(color: theme.colorScheme.outlineVariant),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.workspace_premium, color: BizTheme.slovakBlue, size: 18),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Rozšírený profil firmy',
+                    style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              const SizedBox(height: BizTheme.spacingMd),
+              _kv(theme, 'Právna forma', profile.legalForm),
+              _kv(theme, 'Dátum registrácie', profile.registrationDate),
+              _kv(theme, 'SK NACE', profile.nace),
+              _kv(theme, 'Doplňujúca správa', profile.message),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _kv(ThemeData theme, String label, String? value) {
+    if (value == null || value.trim().isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: BizTheme.spacingSm),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 140,
+            child: Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              value,
+              style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildPaymentRequiredState() {

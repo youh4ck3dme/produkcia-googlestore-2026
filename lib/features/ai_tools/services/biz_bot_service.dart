@@ -34,9 +34,12 @@ PRAVIDLÁ:
 5. Pamätaj si predchádzajúci kontext rozhovoru pre súvislé odpovede.
 ''';
 
-    // Use conversation-aware generation for context continuity
-    final fullPrompt = '$systemPrompt\n\nPOUŽÍVATEĽ SA PÝTA: $question';
-    return await _gemini.generateWithContext(_conversationId, fullPrompt);
+    // IMPORTANT: do not store the full system prompt into conversation memory.
+    return await _gemini.generateWithSystemPrompt(
+      conversationId: _conversationId,
+      systemPrompt: '$systemPrompt\n\nAKTUÁLNY KONTEXT POUŽÍVATEĽA:\n$context',
+      userMessage: question,
+    );
   }
 
   // Streaming version for real-time responses
@@ -58,7 +61,7 @@ PRAVIDLÁ:
 4. Nikdy neuvádzaj fiktívne čísla, ak nie sú v kontexte.
 ''';
 
-    final fullPrompt = '$systemPrompt\n\nPOUŽÍVATEĽ SA PÝTA: $question';
+    final fullPrompt = '$systemPrompt\n\nAKTUÁLNY KONTEXT POUŽÍVATEĽA:\n$context\n\nPOUŽÍVATEĽ SA PÝTA: $question';
 
     String fullResponse = '';
     await for (final chunk in _gemini.generateContentStream(fullPrompt)) {
@@ -67,7 +70,7 @@ PRAVIDLÁ:
     }
 
     // Add to conversation memory after streaming completes
-    _gemini.addToConversation(_conversationId, fullPrompt, fullResponse);
+    _gemini.addToConversation(_conversationId, question, fullResponse);
   }
 
   Future<String> _prepareContext() async {

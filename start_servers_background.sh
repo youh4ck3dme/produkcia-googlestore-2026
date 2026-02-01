@@ -12,8 +12,8 @@ echo "🚀 Spúšťam servery v pozadí..."
 echo ""
 
 # 1. Flutter Web App
-echo "1️⃣  Flutter Web App (port 5000)..."
-nohup flutter run -d chrome --web-port=5000 > /tmp/flutter_server.log 2>&1 &
+echo "1️⃣  Flutter Web App (port 5050)..."
+nohup flutter run -d chrome --web-port=5050 > /tmp/flutter_server.log 2>&1 &
 FLUTTER_PID=$!
 echo "   PID: $FLUTTER_PID"
 echo "   Log: tail -f /tmp/flutter_server.log"
@@ -63,7 +63,7 @@ fi
 echo "✅ Servery sú spustené v pozadí!"
 echo ""
 echo "📋 Prehľad:"
-echo "   • Flutter Web App:    http://localhost:5000"
+echo "   • Flutter Web App:    http://localhost:5050"
 echo "   • Firebase Functions: http://localhost:5001"
 if [ ! -z "$VERCEL_PID" ]; then
     echo "   • Vercel API Server:  http://localhost:3000"

@@ -37,13 +37,36 @@ void main() {
 
     test('canWatchCompanies true for pro', () {
       final state = BillingState(
-        entitlements: UserEntitlements(isPro: true),
+        entitlements: const UserEntitlements(isPro: true),
       );
       final container = containerFor(state);
       addTearDown(container.dispose);
 
       final guard = container.read(subscriptionGuardProvider);
       expect(guard.canWatchCompanies, isTrue);
+    });
+
+    test('icoPremiumProfile access is pro/business only', () {
+      final free = containerFor(BillingState(entitlements: UserEntitlements.free()));
+      addTearDown(free.dispose);
+      expect(
+        free.read(subscriptionGuardProvider).canAccess(BizFeature.icoPremiumProfile),
+        isFalse,
+      );
+
+      final pro = containerFor(BillingState(entitlements: const UserEntitlements(isPro: true)));
+      addTearDown(pro.dispose);
+      expect(
+        pro.read(subscriptionGuardProvider).canAccess(BizFeature.icoPremiumProfile),
+        isTrue,
+      );
+
+      final business = containerFor(BillingState(entitlements: const UserEntitlements(isBusiness: true, isPro: true)));
+      addTearDown(business.dispose);
+      expect(
+        business.read(subscriptionGuardProvider).canAccess(BizFeature.icoPremiumProfile),
+        isTrue,
+      );
     });
 
     test('getUpgradeMessage returns correct messages', () {

@@ -3,8 +3,15 @@
 ## 📧 Údaje Demo Účtu
 
 **Email:** `bizbizagent@bizbizagent.com`  
-**Password:** `1369#1369#1369#`  
+**Password:** *(NEUKLADAŤ do repozitára)*  
 **Provider:** Email/Password (nie Google Sign-In!)
+
+### Kde držať heslo bezpečne (lokálne)
+
+1. Skopíruj šablónu:
+   - `DEMO_ACCOUNT_SECRETS.example.txt` → `DEMO_ACCOUNT_SECRETS.txt`
+2. Doplň `DEMO_PASSWORD=...`
+3. Súbor `DEMO_ACCOUNT_SECRETS.txt` je v `.gitignore` (necommitne sa).
 
 ## 🚀 Rýchle Vytvorenie
 
@@ -14,7 +21,7 @@
 ### Krok 2: Vytvor Účet
 1. Klikni **"Add User"** (alebo **"Pridať používateľa"**)
 2. Email: `bizbizagent@bizbizagent.com`
-3. Password: `1369#1369#1369#`
+3. Password: *(použi hodnotu z `DEMO_ACCOUNT_SECRETS.txt`)*
 4. **Zruš zaškrtnutie** "Send email verification"
 5. Klikni **"Add User"**
 
@@ -26,7 +33,7 @@
 ### Pre Google Play Console
 Pri vypĺňaní **App Access** sekcie:
 - **Username:** `bizbizagent@bizbizagent.com`
-- **Password:** `1369#1369#1369#`
+- **Password:** *(použi lokálne uložené demo heslo; neuvádzaj v repozitári)*
 
 ### Pre Testovanie
 Skús sa prihlásiť v aplikácii s týmito údajmi.

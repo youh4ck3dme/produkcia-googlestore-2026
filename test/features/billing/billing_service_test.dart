@@ -35,7 +35,7 @@ void main() {
     });
 
     test('copyWith preserves unspecified fields', () {
-      final e = UserEntitlements(isPro: true, invoiceCount: 3);
+      final e = const UserEntitlements(isPro: true, invoiceCount: 3);
       final updated = e.copyWith(icoLookupsCount: 2);
       expect(updated.isPro, isTrue);
       expect(updated.invoiceCount, 3);

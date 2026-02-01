@@ -1,6 +1,8 @@
 #!/usr/bin/env dart
 // Testovací skript pre produkčné Firebase API a Cloud Functions
 // Spustenie: dart test_production_api.dart
+//
+// ignore_for_file: avoid_print, prefer_interpolation_to_compose_strings
 
 import 'dart:io';
 import 'dart:convert';

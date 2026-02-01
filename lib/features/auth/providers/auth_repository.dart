@@ -19,7 +19,6 @@ class AuthRepository {
   UserModel? _currentUser;
   late final Stream<UserModel?> authStateChanges;
   StreamSubscription<User?>? _authSubscription;
-
   AuthRepository(this._auth) {
     _init();
     _initInitialValue();
@@ -47,8 +46,14 @@ class AuthRepository {
   }
 
   void _init() {
-    // Explicitly set persistence to LOCAL (long-lived)
-    _auth.setPersistence(Persistence.LOCAL);
+    // Explicitly set persistence to LOCAL (long-lived) on WEB only.
+    if (kIsWeb) {
+      try {
+        _auth.setPersistence(Persistence.LOCAL);
+      } catch (e) {
+        debugPrint('Auth persistence not supported: $e');
+      }
+    }
 
     _authSubscription = _auth.authStateChanges().listen((User? user) {
       if (_currentUser != null && _currentUser!.id == 'fake-id-123') return;
@@ -124,9 +129,25 @@ class AuthRepository {
 
   Future<UserModel?> signInWithGoogle() async {
     try {
-      final googleSignIn = GoogleSignIn(
-        clientId: '542280140779-fnbgni0vvqb9dgpl6q4k64p6s91s6jdi.apps.googleusercontent.com',
-      );
+      if (kIsWeb) {
+        // Prefer FirebaseAuth popup on web (more reliable than google_sign_in web setup).
+        final GoogleAuthProvider googleProvider = GoogleAuthProvider()..addScope('email');
+        final result = await _auth.signInWithPopup(googleProvider);
+        final user = result.user;
+        if (user == null) return null;
+
+        final userModel = UserModel(
+          id: user.uid,
+          email: user.email ?? '',
+          displayName: user.displayName,
+          photoUrl: user.photoURL,
+          isAnonymous: user.isAnonymous,
+        );
+        _authStateController.add(userModel);
+        return userModel;
+      }
+
+      final googleSignIn = GoogleSignIn(scopes: const ['email']);
 
       GoogleSignInAccount? googleUser;
       try {
@@ -187,6 +208,11 @@ class AuthRepository {
 
   Future<void> signOut() async {
     _currentUser = null;
+    try {
+      await GoogleSignIn().signOut();
+    } catch (_) {
+      // ignore
+    }
     await _auth.signOut();
     _authStateController.add(null);
   }

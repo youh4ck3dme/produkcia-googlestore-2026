@@ -2,8 +2,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:bizagent/core/services/icoatlas_service.dart';
-import 'package:bizagent/core/models/ico_lookup_result.dart';
-import 'package:bizagent/core/models/company_info.dart';
 
 class MockDio extends Mock implements Dio {}
 
@@ -16,15 +14,17 @@ void main() {
 
     setUp(() {
       mockDio = MockDio();
-      service = IcoAtlasService(mockDio, isDemoMode: true);
+      // Inject gateway dio as well so secureLookup/autocomplete are testable
+      // without constructing a real Dio internally.
+      service = IcoAtlasService(mockDio, gatewayDio: mockDio);
     });
 
     group('publicLookup', () {
       test('should handle network timeout errors', () async {
         // Arrange
-        when(() => mockDio.get(any(), queryParameters: any(named: 'queryParameters')))
+        when(() => mockDio.get(any()))
             .thenThrow(DioException(
-              requestOptions: RequestOptions(path: '/api/public/ico/lookup'),
+              requestOptions: RequestOptions(path: '/api/company/12345678'),
               type: DioExceptionType.connectionTimeout,
               message: 'Connection timeout',
             ));
@@ -38,9 +38,9 @@ void main() {
 
       test('should handle connection errors', () async {
         // Arrange
-        when(() => mockDio.get(any(), queryParameters: any(named: 'queryParameters')))
+        when(() => mockDio.get(any()))
             .thenThrow(DioException(
-              requestOptions: RequestOptions(path: '/api/public/ico/lookup'),
+              requestOptions: RequestOptions(path: '/api/company/12345678'),
               type: DioExceptionType.connectionError,
               message: 'No internet connection',
             ));
@@ -58,9 +58,9 @@ void main() {
         when(() => mockResponse.statusCode).thenReturn(429);
         when(() => mockResponse.data).thenReturn({'resetIn': '60'});
 
-        when(() => mockDio.get(any(), queryParameters: any(named: 'queryParameters')))
+        when(() => mockDio.get(any()))
             .thenThrow(DioException(
-              requestOptions: RequestOptions(path: '/api/public/ico/lookup'),
+              requestOptions: RequestOptions(path: '/api/company/12345678'),
               response: mockResponse,
               type: DioExceptionType.badResponse,
             ));
@@ -80,9 +80,9 @@ void main() {
         when(() => mockResponse.statusCode).thenReturn(429);
         when(() => mockResponse.data).thenReturn({});
 
-        when(() => mockDio.get(any(), queryParameters: any(named: 'queryParameters')))
+        when(() => mockDio.get(any()))
             .thenThrow(DioException(
-              requestOptions: RequestOptions(path: '/api/public/ico/lookup'),
+              requestOptions: RequestOptions(path: '/api/company/12345678'),
               response: mockResponse,
               type: DioExceptionType.badResponse,
             ));
@@ -102,9 +102,9 @@ void main() {
         when(() => mockResponse.statusCode).thenReturn(404);
         when(() => mockResponse.data).thenReturn({'error': 'Company not found'});
 
-        when(() => mockDio.get(any(), queryParameters: any(named: 'queryParameters')))
+        when(() => mockDio.get(any()))
             .thenThrow(DioException(
-              requestOptions: RequestOptions(path: '/api/public/ico/lookup'),
+              requestOptions: RequestOptions(path: '/api/company/12345678'),
               response: mockResponse,
               type: DioExceptionType.badResponse,
             ));
@@ -122,9 +122,9 @@ void main() {
         when(() => mockResponse.statusCode).thenReturn(500);
         when(() => mockResponse.data).thenReturn({'error': 'Internal server error'});
 
-        when(() => mockDio.get(any(), queryParameters: any(named: 'queryParameters')))
+        when(() => mockDio.get(any()))
             .thenThrow(DioException(
-              requestOptions: RequestOptions(path: '/api/public/ico/lookup'),
+              requestOptions: RequestOptions(path: '/api/company/12345678'),
               response: mockResponse,
               type: DioExceptionType.badResponse,
             ));
@@ -142,9 +142,9 @@ void main() {
         when(() => mockResponse.statusCode).thenReturn(401);
         when(() => mockResponse.data).thenReturn({'error': 'Unauthorized'});
 
-        when(() => mockDio.get(any(), queryParameters: any(named: 'queryParameters')))
+        when(() => mockDio.get(any()))
             .thenThrow(DioException(
-              requestOptions: RequestOptions(path: '/api/public/ico/lookup'),
+              requestOptions: RequestOptions(path: '/api/company/12345678'),
               response: mockResponse,
               type: DioExceptionType.badResponse,
             ));
@@ -162,7 +162,7 @@ void main() {
         when(() => mockResponse.statusCode).thenReturn(200);
         when(() => mockResponse.data).thenReturn('invalid json');
 
-        when(() => mockDio.get(any(), queryParameters: any(named: 'queryParameters')))
+        when(() => mockDio.get(any()))
             .thenAnswer((_) async => mockResponse);
 
         // Act
@@ -178,7 +178,7 @@ void main() {
         when(() => mockResponse.statusCode).thenReturn(200);
         when(() => mockResponse.data).thenReturn(null);
 
-        when(() => mockDio.get(any(), queryParameters: any(named: 'queryParameters')))
+        when(() => mockDio.get(any()))
             .thenAnswer((_) async => mockResponse);
 
         // Act
@@ -194,7 +194,7 @@ void main() {
         when(() => mockResponse.statusCode).thenReturn(200);
         when(() => mockResponse.data).thenReturn({'ok': false, 'error': 'Invalid ICO'});
 
-        when(() => mockDio.get(any(), queryParameters: any(named: 'queryParameters')))
+        when(() => mockDio.get(any()))
             .thenAnswer((_) async => mockResponse);
 
         // Act
@@ -210,22 +210,19 @@ void main() {
         when(() => mockResponse.statusCode).thenReturn(200);
         when(() => mockResponse.data).thenReturn({'ok': true});
 
-        when(() => mockDio.get(any(), queryParameters: any(named: 'queryParameters')))
+        when(() => mockDio.get(any()))
             .thenAnswer((_) async => mockResponse);
 
         // Act
         final result = await service.publicLookup('12345678');
 
         // Assert
-        // Note: Implementation uses ?? {} which creates empty map, resulting in IcoLookupResult with empty values
-        expect(result, isNotNull);
-        expect(result!.name, isEmpty);
-        expect(result.status, isEmpty);
+        expect(result, isNull);
       });
 
       test('should handle generic exceptions', () async {
         // Arrange
-        when(() => mockDio.get(any(), queryParameters: any(named: 'queryParameters')))
+        when(() => mockDio.get(any()))
             .thenThrow(Exception('Unexpected error'));
 
         // Act
@@ -239,7 +236,7 @@ void main() {
     group('fetchByIco', () {
       test('should throw when result is null', () async {
         // Arrange
-        when(() => mockDio.get(any(), queryParameters: any(named: 'queryParameters')))
+        when(() => mockDio.get(any()))
             .thenAnswer((_) async {
           final mockResponse = MockResponse();
           when(() => mockResponse.statusCode).thenReturn(404);
@@ -260,9 +257,9 @@ void main() {
         when(() => mockResponse.statusCode).thenReturn(429);
         when(() => mockResponse.data).thenReturn({'resetIn': '60'});
 
-        when(() => mockDio.get(any(), queryParameters: any(named: 'queryParameters')))
+        when(() => mockDio.get(any()))
             .thenThrow(DioException(
-              requestOptions: RequestOptions(path: '/api/public/ico/lookup'),
+              requestOptions: RequestOptions(path: '/api/company/12345678'),
               response: mockResponse,
               type: DioExceptionType.badResponse,
             ));
@@ -287,7 +284,7 @@ void main() {
           },
         });
 
-        when(() => mockDio.get(any(), queryParameters: any(named: 'queryParameters')))
+        when(() => mockDio.get(any()))
             .thenAnswer((_) async => mockResponse);
 
         // Act
@@ -458,17 +455,14 @@ void main() {
         final result = await service.secureLookup('12345678', 'token');
 
         // Assert
-        // Note: Implementation uses ?? {} which creates empty map, resulting in IcoLookupResult with empty values
-        expect(result, isNotNull);
-        expect(result!.name, isEmpty);
-        expect(result.status, isEmpty);
+        expect(result, isNull);
       });
     });
 
     group('lookupCompany', () {
       test('should return null when publicLookup returns null', () async {
         // Arrange
-        when(() => mockDio.get(any(), queryParameters: any(named: 'queryParameters')))
+        when(() => mockDio.get(any()))
             .thenAnswer((_) async {
           final mockResponse = MockResponse();
           when(() => mockResponse.statusCode).thenReturn(404);
@@ -489,9 +483,9 @@ void main() {
         when(() => mockResponse.statusCode).thenReturn(429);
         when(() => mockResponse.data).thenReturn({'resetIn': '60'});
 
-        when(() => mockDio.get(any(), queryParameters: any(named: 'queryParameters')))
+        when(() => mockDio.get(any()))
             .thenThrow(DioException(
-              requestOptions: RequestOptions(path: '/api/public/ico/lookup'),
+              requestOptions: RequestOptions(path: '/api/company/12345678'),
               response: mockResponse,
               type: DioExceptionType.badResponse,
             ));
@@ -516,7 +510,7 @@ void main() {
           },
         });
 
-        when(() => mockDio.get(any(), queryParameters: any(named: 'queryParameters')))
+        when(() => mockDio.get(any()))
             .thenAnswer((_) async => mockResponse);
 
         // Act
@@ -528,7 +522,7 @@ void main() {
 
       test('should handle exceptions gracefully', () async {
         // Arrange
-        when(() => mockDio.get(any(), queryParameters: any(named: 'queryParameters')))
+        when(() => mockDio.get(any()))
             .thenThrow(Exception('Unexpected error'));
 
         // Act
@@ -559,7 +553,7 @@ void main() {
 
       test('should handle network errors', () async {
         // Arrange
-        when(() => mockDio.get(any(), queryParameters: any(named: 'queryParameters')))
+        when(() => mockDio.get(any()))
             .thenThrow(DioException(
               requestOptions: RequestOptions(path: '/api/public/ico/autocomplete'),
               type: DioExceptionType.connectionError,
@@ -579,7 +573,7 @@ void main() {
         when(() => mockResponse.statusCode).thenReturn(500);
         when(() => mockResponse.data).thenReturn({'error': 'Server error'});
 
-        when(() => mockDio.get(any(), queryParameters: any(named: 'queryParameters')))
+        when(() => mockDio.get(any()))
             .thenThrow(DioException(
               requestOptions: RequestOptions(path: '/api/public/ico/autocomplete'),
               response: mockResponse,
@@ -599,7 +593,7 @@ void main() {
         when(() => mockResponse.statusCode).thenReturn(200);
         when(() => mockResponse.data).thenReturn({'error': 'Invalid format'});
 
-        when(() => mockDio.get(any(), queryParameters: any(named: 'queryParameters')))
+        when(() => mockDio.get(any()))
             .thenAnswer((_) async => mockResponse);
 
         // Act
@@ -611,7 +605,7 @@ void main() {
 
       test('should handle exceptions gracefully', () async {
         // Arrange
-        when(() => mockDio.get(any(), queryParameters: any(named: 'queryParameters')))
+        when(() => mockDio.get(any()))
             .thenThrow(Exception('Unexpected error'));
 
         // Act
@@ -622,10 +616,10 @@ void main() {
       });
     });
 
-    group('Real Mode (isDemoMode: false)', () {
+    group('Real Mode', () {
       test('should handle errors in real mode', () async {
         // Arrange
-        final realService = IcoAtlasService(mockDio, isDemoMode: false);
+        final realService = IcoAtlasService(mockDio);
         when(() => mockDio.get(any()))
             .thenThrow(DioException(
               requestOptions: RequestOptions(path: '/api/company/12345678'),
@@ -642,7 +636,7 @@ void main() {
 
       test('should handle 404 in real mode', () async {
         // Arrange
-        final realService = IcoAtlasService(mockDio, isDemoMode: false);
+        final realService = IcoAtlasService(mockDio);
         final mockResponse = MockResponse();
         when(() => mockResponse.statusCode).thenReturn(404);
         when(() => mockResponse.data).thenReturn(null);
@@ -659,7 +653,7 @@ void main() {
 
       test('should handle null response data in real mode', () async {
         // Arrange
-        final realService = IcoAtlasService(mockDio, isDemoMode: false);
+        final realService = IcoAtlasService(mockDio);
         final mockResponse = MockResponse();
         when(() => mockResponse.statusCode).thenReturn(200);
         when(() => mockResponse.data).thenReturn(null);

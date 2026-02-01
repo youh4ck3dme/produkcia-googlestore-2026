@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:bizagent/features/auth/providers/auth_repository.dart';
 import 'package:bizagent/features/auth/models/user_model.dart';
 
 // Note: Full Firebase Auth integration tests should use Firebase Emulator
@@ -12,7 +11,7 @@ void main() {
     
     test('UserModel should correctly map Firebase user data', () {
       // Arrange
-      final userModel = UserModel(
+      final userModel = const UserModel(
         id: 'user123',
         email: 'test@example.com',
         displayName: 'Test User',
@@ -31,7 +30,7 @@ void main() {
 
     test('UserModel should handle anonymous users', () {
       // Arrange
-      final anonymousUser = UserModel(
+      final anonymousUser = const UserModel(
         id: 'anonymous123',
         email: '',
         displayName: 'Demo User',
@@ -46,7 +45,7 @@ void main() {
 
     test('UserModel should serialize to map correctly', () {
       // Arrange
-      final userModel = UserModel(
+      final userModel = const UserModel(
         id: 'user123',
         email: 'test@example.com',
         displayName: 'Test User',

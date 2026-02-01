@@ -136,7 +136,7 @@ else
     test_fail "Firestore dependency missing"
 fi
 
-if [ -f "firebase/firestore.rules" ]; then
+if [ -f "firestore.rules" ] || [ -f "firebase/firestore.rules" ]; then
     test_pass "Firestore security rules exist"
 else
     test_fail "Firestore security rules missing"
@@ -151,7 +151,7 @@ else
     test_fail "Firebase Storage dependency missing"
 fi
 
-if [ -f "firebase/storage.rules" ]; then
+if [ -f "storage.rules" ] || [ -f "firebase/storage.rules" ]; then
     test_pass "Storage security rules exist"
 else
     test_fail "Storage security rules missing"

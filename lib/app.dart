@@ -3,12 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/ui/biz_theme.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/router/app_router.dart';
-
+import 'core/demo_mode/demo_mode_service.dart';
 import 'core/i18n/l10n.dart';
-
 import 'core/services/review_service.dart';
 import 'features/notifications/services/notification_service.dart';
 import 'features/notifications/services/notification_scheduler.dart';
+import 'features/expenses/providers/expenses_provider.dart';
+import 'features/invoices/providers/invoices_provider.dart';
+import 'features/analytics/providers/expense_insights_provider.dart';
 
 class BizAgentApp extends ConsumerStatefulWidget {
   const BizAgentApp({super.key});
@@ -43,25 +45,44 @@ class _BizAgentAppState extends ConsumerState<BizAgentApp> {
   Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
     final themeMode = ref.watch(themeProvider);
+    final demo = DemoModeService.instance;
 
-    return L10n(
-      locale: AppLocale.sk,
-      child: MaterialApp.router(
-        title: 'BizAgent',
-        localizationsDelegates: const [
-          DefaultMaterialLocalizations.delegate,
-          DefaultWidgetsLocalizations.delegate,
-        ],
-        debugShowCheckedModeBanner: false,
-        theme: BizTheme.light(),
-        darkTheme: BizTheme.dark(),
-        themeMode: themeMode,
-        routerConfig: router,
-        builder: (context, child) {
-          if (child != null) return child;
-          return const SizedBox.shrink();
-        },
-      ),
+    return ListenableBuilder(
+      listenable: demo,
+      builder: (context, _) {
+        final overrides = <Override>[];
+        if (demo.isDemoMode) {
+          overrides.addAll([
+            expensesProvider.overrideWith((ref) => Stream.value(demo.getDemoExpenses())),
+            invoicesProvider.overrideWith((ref) => Stream.value(demo.getDemoInvoices())),
+            expenseInsightsProvider.overrideWith((ref) => Future.value(demo.getDemoInsights())),
+          ]);
+        }
+        final child = L10n(
+          locale: AppLocale.sk,
+          child: MaterialApp.router(
+            title: 'BizAgent',
+            localizationsDelegates: const [
+              DefaultMaterialLocalizations.delegate,
+              DefaultWidgetsLocalizations.delegate,
+            ],
+            debugShowCheckedModeBanner: false,
+            theme: BizTheme.light(),
+            darkTheme: BizTheme.dark(),
+            themeMode: themeMode,
+            routerConfig: router,
+            builder: (context, child) {
+              if (child != null) return child;
+              return const SizedBox.shrink();
+            },
+          ),
+        );
+        if (overrides.isEmpty) return child;
+        return ProviderScope(
+          overrides: overrides,
+          child: child,
+        );
+      },
     );
   }
 }

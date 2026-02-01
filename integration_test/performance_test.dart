@@ -24,7 +24,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           child: MaterialApp(
-            theme: BizTheme.lightTheme,
+            theme: BizTheme.light(),
             home: const DashboardScreen(),
           ),
         ),
@@ -47,8 +47,8 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          theme: BizTheme.lightTheme,
-          darkTheme: BizTheme.darkTheme,
+          theme: BizTheme.light(),
+          darkTheme: BizTheme.dark(),
           home: const Scaffold(body: Center(child: Text('Test'))),
         ),
       );
@@ -69,7 +69,7 @@ void main() {
   group('Memory Tests', () {
     test('Theme Memory Footprint', () {
       // Create multiple theme instances
-      final themes = List.generate(100, (_) => BizTheme.lightTheme);
+      final themes = List.generate(100, (_) => BizTheme.light());
       
       expect(themes.length, equals(100));
       // Themes should be lightweight (no heavy objects)

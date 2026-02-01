@@ -32,46 +32,55 @@ class CompanyLookupService {
       return IcoLookupResult.invalid();
     }
 
-    final docRef = _db.collection('companies').doc(icoNorm); // Using 'companies' as per existing data, user suggested 'company_cache' but sticking to established schema is safer for now unless migration intended. Let's stick to 'companies' to match existing tests/data.
-    final snap = await docRef.get();
+    final docRef = _db.collection('companies').doc(icoNorm);
 
-    if (snap.exists) {
-      final cached = IcoLookupResult.fromFirestore(snap.data()!);
+    try {
+      final snap = await docRef.get();
 
-      if (!_isExpired(cached)) {
+      if (snap.exists) {
+        final cached = IcoLookupResult.fromFirestore(snap.data()!);
+
+        if (!_isExpired(cached)) {
+          return cached;
+        }
+
+        // stale → return now + refresh in background
+        unawaited(_refreshInBackground(icoNorm, docRef));
         return cached;
       }
 
-      // stale → return now + refresh in background
-      unawaited(_refreshInBackground(icoNorm, docRef));
-      return cached;
+      return _fetchFresh(icoNorm, docRef);
+    } catch (_) {
+      // Firestore zlyhal (pravidlá, sieť, neinicializovaný) → fallback na API bez cache
+      return _fetchFresh(icoNorm, null);
     }
-
-    return _fetchFresh(icoNorm, docRef);
   }
 
   /// INTERNALS
 
   Future<IcoLookupResult> _fetchFresh(
     String ico,
-    DocumentReference<Map<String, dynamic>> docRef,
+    DocumentReference<Map<String, dynamic>>? docRef,
   ) async {
     try {
-      // Adapter: user skeleton calls _remote.lookup(ico) which returns IcoLookupResult.
-      // Existing IcoAtlasService.publicLookup returns IcoLookupResult?.
-      // We need to bridge this.
       final fresh = await _remote.publicLookup(ico);
 
       if (fresh == null) {
-         return IcoLookupResult.invalid(); // Not found or error
+        return IcoLookupResult.invalid(); // Not found or error
       }
-      
+
       if (!fresh.isValid) {
         return fresh; // Limit reached etc.
       }
 
-      // Save using toFirestore which puts ServerTimestamp
-      await docRef.set(fresh.toFirestore(), SetOptions(merge: true));
+      // Ulož do cache len ak máme docRef a oprávnenie (Firestore nevyhodil)
+      if (docRef != null) {
+        try {
+          await docRef.set(fresh.toFirestore(), SetOptions(merge: true));
+        } catch (_) {
+          // zápis cache zlyhal – vráť dáta bez cache
+        }
+      }
       return fresh;
     } on SocketException {
       return IcoLookupResult.offline();

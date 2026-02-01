@@ -1,5 +1,5 @@
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { GoogleGenAI } = require("@google/genai");
 const { defineString } = require("firebase-functions/params");
 
 const geminiApiKey = defineString("GEMINI_API_KEY");
@@ -7,8 +7,12 @@ const icoAtlasApiKey = defineString("ICOATLAS_API_KEY");
 
 // Model configuration
 // Updated to use currently supported models (January 2026)
-const MODEL_PRIORITY = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash"];
-const DEFAULT_MODEL = "gemini-1.5-flash";
+//
+// NOTE (runtime evidence from Firebase logs):
+// The legacy @google/generative-ai SDK uses the v1beta endpoint and can return 404 for models.
+// We use the Google Gen AI SDK (@google/genai) which supports API version v1.
+const MODEL_PRIORITY = ["gemini-2.0-flash", "gemini-1.5-flash"];
+const DEFAULT_MODEL = "gemini-2.0-flash";
 
 /**
  * Generuje profesionálny e-mail na základe kontextu.
@@ -18,6 +22,7 @@ exports.generateEmail = onCall({
     "https://biz-agent-web.vercel.app",
     "https://bizagent-live-2026.web.app",
     "http://localhost:3000",
+    "http://localhost:5050",
     "http://localhost:62262"
   ]
 }, async (request) => {
@@ -36,20 +41,17 @@ exports.generateEmail = onCall({
   }
 
   try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ 
-      model: DEFAULT_MODEL,
-      systemInstruction: "Si profesionálny biznis asistent pre slovenských podnikateľov. Tvojou úlohou je písať e-maily, ktoré sú gramaticky správne, slušné a vecne presné podľa zadaného kontextu. Používaj spisovnú slovenčinu a profesionálne formátovanie."
-    });
-
     const prompt = `Napíš ${type} e-mail v ${tone} tóne. Kontext: ${context}`;
-    
-    const result = await model.generateContent(prompt);
-    return { text: result.response.text() };
+    const ai = new GoogleGenAI({ vertexai: false, apiKey });
+    const response = await ai.models.generateContent({
+      model: DEFAULT_MODEL,
+      contents: prompt,
+    });
+    return { text: response.text || "AI nevrátilo žiadny text." };
 
   } catch (error) {
     console.error("Gemini Email Error:", error);
-    if (error.status === 403 || error.message.includes('API key')) {
+    if (error.status === 403 || String(error.message || '').includes('API key')) {
       throw new HttpsError('permission-denied', 'Neplatný API kľúč pre AI službu.');
     }
     throw new HttpsError('internal', 'Chyba pri generovaní e-mailu: ' + error.message);
@@ -64,6 +66,7 @@ exports.analyzeReceipt = onCall({
     "https://biz-agent-web.vercel.app",
     "https://bizagent-live-2026.web.app",
     "http://localhost:3000",
+    "http://localhost:5050",
     "http://localhost:62262"
   ]
 }, async (request) => {
@@ -82,30 +85,34 @@ exports.analyzeReceipt = onCall({
   }
 
   try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ 
-      model: DEFAULT_MODEL,
-      systemInstruction: `Si expert na analýzu slovenských pokladničných dokladov. 
-      Z extrahovaného textu vytiahni údaje do čistého JSONu v tejto štruktúre:
-      {
-        "vendor_name": "Názov obchodu",
-        "ico": "XXXXXXXX (ak existuje)",
-        "date": "YYYY-MM-DD",
-        "total": 0.0,
-        "currency": "EUR",
-        "address": {
-          "street": "Ulica",
-          "street_number": "Číslo",
-          "psc": "PSČ",
-          "city": "Mesto"
-        },
-        "confidence": 0.9 (odhad istoty)
-      }
-      Ak údaj nevieš nájsť, nechaj ho null.`
-    });
+    const ai = new GoogleGenAI({ vertexai: false, apiKey });
+    const receiptPrompt = `Si expert na analýzu slovenských pokladničných dokladov.
+Z extrahovaného textu vytiahni údaje do čistého JSONu v tejto štruktúre:
+{
+  "vendor_name": "Názov obchodu",
+  "ico": "XXXXXXXX (ak existuje)",
+  "date": "YYYY-MM-DD",
+  "total": 0.0,
+  "currency": "EUR",
+  "address": {
+    "street": "Ulica",
+    "street_number": "Číslo",
+    "psc": "PSČ",
+    "city": "Mesto"
+  },
+  "confidence": 0.9
+}
+Ak údaj nevieš nájsť, nechaj ho null.
 
-    const result = await model.generateContent(`Analyzuj text:\n\n${text}`);
-    const jsonString = result.response.text().replace(/```json|```/g, '').trim();
+Analyzuj text:
+${text}`;
+
+    const response = await ai.models.generateContent({
+      model: DEFAULT_MODEL,
+      contents: receiptPrompt,
+    });
+    const rawText = response.text || '';
+    const jsonString = rawText.replace(/```json|```/g, '').trim();
     
     return JSON.parse(jsonString);
   } catch (error) {
@@ -123,13 +130,14 @@ exports.lookupCompany = onCall({
     "https://biz-agent-web.vercel.app",
     "https://bizagent-live-2026.web.app",
     "http://localhost:3000",
+    "http://localhost:5050",
     "http://localhost:62262"
   ]
 }, async (request) => {
   // Allow unauthenticated for onboarding flow (strictly rate limited in prod)
   // For now, allow it to speed up "Magic Setup"
 
-  const { ico } = request.data;
+  const { ico, full } = request.data;
   if (!ico) {
     throw new HttpsError('invalid-argument', 'Chýba IČO.');
   }
@@ -167,7 +175,26 @@ exports.lookupCompany = onCall({
   // Ak nemáme kľúč alebo je to známe testovacie IČO, vráť mock
   if (!apiKey || MOCK_DB[ico]) {
     console.log("Using Mock/Fallback for IČO:", ico);
-    if (MOCK_DB[ico]) return MOCK_DB[ico];
+    if (MOCK_DB[ico]) {
+      const mock = MOCK_DB[ico];
+      // Ensure consistent shape for premium/full payload requests.
+      if (full === true) {
+        return {
+          ok: true,
+          data: {
+            ico: mock.ico,
+            name: mock.name,
+            dic: mock.dic,
+            ic_dph: mock.icDph,
+            address: mock.address,
+          },
+          related: [],
+          meta: { mocked: true },
+          message: 'MOCK',
+        };
+      }
+      return mock;
+    }
 
     // Ak nemáme kľúč a nie je v mocku:
     if (!apiKey) {
@@ -199,16 +226,35 @@ exports.lookupCompany = onCall({
        return null;
     }
 
-    const data = await response.json();
-    if (!data) return null;
+    const payload = await response.json();
+    if (!payload) return null;
 
-    // Map to our simplified format
+    // Expected response shape:
+    // { message: string, data: object|null, related: [], meta: {...} }
+    const company = payload.data;
+    if (!company || typeof company !== 'object') return null;
+
+    // Premium/full payload (closest to icoatlas.sk)
+    if (full === true) {
+      return {
+        ok: true,
+        data: company,
+        related: Array.isArray(payload.related) ? payload.related : [],
+        meta: payload.meta && typeof payload.meta === 'object' ? payload.meta : {},
+        message: payload.message || 'OK',
+      };
+    }
+
+    // Basic payload (keep backward compatibility + simple UI)
     return {
-      name: data.name || '',
-      ico: data.ico || ico,
-      dic: data.dic || '',
-      icDph: data.ic_dph || '',
-      address: data.address || ''
+      name: company.name || '',
+      ico: company.ico || ico,
+      dic: company.dic || '',
+      icDph: company.ic_dph || '',
+      address: company.address || '',
+      city: company.city || '',
+      zip: company.zip || '',
+      status: company.status || '',
     };
 
   } catch (error) {
@@ -226,13 +272,14 @@ exports.generateContent = onCall({
     "https://biz-agent-web.vercel.app",
     "https://bizagent-live-2026.web.app",
     "http://localhost:3000",
+    "http://localhost:5050",
     "http://localhost:62262"
   ]
 }, async (request) => {
   // Allow unauthenticated for demo/onboarding, but rate limit in production
   // For production, consider requiring auth: if (!request.auth) { throw new HttpsError('unauthenticated', '...'); }
 
-  const { prompt, model } = request.data;
+  const { prompt } = request.data;
   if (!prompt) {
     throw new HttpsError('invalid-argument', 'Chýba parameter "prompt".');
   }
@@ -242,22 +289,20 @@ exports.generateContent = onCall({
     throw new HttpsError('failed-precondition', 'Server nie je správne nakonfigurovaný (chýba API kľúč).');
   }
 
-  // Model priority fallback
-  const requestedModel = model || DEFAULT_MODEL;
-  const modelsToTry = [requestedModel, ...MODEL_PRIORITY.filter(m => m !== requestedModel)];
+  // Model priority fallback (SERVER-SIDE ONLY)
+  // We intentionally ignore any client-provided model to keep behavior stable and prevent breakage.
+  const modelsToTry = [DEFAULT_MODEL, ...MODEL_PRIORITY.filter(m => m !== DEFAULT_MODEL)];
 
   let lastError = null;
   for (const modelName of modelsToTry) {
     try {
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const geminiModel = genAI.getGenerativeModel({ 
+      const ai = new GoogleGenAI({ vertexai: false, apiKey });
+      const response = await ai.models.generateContent({
         model: modelName,
-        systemInstruction: "Si expert na slovenské účtovníctvo a biznis asistenciu. Odpovedaj v slovenčine, buď presný a profesionálny."
+        contents: prompt,
       });
-
-      const result = await geminiModel.generateContent(prompt);
       return { 
-        text: result.response.text(),
+        text: response.text || "AI nevrátilo žiadny text.",
         model: modelName
       };
 
@@ -265,11 +310,11 @@ exports.generateContent = onCall({
       console.error(`Gemini ${modelName} Error:`, error);
       lastError = error;
       
-      if (error.status === 403 || error.message?.includes('API key')) {
+      if (error.status === 403 || String(error.message || '').includes('API key')) {
         throw new HttpsError('permission-denied', 'Neplatný API kľúč pre AI službu.');
       }
       
-      if (error.message?.includes('quota') || error.status === 429) {
+      if (String(error.message || '').includes('quota') || error.status === 429) {
         throw new HttpsError('resource-exhausted', 'Dosiahli ste limit bezplatných dopytov. Skúste to neskôr.');
       }
 

@@ -133,34 +133,33 @@ class BizTheme {
     
     final baseTextColor = isDark ? darkOnSurface : gray900;
     final secondaryTextColor = isDark ? darkOnSurfaceVariant : gray600;
+    final disabledTextColor = isDark ? darkDisabled : gray500;
+
+    // Use Material 3 baseline typography, then apply Inter consistently.
+    final materialTextTheme = ThemeData(
+      useMaterial3: true,
+      colorScheme: colorScheme,
+      brightness: colorScheme.brightness,
+    ).textTheme;
+
+    final interTextTheme = GoogleFonts.interTextTheme(materialTextTheme).apply(
+      bodyColor: baseTextColor,
+      displayColor: baseTextColor,
+    );
+
+    final textTheme = interTextTheme.copyWith(
+      bodyMedium: interTextTheme.bodyMedium?.copyWith(color: secondaryTextColor),
+      bodySmall: interTextTheme.bodySmall?.copyWith(color: disabledTextColor),
+      labelSmall: interTextTheme.labelSmall?.copyWith(color: disabledTextColor),
+    );
     
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: isDark ? darkSurface : Colors.white,
       
-      // Typography - SumUp Style (Inter font, smaller sizes, tighter spacing) - Reduced by 20%
-      textTheme: GoogleFonts.interTextTheme().copyWith(
-        displayLarge: GoogleFonts.inter(fontSize: 38.4, height: 44.8 / 38.4, fontWeight: FontWeight.bold, letterSpacing: -0.5, color: baseTextColor),
-        displayMedium: GoogleFonts.inter(fontSize: 30.4, height: 35.2 / 30.4, fontWeight: FontWeight.bold, letterSpacing: -0.25, color: baseTextColor),
-        displaySmall: GoogleFonts.inter(fontSize: 24, height: 28.8 / 24, fontWeight: FontWeight.bold, letterSpacing: -0.25, color: baseTextColor),
-        
-        headlineLarge: GoogleFonts.inter(fontSize: 20.8, height: 25.6 / 20.8, fontWeight: FontWeight.w600, letterSpacing: -0.2, color: baseTextColor),
-        headlineMedium: GoogleFonts.inter(fontSize: 17.6, height: 22.4 / 17.6, fontWeight: FontWeight.w600, letterSpacing: -0.15, color: baseTextColor),
-        headlineSmall: GoogleFonts.inter(fontSize: 14.4, height: 19.2 / 14.4, fontWeight: FontWeight.w600, letterSpacing: -0.1, color: baseTextColor),
-        
-        titleLarge: GoogleFonts.inter(fontSize: 14.4, height: 19.2 / 14.4, fontWeight: FontWeight.w600, letterSpacing: 0, color: baseTextColor),
-        titleMedium: GoogleFonts.inter(fontSize: 11.2, height: 16 / 11.2, fontWeight: FontWeight.w600, letterSpacing: 0.1, color: baseTextColor),
-        titleSmall: GoogleFonts.inter(fontSize: 9.6, height: 12.8 / 9.6, fontWeight: FontWeight.w600, letterSpacing: 0.1, color: baseTextColor),
-        
-        bodyLarge: GoogleFonts.inter(fontSize: 11.2, height: 16 / 11.2, fontWeight: FontWeight.normal, letterSpacing: 0, color: baseTextColor),
-        bodyMedium: GoogleFonts.inter(fontSize: 10.4, height: 14.4 / 10.4, fontWeight: FontWeight.normal, letterSpacing: 0, color: secondaryTextColor),
-        bodySmall: GoogleFonts.inter(fontSize: 8.8, height: 12.8 / 8.8, fontWeight: FontWeight.normal, letterSpacing: 0.1, color: isDark ? darkDisabled : gray500),
-        
-        labelLarge: GoogleFonts.inter(fontSize: 10.4, height: 14.4 / 10.4, fontWeight: FontWeight.w600, letterSpacing: 0.1),
-        labelMedium: GoogleFonts.inter(fontSize: 8.8, height: 12.8 / 8.8, fontWeight: FontWeight.w600, letterSpacing: 0.2),
-        labelSmall: GoogleFonts.inter(fontSize: 8, height: 11.2 / 8, fontWeight: FontWeight.w600, letterSpacing: 0.2),
-      ),
+      // Typography (Inter) – use Material 3 baseline sizes for readability.
+      textTheme: textTheme,
 
       // AppBar s liquid glass efektom pre sticky state
       appBarTheme: AppBarTheme(
@@ -169,11 +168,9 @@ class BizTheme {
         elevation: 0,
         scrolledUnderElevation: 4, // Zvýšená elevation keď je sticky
         centerTitle: false,
-        titleTextStyle: GoogleFonts.inter(
+        titleTextStyle: textTheme.titleLarge?.copyWith(
           color: isDark ? darkOnSurface : slovakBlue,
-          fontSize: 13.6, // Reduced by 20% (17 * 0.8)
           fontWeight: FontWeight.w600,
-          letterSpacing: -0.1,
         ),
         iconTheme: IconThemeData(color: isDark ? darkOnSurface : slovakBlue),
         // Shape sa nastaví cez flexibleSpace v custom AppBar
@@ -199,7 +196,7 @@ class BizTheme {
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
           minimumSize: const Size(88, 40),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radiusMd)),
-          textStyle: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 10.4, letterSpacing: 0.1), // Reduced by 20% (13 * 0.8)
+          textStyle: textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
@@ -210,7 +207,7 @@ class BizTheme {
            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
            minimumSize: const Size(88, 40),
            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radiusMd)),
-           textStyle: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 10.4, letterSpacing: 0.1), // Reduced by 20% (13 * 0.8)
+           textStyle: textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
         )
       ),
       textButtonTheme: TextButtonThemeData(
@@ -218,7 +215,7 @@ class BizTheme {
           foregroundColor: isDark ? darkPrimaryBlue : slovakBlue,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           minimumSize: const Size(64, 36),
-          textStyle: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 10.4, letterSpacing: 0.1), // Reduced by 20% (13 * 0.8)
+          textStyle: textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -228,7 +225,7 @@ class BizTheme {
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
           minimumSize: const Size(88, 40),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radiusMd)),
-          textStyle: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 10.4, letterSpacing: 0.1), // Reduced by 20% (13 * 0.8)
+          textStyle: textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
         ),
       ),
 
@@ -246,8 +243,8 @@ class BizTheme {
         filled: true,
         fillColor: isDark ? darkSurfaceContainerLow : gray50,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        labelStyle: GoogleFonts.inter(color: isDark ? darkOnSurfaceVariant : gray600, fontWeight: FontWeight.w500, fontSize: 10.4), // Reduced by 20% (13 * 0.8)
-        hintStyle: GoogleFonts.inter(color: isDark ? darkDisabled : gray400, fontSize: 10.4), // Reduced by 20% (13 * 0.8)
+        labelStyle: textTheme.bodyMedium?.copyWith(color: secondaryTextColor, fontWeight: FontWeight.w500),
+        hintStyle: textTheme.bodyMedium?.copyWith(color: isDark ? darkDisabled : gray400),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radiusLg),
           borderSide: BorderSide.none,
@@ -271,8 +268,8 @@ class BizTheme {
         backgroundColor: isDark ? darkSurface : Colors.white,
         selectedItemColor: isDark ? darkPrimaryBlue : slovakBlue,
         unselectedItemColor: isDark ? darkDisabled : gray500,
-        selectedLabelStyle: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 8.8, letterSpacing: 0.1), // Reduced by 20% (11 * 0.8)
-        unselectedLabelStyle: GoogleFonts.inter(fontWeight: FontWeight.w500, fontSize: 8.8, letterSpacing: 0.1), // Reduced by 20% (11 * 0.8)
+        selectedLabelStyle: textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
+        unselectedLabelStyle: textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w500),
         elevation: 8,
         type: BottomNavigationBarType.fixed,
       ),

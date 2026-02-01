@@ -36,8 +36,8 @@ fi
 # Zastavenie podľa portov (fallback)
 echo "   Kontrolujem porty..."
 
-# Port 5000 (Flutter)
-lsof -ti:5000 | xargs kill -9 2>/dev/null || true
+# Port 5050 (Flutter)
+lsof -ti:5050 | xargs kill -9 2>/dev/null || true
 
 # Port 5001 (Firebase Functions)
 lsof -ti:5001 | xargs kill -9 2>/dev/null || true

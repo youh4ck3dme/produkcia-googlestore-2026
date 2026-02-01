@@ -3,13 +3,14 @@
 ## Test Philosophy
 
 BizAgent používa **pyramídový test model**:
+
 - **70% Unit tests** - Business logic (services, utils)
 - **20% Widget tests** - UI components
 - **10% Integration tests** - End-to-end flows
 
 ## Test Structure
 
-```
+```text
 test/
 ├── core/
 │   ├── router/
@@ -39,6 +40,75 @@ test/
 │
 └── widget_test.dart                              # App smoke test
 ```
+
+## Demo Mode & AI Testing Module
+
+Modul pre demo módy a E2E testy BizAgent AI funkcií.
+
+### Štruktúra
+
+```text
+lib/core/demo_mode/
+├── demo_scenarios.dart       # DemoScenario enum (standard, taxOptimization, anomalyDetection, …)
+├── demo_data_generator.dart  # Generátor demo výdavkov, faktúr, insights, orphan transakcií
+├── demo_mode_service.dart    # Singleton: aktivácia triple-tap, getDemoExpenses/Invoices/Insights
+├── demo_scenario_runner.dart # Prezentácia: runFullDemo() pre investora
+└── demo_mode.dart            # Barrel export
+
+test/
+├── e2e/
+│   ├── ai_accountant_e2e_test.dart   # AI insights, SmartInsightsWidget, scenáre
+│   ├── receipt_detective_e2e_test.dart # Orphan transakcie, GPS, emaily, confidence
+│   └── full_flow_test.dart           # Demo aktivácia, triple-tap, scenáre
+├── integration/
+│   └── demo_integration_test.dart   # DemoScenarioRunner, konzistencia dát
+├── performance/
+│   └── performance_test.dart        # Časové limity: expense/insight gen < 500ms, 1000 položiek < 3s
+└── golden/
+    ├── golden_test.dart              # UI regression: SmartInsightsWidget light/dark
+    └── goldens/                      # Vygenerované PNG
+```
+
+### Spustenie testov
+
+```bash
+# Všetky testy (vrátane demo/E2E)
+flutter test
+
+# Len E2E / demo
+flutter test test/e2e/
+
+# Integrácia
+flutter test test/integration/
+
+# Performance
+flutter test test/performance/
+
+# Golden (kontrola)
+flutter test test/golden/
+
+# Golden (aktualizácia referenčných obrázkov)
+flutter test test/golden/ --update-goldens
+```
+
+### Demo mód v aplikácii
+
+- **Aktivácia:** triple tap na názov v AppBar (dashboard).
+- **Správanie:** keď je demo mód zapnutý, `expensesProvider`, `invoicesProvider` a `expenseInsightsProvider` vracajú dáta z `DemoDataGenerator` podľa aktuálneho `DemoScenario`.
+- **Indikátor:** v AppBar sa zobrazí chip „Demo“.
+
+### CI/CD
+
+Workflow `.github/workflows/test.yml` beží pri push/PR na `main`, `master`, `develop`:
+
+- `flutter analyze`
+- `flutter test` (unit + widget)
+- `flutter test test/e2e/`
+- `flutter test test/integration/`
+- `flutter test test/performance/`
+- `flutter test test/golden/`
+
+Samostatný job `golden-update` (workflow_dispatch) aktualizuje golden súbory a nahrá artefakty.
 
 ## Running Tests
 
@@ -154,6 +224,7 @@ void main() {
 ### Provider Override Pattern
 
 **StreamProvider Mock:**
+
 ```dart
 invoicesProvider.overrideWith((ref) {
   return Stream.value([
@@ -164,6 +235,7 @@ invoicesProvider.overrideWith((ref) {
 ```
 
 **StateNotifierProvider Mock:**
+
 ```dart
 invoicesControllerProvider.overrideWith((ref) {
   return FakeInvoicesController();
@@ -273,6 +345,7 @@ void main() {
 ```
 
 **Run:**
+
 ```bash
 flutter test integration_test/invoice_flow_test.dart
 ```
@@ -282,11 +355,13 @@ flutter test integration_test/invoice_flow_test.dart
 ### Issue: "L10n not found"
 
 **Symptom:**
-```
+
+```text
 Assertion failed: L10n not found. Wrap app with L10n.
 ```
 
 **Fix:**
+
 ```dart
 await tester.pumpWidget(
   L10n(  // ✅ Add L10n wrapper
@@ -299,11 +374,13 @@ await tester.pumpWidget(
 ### Issue: "Provider not found in scope"
 
 **Symptom:**
-```
+
+```text
 Error: Could not find provider invoicesProvider
 ```
 
 **Fix:**
+
 ```dart
 await tester.pumpWidget(
   ProviderScope(  // ✅ Add ProviderScope
@@ -318,11 +395,13 @@ await tester.pumpWidget(
 ### Issue: "Multiple exceptions detected"
 
 **Symptom:**
-```
+
+```text
 Multiple exceptions (3) were detected during the running of the current test
 ```
 
 **Debug:**
+
 ```dart
 testWidgets('test name', (tester) async {
   // Add error catching
@@ -353,6 +432,7 @@ testWidgets('InvoiceScreen golden test', (tester) async {
 ```
 
 **Generate goldens:**
+
 ```bash
 flutter test --update-goldens
 ```
@@ -458,13 +538,14 @@ jobs:
 ## Test Coverage Goals
 
 | Component | Target Coverage |
-|-----------|----------------|
+| --------- | --------------- |
 | Core Services | ≥90% |
 | Business Logic | ≥85% |
 | UI Widgets | ≥70% |
 | Overall | ≥75% |
 
 **Check coverage:**
+
 ```bash
 flutter test --coverage
 lcov --summary coverage/lcov.info
@@ -485,6 +566,7 @@ fi
 ```
 
 **Install:**
+
 ```bash
 npm install --save-dev husky
 npx husky install

@@ -52,8 +52,8 @@ class BillingService extends StateNotifier<BillingState> {
   }
 
   /// Test-only: fixed state, no IAP or async init. Caller must provide a UsageLimiter (e.g. from mock prefs).
-  BillingService.forTest(BillingState state, this._usageLimiter) : super(state) {
-    _subscription = Stream<List<PurchaseDetails>>.empty().listen((_) {});
+  BillingService.forTest(super.state, this._usageLimiter) {
+    _subscription = const Stream<List<PurchaseDetails>>.empty().listen((_) {});
   }
 
   Future<void> _init() async {

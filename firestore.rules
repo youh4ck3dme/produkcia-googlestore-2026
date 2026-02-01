@@ -58,5 +58,11 @@ service cloud.firestore {
     match /invoice_numbering/{userId}/{document=**} {
       allow read, write: if isOwner(userId);
     }
+
+    // IČO lookup cache (companies) – verejné čítanie pre cache, zápis len pre prihlásených
+    match /companies/{ico} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
   }
 }

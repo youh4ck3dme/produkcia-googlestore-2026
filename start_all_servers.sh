@@ -30,12 +30,12 @@ cleanup() {
 
 trap cleanup SIGINT SIGTERM
 
-# 1. Flutter Web App (Port 5000)
-echo -e "${BLUE}1️⃣  Spúšťam Flutter Web App na porte 5000...${NC}"
-flutter run -d chrome --web-port=5000 > /tmp/flutter_server.log 2>&1 &
+# 1. Flutter Web App (Port 5050)
+echo -e "${BLUE}1️⃣  Spúšťam Flutter Web App na porte 5050...${NC}"
+flutter run -d chrome --web-port=5050 > /tmp/flutter_server.log 2>&1 &
 FLUTTER_PID=$!
 echo "   PID: $FLUTTER_PID"
-echo "   URL: http://localhost:5000"
+echo "   URL: http://localhost:5050"
 echo ""
 
 # Počkaj chvíľu, kým sa Flutter spustí
@@ -78,7 +78,7 @@ echo ""
 echo -e "${GREEN}✅ Všetky servery sú spustené!${NC}"
 echo ""
 echo "📋 Prehľad:"
-echo "   • Flutter Web App:    http://localhost:5000"
+echo "   • Flutter Web App:    http://localhost:5050"
 echo "   • Firebase Functions: http://localhost:5001"
 if [ ! -z "$VERCEL_PID" ]; then
     echo "   • Vercel API Server:  http://localhost:3000"

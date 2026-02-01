@@ -11,6 +11,7 @@ class MockAuthRepository implements AuthRepository {
   bool _shouldThrow = false;
   String? _throwError;
   final _authStateController = StreamController<UserModel?>.broadcast();
+  @override
   late final Stream<UserModel?> authStateChanges;
 
   MockAuthRepository() {
@@ -59,7 +60,7 @@ class MockAuthRepository implements AuthRepository {
     if (_shouldThrow) {
       throw Exception(_throwError ?? 'Google sign in failed');
     }
-    _currentUser = UserModel(
+    _currentUser = const UserModel(
       id: 'googleuser123',
       email: 'google@example.com',
       displayName: 'Google User',
@@ -73,7 +74,7 @@ class MockAuthRepository implements AuthRepository {
     if (_shouldThrow) {
       throw Exception(_throwError ?? 'Anonymous sign in failed');
     }
-    _currentUser = UserModel(
+    _currentUser = const UserModel(
       id: 'anonymous123',
       email: '',
       displayName: 'Demo User',

@@ -5,6 +5,8 @@
 // - Pre emulator: Uistite sa, že beží: firebase emulators:start --only functions
 // - Pre produkciu: Najprv nasaďte funkciu: firebase deploy --only functions
 // - Zmeňte useEmulator na false pre testovanie produkcie
+//
+// ignore_for_file: avoid_print
 
 import 'dart:convert';
 import 'dart:io';

@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
-import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'package:bizagent/core/services/local_persistence_service.dart';
 

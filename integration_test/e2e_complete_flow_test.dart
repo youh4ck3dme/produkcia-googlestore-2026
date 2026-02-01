@@ -4,24 +4,21 @@ import 'package:integration_test/integration_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:bizagent/main.dart';
+import 'package:bizagent/app.dart';
 import 'package:bizagent/core/router/app_router.dart';
-import 'package:bizagent/features/auth/providers/auth_provider.dart';
 import 'package:bizagent/features/intro/providers/onboarding_provider.dart';
 import 'package:bizagent/core/services/analytics_service.dart';
-import 'package:bizagent/core/services/notification_service.dart';
+import 'package:bizagent/features/notifications/services/notification_service.dart';
 import 'package:bizagent/core/services/monitoring_service.dart';
 import 'package:bizagent/features/invoices/providers/invoices_provider.dart';
 import 'package:bizagent/features/expenses/providers/expenses_provider.dart';
 import 'package:bizagent/features/settings/providers/settings_provider.dart';
-import 'package:bizagent/core/providers/theme_provider.dart';
 import 'package:bizagent/core/services/initialization_service.dart';
 import 'package:bizagent/features/auth/providers/auth_repository.dart';
 import 'package:bizagent/features/auth/models/user_model.dart';
 import 'package:bizagent/features/settings/models/user_settings_model.dart';
 import 'package:bizagent/features/splash/screens/splash_screen.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
-import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 import 'dart:async';
 
@@ -29,8 +26,6 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   group('E2E Complete Flow Tests', () {
-    late WidgetTester tester;
-
     setUp(() async {
       // Reset SharedPreferences before each test
       SharedPreferences.setMockInitialValues({
@@ -134,7 +129,7 @@ void main() {
 }
 
 // Mock classes
-@GenerateMocks([AuthRepository, FirebaseAnalytics, NotificationService, MonitoringService])
+@GenerateMocks([AuthRepository, FirebaseAnalytics])
 class MockAuthRepository extends Fake implements AuthRepository {
   final _authStateController = StreamController<UserModel?>.broadcast();
 
@@ -158,9 +153,7 @@ class MockAuthRepository extends Fake implements AuthRepository {
   }
 
   @override
-  void dispose() {
-    _authStateController.close();
-  }
+  UserModel? get currentUser => null;
 }
 
 class MockUser extends UserModel {
@@ -173,7 +166,12 @@ class MockUser extends UserModel {
 
 class MockFirebaseAnalytics extends Fake implements FirebaseAnalytics {
   @override
-  Future<void> logScreenView({String? screenName, String? screenClass}) async {}
+  Future<void> logScreenView({
+    String? screenName,
+    String? screenClass,
+    AnalyticsCallOptions? callOptions,
+    Map<String, Object>? parameters,
+  }) async {}
 }
 
 class TestInitializationService extends InitializationService {

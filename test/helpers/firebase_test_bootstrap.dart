@@ -1,6 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_core_platform_interface/firebase_core_platform_interface.dart';
 
 /// Initialize Firebase for tests using mocks
 /// Note: This requires firebase_core_platform_interface test helpers

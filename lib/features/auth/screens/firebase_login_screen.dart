@@ -3,9 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:google_sign_in/google_sign_in.dart';
 import '../../../core/ui/biz_theme.dart';
+import '../providers/auth_repository.dart';
 
 class FirebaseLoginScreen extends ConsumerStatefulWidget {
   const FirebaseLoginScreen({super.key});
@@ -87,29 +86,11 @@ class _FirebaseLoginScreenState extends ConsumerState<FirebaseLoginScreen> {
   Future<void> _signInWithGoogle() async {
     setState(() => _isLoading = true);
     try {
-      if (kIsWeb) {
-        final GoogleAuthProvider googleProvider = GoogleAuthProvider();
-        googleProvider.addScope('email');
-        googleProvider.setCustomParameters({
-          'login_hint': 'user@example.com',
-        });
-        await FirebaseAuth.instance.signInWithPopup(googleProvider);
-      } else {
-        // Platform (macOS, Android, iOS) native flow
-        final googleUser = await GoogleSignIn().signIn();
-        final googleAuth = await googleUser?.authentication;
-        
-        if (googleAuth != null) {
-          final credential = GoogleAuthProvider.credential(
-            accessToken: googleAuth.accessToken,
-            idToken: googleAuth.idToken,
-          );
-          await FirebaseAuth.instance.signInWithCredential(credential);
-        } else {
-          // User cancelled the login
-          if (mounted) setState(() => _isLoading = false);
-          return;
-        }
+      // Single source of truth: AuthRepository handles web/native specifics.
+      final user = await ref.read(authRepositoryProvider).signInWithGoogle();
+      if (user == null) {
+        // Cancelled or failed without FirebaseAuthException.
+        _showError('Prihlásenie bolo zrušené alebo zlyhalo.');
       }
     } on FirebaseAuthException catch (e) {
       _showError(_getFirebaseErrorMessage(e.code));

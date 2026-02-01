@@ -5,8 +5,15 @@ Tento dokument popisuje, ako vytvoriť a overiť demo účet pre Google Play rev
 ## 📋 Údaje Demo Účtu
 
 - **Email:** `bizbizagent@bizbizagent.com`
-- **Password:** `1369#1369#1369#`
+- **Password:** *(NEUKLADAŤ do repozitára; drž lokálne v `DEMO_ACCOUNT_SECRETS.txt`)*
 - **Provider:** Email/Password (nie Google Sign-In!)
+
+### 🔒 Lokálne uloženie hesla (odporúčané)
+
+1. Skopíruj šablónu:
+   - `DEMO_ACCOUNT_SECRETS.example.txt` → `DEMO_ACCOUNT_SECRETS.txt`
+2. Doplň `DEMO_PASSWORD=...`
+3. Súbor `DEMO_ACCOUNT_SECRETS.txt` je v `.gitignore` (necommitne sa).
 
 ## 🚀 Vytvorenie Účtu
 
@@ -16,7 +23,7 @@ Tento dokument popisuje, ako vytvoriť a overiť demo účet pre Google Play rev
 2. Klikni na **"Add User"** (alebo **"Pridať používateľa"**)
 3. Vyplň formulár:
    - **Email:** `bizbizagent@bizbizagent.com`
-   - **Password:** `1369#1369#1369#`
+   - **Password:** *(použi hodnotu z `DEMO_ACCOUNT_SECRETS.txt`)*
    - **Send email verification:** ❌ (zruš zaškrtnutie - nie je potrebné pre demo účet)
 4. Klikni **"Add User"**
 5. **DÔLEŽITÉ:** Over, že v stĺpci **"Provider"** vidíš ikonu obálky (📧 Email), nie G (Google)
@@ -51,7 +58,7 @@ node create_demo_account.js
 2. Choď na prihlasovaciu obrazovku
 3. Zadaj:
    - Email: `bizbizagent@bizbizagent.com`
-   - Password: `1369#1369#1369#`
+   - Password: *(použi lokálne uložené demo heslo)*
 4. Klikni "Prihlásiť sa"
 5. Over, že sa úspešne prihlásil
 
@@ -72,7 +79,7 @@ Ak účet už existuje, môžeš:
    - Firebase Console > Authentication > Users
    - Klikni na účet
    - Klikni "Reset Password" alebo "Zmeniť heslo"
-   - Nastav nové heslo: `1369#1369#1369#`
+   - Nastav nové heslo: *(podľa `DEMO_ACCOUNT_SECRETS.txt`)*
 
 2. **Vymazať a vytvoriť znova:**
    - Firebase Console > Authentication > Users
@@ -98,7 +105,7 @@ Ak je účet disabled:
 
 ### Heslo nefunguje
 
-1. Skontroluj, že heslo je presne: `1369#1369#1369#` (s # znakmi)
+1. Skontroluj, že používaš heslo z `DEMO_ACCOUNT_SECRETS.txt`
 2. Skús resetovať heslo v Firebase Console
 3. Over, že používaš správny email: `bizbizagent@bizbizagent.com`
 
@@ -109,7 +116,7 @@ Pri vypĺňaní formulára v Google Play Console:
 1. **App Access** sekcia:
    - Vyber: "All or some functionality is restricted"
    - **Username:** `bizbizagent@bizbizagent.com`
-   - **Password:** `1369#1369#1369#`
+   - **Password:** *(demo heslo; neuvádzať do repozitára)*
    - **Notes:** "This is a test account strictly for review purposes. It comes with pre-populated dummy data."
 
 2. **Overenie:**

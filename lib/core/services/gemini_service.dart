@@ -53,15 +53,13 @@ class GeminiService {
         debugPrint('Gemini API (Web): Using Cloud Function');
         final functions = FirebaseFunctions.instance;
         final callable = functions.httpsCallable('generateContent');
-        
-        final preferredModel = _selectOptimalModel(prompt);
+
         final result = await callable.call({
           'prompt': prompt,
-          'model': preferredModel,
         });
 
         final responseText = result.data['text'] as String? ?? 'AI nevrátilo žiadny text.';
-        final usedModel = result.data['model'] as String? ?? preferredModel;
+        final usedModel = result.data['model'] as String? ?? modelName;
 
         // Cache the successful result
         _addToCache(cacheKey, responseText);
@@ -80,6 +78,7 @@ class GeminiService {
         }
 
         debugPrint('Gemini API (Web) success with $usedModel');
+
         return responseText;
 
       } on FirebaseFunctionsException catch (e) {
@@ -260,6 +259,34 @@ ${history.map((msg) => '${msg['role'] == 'user' ? 'Užívateľ' : 'AI'}: ${msg['
     // Store in conversation memory
     addToConversation(conversationId, userMessage, response);
 
+    return response;
+  }
+
+  // Generate with system prompt + conversation memory, without storing the system prompt in memory.
+  Future<String> generateWithSystemPrompt({
+    required String conversationId,
+    required String systemPrompt,
+    required String userMessage,
+  }) async {
+    final history = _conversations[conversationId] ?? [];
+
+    final historyBlock = history.isEmpty
+        ? ''
+        : '''
+KONTEXT ROZHOVORU:
+${history.map((msg) => '${msg['role'] == 'user' ? 'Užívateľ' : 'AI'}: ${msg['content']}').join('\n')}
+
+''';
+
+    final fullPrompt = '''
+$systemPrompt
+
+$historyBlock
+UŽÍVATEĽ: $userMessage
+''';
+
+    final response = await generateContent(fullPrompt);
+    addToConversation(conversationId, userMessage, response);
     return response;
   }
 

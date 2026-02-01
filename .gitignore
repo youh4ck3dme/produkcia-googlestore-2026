@@ -14,9 +14,14 @@ build/
 .env
 .env.local
 **/.env
+**/.env.*
 functions/.env
+functions/.env.*
+**/.env.backup
+**/.env.*.backup
 functions/secrets_temp.md
 **/*secrets*.md
+DEMO_ACCOUNT_SECRETS.txt
 
 # IDE
 .idea/
@@ -31,7 +36,12 @@ Thumbs.db
 # Android Signing Keys (SECURE)
 android/key.properties
 android/app/upload-keystore.jks
+android/KEYSTORE_SECRETS.txt
 key.properties
 **/*.jks
 **/*.keystore
 .vercel
+
+# Release bundles / generated artifacts
+*.zip
+flutter_*.log

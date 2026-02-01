@@ -34,6 +34,7 @@ void main() {
           id: 'test-user',
           email: 'test@example.com',
           displayName: 'Test user',
+          isAnonymous: true,
         ))),
         // Mock Settings
         settingsProvider.overrideWith((ref) => Stream.value(UserSettingsModel.empty().copyWith(

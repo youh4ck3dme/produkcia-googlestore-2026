@@ -1,0 +1,14 @@
+## Example Android signing config (DO NOT COMMIT REAL ONE)
+#
+# Copy this file to: android/key.properties
+# The real android/key.properties MUST stay private (it contains secrets).
+#
+# storeFile is resolved relative to android/app/ (see android/app/build.gradle.kts -> file(storeFile))
+#
+# Recommended: use an **upload key** (Play App Signing enabled).
+#
+storeFile=upload-keystore.jks
+storePassword=CHANGE_ME
+keyAlias=bizagent-upload
+keyPassword=CHANGE_ME
+

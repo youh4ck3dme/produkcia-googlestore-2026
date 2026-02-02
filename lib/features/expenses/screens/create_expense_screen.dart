@@ -18,8 +18,9 @@ import '../../auth/providers/auth_repository.dart';
 
 class CreateExpenseScreen extends ConsumerStatefulWidget {
   final String? initialText;
+  final String? sharedImagePath;
 
-  const CreateExpenseScreen({super.key, this.initialText});
+  const CreateExpenseScreen({super.key, this.initialText, this.sharedImagePath});
 
   @override
   ConsumerState<CreateExpenseScreen> createState() =>
@@ -53,6 +54,62 @@ class _CreateExpenseScreenState extends ConsumerState<CreateExpenseScreen> {
 
     // Listen to vendor changes for auto-categorization
     _vendorController.addListener(_onVendorChanged);
+
+    // If this screen was opened via Android share intent, pre-fill via OCR from the shared file.
+    if (widget.sharedImagePath != null && widget.sharedImagePath!.trim().isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _processSharedImage(widget.sharedImagePath!.trim());
+      });
+    }
+  }
+
+  Future<void> _processSharedImage(String path) async {
+    final ocrService = ref.read(ocrServiceProvider);
+    final aiOcrService = ref.read(aiOcrServiceProvider);
+    final analytics = ref.read(analyticsServiceProvider);
+
+    // Track start
+    analytics.logScanStarted();
+
+    final result = await ocrService.scanReceiptFromPath(path);
+
+    if (result != null && mounted) {
+      analytics.logScanSuccess(result.vendorId ?? 'unknown');
+
+      setState(() {
+        _scannedReceiptPath = result.imagePath; // Save image path
+        _descController.text = result.originalText;
+
+        // Initial quick regex parse
+        if (result.totalAmount != null) {
+          _amountController.text = result.totalAmount!;
+        }
+        if (result.vendorId != null) _vendorController.text = result.vendorId!;
+        if (result.date != null) _tryParseDate(result.date!);
+      });
+
+      BizSnackbar.showInfo(context, 'Upravujeme údaje pomocou AI...');
+
+      // AI Refinement
+      final refined =
+          await aiOcrService.refineWithAi(result.originalText, imagePath: result.imagePath);
+
+      if (refined != null && mounted) {
+        setState(() {
+          if (refined.totalAmount != null) {
+            _amountController.text = refined.totalAmount!;
+          }
+          if (refined.vendorId != null) {
+            _vendorController.text = refined.vendorId!;
+          }
+          if (refined.date != null) _tryParseDate(refined.date!);
+          _onVendorChanged();
+        });
+
+        BizSnackbar.showSuccess(context, 'Údaje úspešne spracované cez Gemini AI');
+      }
+    }
   }
 
   void _onVendorChanged() async {

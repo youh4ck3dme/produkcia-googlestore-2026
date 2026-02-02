@@ -14,6 +14,30 @@
       },
       "oauth_client": [
         {
+          "client_id": "542280140779-04004p66lmb7u88vqupfqa1esg1kesi2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bizagent.live",
+            "certificate_hash": "cecc0110155f67271e89a653c5a615555a34f051"
+          }
+        },
+        {
+          "client_id": "542280140779-aat1tahi12f30au7dasrkp4ooliung84.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bizagent.live",
+            "certificate_hash": "eebc25eb09c966d94cfdca219cef9b067b45959c"
+          }
+        },
+        {
+          "client_id": "542280140779-tt1ljfkgqpr6j106leflv7sajhke4hhg.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bizagent.live",
+            "certificate_hash": "64484356b71ba383e83f5b976c5aaf4ff55a6464"
+          }
+        },
+        {
           "client_id": "542280140779-ufndcfmo3kjv4p8jjj6pq2fretjhosue.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
@@ -32,21 +56,20 @@
         }
       ],
       "services": {
-        "analytics_service": {
-          "status": 1,
-          "analytics_property_id": "G-PLACEHOLDER"
-        },
         "appinvite_service": {
-          "status": 1,
           "other_platform_oauth_client": [
             {
               "client_id": "542280140779-c5m14rqpih1j9tmf9km52aq1684l9qjd.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "542280140779-fnbgni0vvqb9dgpl6q4k64p6s91s6jdi.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.bizagent.bizagent"
+              }
             }
           ]
-        },
-        "ads_service": {
-          "status": 2
         }
       }
     }

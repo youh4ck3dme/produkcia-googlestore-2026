@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/ui/biz_theme.dart';
 import 'core/providers/theme_provider.dart';
@@ -51,7 +52,7 @@ class _BizAgentAppState extends ConsumerState<BizAgentApp> {
       listenable: demo,
       builder: (context, _) {
         final overrides = <Override>[];
-        if (demo.isDemoMode) {
+        if (demo.isDemoMode && !kReleaseMode) {
           overrides.addAll([
             expensesProvider.overrideWith((ref) => Stream.value(demo.getDemoExpenses())),
             invoicesProvider.overrideWith((ref) => Stream.value(demo.getDemoInvoices())),

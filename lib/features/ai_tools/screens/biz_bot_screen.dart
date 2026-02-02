@@ -4,14 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../services/biz_bot_service.dart';
 import '../../../core/ui/biz_theme.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-
-class BizBotMessage {
-  final String text;
-  final bool isUser;
-  final DateTime timestamp;
-
-  BizBotMessage({required this.text, required this.isUser, required this.timestamp});
-}
+import '../../auth/providers/auth_repository.dart';
+import '../models/bizbot_message.dart';
+import '../providers/bizbot_history_provider.dart';
 
 class BizBotScreen extends ConsumerStatefulWidget {
   const BizBotScreen({super.key});
@@ -21,20 +16,32 @@ class BizBotScreen extends ConsumerStatefulWidget {
 }
 
 class _BizBotScreenState extends ConsumerState<BizBotScreen> {
-  final List<BizBotMessage> _messages = [];
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   bool _isLoading = false;
+  int _lastMessageCount = 0;
+  ProviderSubscription<AsyncValue<List<BizBotMessage>>>? _messagesSub;
 
   @override
   void initState() {
     super.initState();
-    // Welcome message
-    _messages.add(BizBotMessage(
-      text: 'Ahoj! Som tvoj BizAgent asistent. Ako ti môžem dnes pomôcť s tvojím podnikaním?',
-      isUser: false,
-      timestamp: DateTime.now(),
-    ));
+
+    // Scroll to bottom when Firestore stream updates.
+    _messagesSub = ref.listenManual<AsyncValue<List<BizBotMessage>>>(bizBotMessagesProvider, (_, next) {
+      final msgs = next.valueOrNull;
+      if (msgs == null) return;
+      if (msgs.length == _lastMessageCount) return;
+      _lastMessageCount = msgs.length;
+      _scrollToBottom();
+    });
+  }
+
+  @override
+  void dispose() {
+    _messagesSub?.close();
+    _controller.dispose();
+    _scrollController.dispose();
+    super.dispose();
   }
 
   void _scrollToBottom() {
@@ -53,22 +60,25 @@ class _BizBotScreenState extends ConsumerState<BizBotScreen> {
     final text = _controller.text.trim();
     if (text.isEmpty || _isLoading) return;
 
+    final user = ref.read(authStateProvider).valueOrNull;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Na chat je potrebné byť prihlásený.')),
+      );
+      return;
+    }
+
     setState(() {
-      _messages.add(BizBotMessage(text: text, isUser: true, timestamp: DateTime.now()));
       _controller.clear();
       _isLoading = true;
     });
-    _scrollToBottom();
 
+    final repo = ref.read(bizBotHistoryRepositoryProvider);
     try {
+      await repo.addMessage(uid: user.id, text: text, isUser: true);
+
       final response = await ref.read(bizBotServiceProvider).ask(text);
-      if (mounted) {
-        setState(() {
-          _messages.add(BizBotMessage(text: response, isUser: false, timestamp: DateTime.now()));
-          _isLoading = false;
-        });
-        _scrollToBottom();
-      }
+      await repo.addMessage(uid: user.id, text: response, isUser: false);
     } catch (e) {
       String errorMessage = 'Prepáč, vyskytla sa chyba pri spájaní s AI.';
       
@@ -82,22 +92,21 @@ class _BizBotScreenState extends ConsumerState<BizBotScreen> {
         errorMessage = 'Chyba: $e';
       }
       
+      // Store the error as an assistant message so the user sees it in history.
+      await repo.addMessage(uid: user.id, text: errorMessage, isUser: false);
+    } finally {
       if (mounted) {
         setState(() {
-          _messages.add(BizBotMessage(
-            text: errorMessage,
-            isUser: false,
-            timestamp: DateTime.now(),
-          ));
           _isLoading = false;
         });
-        _scrollToBottom();
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final messagesAsync = ref.watch(bizBotMessagesProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -120,21 +129,24 @@ class _BizBotScreenState extends ConsumerState<BizBotScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.delete_sweep_outlined),
-            onPressed: () => setState(() => _messages.clear()),
+            onPressed: () async {
+              final user = ref.read(authStateProvider).valueOrNull;
+              if (user == null) return;
+              await ref.read(bizBotHistoryRepositoryProvider).clearThread(user.id);
+            },
           ),
         ],
       ),
       body: Column(
         children: [
           Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(16),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final msg = _messages[index];
-                return _buildMessageBubble(msg);
-              },
+            child: messagesAsync.when(
+              data: (messages) => _buildMessagesList(messages),
+              loading: () => _buildMessagesList(const <BizBotMessage>[]),
+              error: (e, _) => _buildMessagesList(
+                const <BizBotMessage>[],
+                errorText: 'Nepodarilo sa načítať históriu chatu.',
+              ),
             ),
           ),
           if (_isLoading)
@@ -145,6 +157,38 @@ class _BizBotScreenState extends ConsumerState<BizBotScreen> {
           _buildInput(),
         ],
       ),
+    );
+  }
+
+  Widget _buildMessagesList(List<BizBotMessage> messages, {String? errorText}) {
+    final displayMessages = messages.isEmpty
+        ? <BizBotMessage>[
+            BizBotMessage(
+              id: 'welcome',
+              text: 'Ahoj! Som tvoj BizAgent asistent. Ako ti môžem dnes pomôcť s tvojím podnikaním?',
+              isUser: false,
+              createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+            ),
+          ]
+        : messages;
+
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.all(16),
+      itemCount: displayMessages.length + (errorText == null ? 0 : 1),
+      itemBuilder: (context, index) {
+        if (errorText != null && index == 0) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Text(
+              errorText,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.redAccent),
+            ),
+          );
+        }
+        final msg = displayMessages[errorText == null ? index : index - 1];
+        return _buildMessageBubble(msg);
+      },
     );
   }
 

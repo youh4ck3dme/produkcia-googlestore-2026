@@ -1,9 +1,15 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/ui/biz_theme.dart';
-import '../../features/ai_tools/screens/biz_bot_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:receive_sharing_intent/receive_sharing_intent.dart';
+import '../../core/router/app_router.dart';
 
-class ScaffoldWithNavBar extends StatelessWidget {
+enum _FabMode { bizbot, icoatlas }
+
+class ScaffoldWithNavBar extends ConsumerStatefulWidget {
   const ScaffoldWithNavBar({
     required this.navigationShell,
     super.key,
@@ -11,11 +17,68 @@ class ScaffoldWithNavBar extends StatelessWidget {
 
   final StatefulNavigationShell navigationShell;
 
+  @override
+  ConsumerState<ScaffoldWithNavBar> createState() => _ScaffoldWithNavBarState();
+}
+
+class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
+  StreamSubscription<List<SharedMediaFile>>? _shareIntentSub;
+  Timer? _fabToggleTimer;
+  _FabMode _fabMode = _FabMode.bizbot;
+
+  void _startFabToggleTimer() {
+    _fabToggleTimer?.cancel();
+    _fabToggleTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (!mounted) return;
+      setState(() {
+        _fabMode = _fabMode == _FabMode.bizbot ? _FabMode.icoatlas : _FabMode.bizbot;
+      });
+    });
+  }
+
   void _goBranch(int index) {
-    navigationShell.goBranch(
+    widget.navigationShell.goBranch(
       index,
-      initialLocation: index == navigationShell.currentIndex,
+      initialLocation: index == widget.navigationShell.currentIndex,
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Start FAB toggling only on mobile.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final width = MediaQuery.of(context).size.width;
+      final isMobile = width < 600;
+      if (isMobile) _startFabToggleTimer();
+    });
+
+    // Android share intent -> open Create Expense screen and prefill via OCR.
+    if (!kIsWeb) {
+      ReceiveSharingIntent.instance.getInitialMedia().then((list) {
+        if (!mounted || list.isEmpty) return;
+        final path = list.first.path.trim();
+        if (path.isEmpty) return;
+        ref.read(routerProvider).go('/create-expense', extra: {'sharedImagePath': path});
+        ReceiveSharingIntent.instance.reset();
+      });
+
+      _shareIntentSub = ReceiveSharingIntent.instance.getMediaStream().listen((list) {
+        if (!mounted || list.isEmpty) return;
+        final path = list.first.path.trim();
+        if (path.isEmpty) return;
+        ref.read(routerProvider).go('/create-expense', extra: {'sharedImagePath': path});
+        ReceiveSharingIntent.instance.reset();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _shareIntentSub?.cancel();
+    _fabToggleTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -61,19 +124,32 @@ class ScaffoldWithNavBar extends StatelessWidget {
 
     if (isMobile) {
       return Scaffold(
-        body: navigationShell,
+        body: widget.navigationShell,
         floatingActionButton: FloatingActionButton(
           onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const BizBotScreen()),
-            );
+            final router = ref.read(routerProvider);
+            switch (_fabMode) {
+              case _FabMode.bizbot:
+                router.push('/ai-tools/biz-bot');
+                break;
+              case _FabMode.icoatlas:
+                router.push('/icoatlas');
+                break;
+            }
           },
           backgroundColor: BizTheme.slovakBlue,
-          child: const Icon(Icons.smart_toy_outlined, color: Colors.white),
+          child: _fabMode == _FabMode.bizbot
+              ? const Icon(Icons.smart_toy_outlined, color: Colors.white)
+              : Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Image.asset(
+                    'assets/icons/icoatlas-logo.png',
+                    fit: BoxFit.contain,
+                  ),
+                ),
         ),
         bottomNavigationBar: NavigationBar(
-          selectedIndex: navigationShell.currentIndex,
+          selectedIndex: widget.navigationShell.currentIndex,
           onDestinationSelected: _goBranch,
           destinations: destinations,
           backgroundColor: theme.colorScheme.surface,
@@ -88,7 +164,7 @@ class ScaffoldWithNavBar extends StatelessWidget {
         children: [
           if (isTablet)
             NavigationRail(
-              selectedIndex: navigationShell.currentIndex,
+              selectedIndex: widget.navigationShell.currentIndex,
               onDestinationSelected: _goBranch,
               labelType: NavigationRailLabelType.all,
               backgroundColor: theme.colorScheme.surface,
@@ -102,7 +178,7 @@ class ScaffoldWithNavBar extends StatelessWidget {
             
           if (isDesktop)
             NavigationDrawer(
-              selectedIndex: navigationShell.currentIndex,
+              selectedIndex: widget.navigationShell.currentIndex,
               onDestinationSelected: _goBranch,
               backgroundColor: theme.colorScheme.surface,
               indicatorColor: theme.colorScheme.primaryContainer,
@@ -126,7 +202,7 @@ class ScaffoldWithNavBar extends StatelessWidget {
             ),
             
           const VerticalDivider(thickness: 1, width: 1),
-          Expanded(child: navigationShell),
+          Expanded(child: widget.navigationShell),
         ],
       ),
     );

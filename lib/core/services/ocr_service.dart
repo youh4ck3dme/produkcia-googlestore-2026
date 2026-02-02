@@ -71,6 +71,36 @@ class OcrService {
     }
   }
 
+  Future<ParsedReceipt?> scanReceiptFromPath(String path) async {
+    // 1. Web Guard
+    if (kIsWeb) {
+      debugPrint('⚠️ OCR is not supported on Web (ML Kit limitation).');
+      return ParsedReceipt(
+        originalText:
+            "OCR skenovanie nie je dostupné vo webovej verzii.\nProsím, vyplňte údaje ručne alebo použite mobilnú aplikáciu.",
+        totalAmount: null,
+        date: null,
+        vendorId: null,
+        imagePath: null,
+      );
+    }
+
+    if (path.trim().isEmpty) return null;
+
+    try {
+      await _ensureInitialized();
+
+      final inputImage = ml.InputImage.fromFilePath(path);
+      final recognizedText = await _textRecognizer!.processImage(inputImage);
+      final text = recognizedText.text;
+
+      return parseReceipt(text, imagePath: path);
+    } catch (e) {
+      debugPrint('Error scanning receipt from path: $e');
+      return null;
+    }
+  }
+
   ParsedReceipt parseReceipt(String text, {String? imagePath}) {
     String? amount;
     String? date;

@@ -98,6 +98,11 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
               onPressed: _deleteSelected,
             )
           else ...[
+            IconButton(
+              icon: const Icon(Icons.smart_toy_outlined),
+              tooltip: 'AI',
+              onPressed: () => context.push('/ai-tools/biz-bot'),
+            ),
             BizTutorialButton(
               onPressed: () {
                 TutorialService.showInvoicesTutorial(

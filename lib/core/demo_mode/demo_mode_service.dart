@@ -24,6 +24,7 @@ class DemoModeService extends ChangeNotifier {
 
   /// Aktivuje demo mód so zvoleným scenárom.
   void activateDemoMode(DemoScenario scenario) {
+    if (kReleaseMode) return;
     _isDemoMode = true;
     _currentScenario = scenario;
     _injectDemoData();
@@ -32,6 +33,7 @@ class DemoModeService extends ChangeNotifier {
 
   /// Deaktivuje demo mód.
   void deactivateDemoMode() {
+    if (kReleaseMode) return;
     _isDemoMode = false;
     _currentScenario = DemoScenario.standard;
     notifyListeners();
@@ -39,6 +41,7 @@ class DemoModeService extends ChangeNotifier {
 
   /// Nastaví scenár (bez zmeny stavu isDemoMode).
   void setScenario(DemoScenario scenario) {
+    if (kReleaseMode) return;
     _currentScenario = scenario;
     if (_isDemoMode) _injectDemoData();
     notifyListeners();
@@ -46,6 +49,7 @@ class DemoModeService extends ChangeNotifier {
 
   /// Zaznamená tap na logo. Pri trojitom tape do 2 s prepne demo mód.
   void recordLogoTap() {
+    if (kReleaseMode) return;
     final now = DateTime.now();
     if (_lastLogoTapTime != null &&
         now.difference(_lastLogoTapTime!) > _tripleTapWindow) {
@@ -69,18 +73,21 @@ class DemoModeService extends ChangeNotifier {
 
   /// Vráti demo výdavky pre aktuálny scenár (ak je demo mód zapnutý).
   List<ExpenseModel> getDemoExpenses() {
+    if (kReleaseMode) return [];
     if (!_isDemoMode) return [];
     return DemoDataGenerator.generateExpenses(_currentScenario);
   }
 
   /// Vráti demo faktúry pre aktuálny scenár (ak je demo mód zapnutý).
   List<InvoiceModel> getDemoInvoices() {
+    if (kReleaseMode) return [];
     if (!_isDemoMode) return [];
     return DemoDataGenerator.generateInvoices(_currentScenario);
   }
 
   /// Vráti demo AI insights pre aktuálny scenár (ak je demo mód zapnutý).
   List<ExpenseInsight> getDemoInsights() {
+    if (kReleaseMode) return [];
     if (!_isDemoMode) return [];
     return DemoDataGenerator.generateInsights(_currentScenario);
   }

@@ -111,13 +111,31 @@ class _AiToolsScreenState extends ConsumerState<AiToolsScreen> {
             const SizedBox(height: BizTheme.spacingMd),
             _buildToolCard(
               context,
+              title: 'ICOatlas – Overovanie firiem',
+              subtitle: 'Overenie firmy podľa IČO (základné údaje + premium profil).',
+              icon: Icons.verified_outlined,
+              color: BizTheme.slovakBlue,
+              leading: Image.asset(
+                'assets/icons/icoatlas-logo.png',
+                width: 32,
+                height: 32,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => const Icon(Icons.verified_outlined, size: 32),
+              ),
+              onTap: () => context.push('/icoatlas'),
+              isProminent: true,
+              delay: 0.ms,
+            ),
+            const SizedBox(height: BizTheme.spacingMd),
+            _buildToolCard(
+              context,
               title: 'BizBot AI Asistent',
               subtitle: 'Váš inteligentný parťák pre biznis, dane a poradenstvo.',
               icon: Icons.smart_toy,
               color: BizTheme.slovakBlue,
               onTap: () => context.go('/ai-tools/biz-bot'),
               isProminent: true,
-              delay: 0.ms,
+              delay: 100.ms,
             ),
             const SizedBox(height: BizTheme.spacingMd),
             _buildToolCard(
@@ -127,7 +145,7 @@ class _AiToolsScreenState extends ConsumerState<AiToolsScreen> {
               icon: Icons.auto_awesome,
               color: Colors.purple,
               onTap: () => context.go('/ai-tools/email-generator'),
-              delay: 100.ms,
+              delay: 200.ms,
             ),
             const SizedBox(height: BizTheme.spacingMd),
             _buildToolCard(
@@ -137,7 +155,7 @@ class _AiToolsScreenState extends ConsumerState<AiToolsScreen> {
               icon: Icons.receipt_long,
               color: BizTheme.successGreen,
               onTap: () => context.go('/ai-tools/expense-analysis'),
-              delay: 200.ms,
+              delay: 300.ms,
             ),
             const SizedBox(height: BizTheme.spacingMd),
             _buildToolCard(
@@ -147,17 +165,6 @@ class _AiToolsScreenState extends ConsumerState<AiToolsScreen> {
               icon: Icons.notifications_active,
               color: Colors.orange,
               onTap: () => context.go('/ai-tools/reminder-generator'),
-              delay: 300.ms,
-            ),
-            const SizedBox(height: BizTheme.spacingMd),
-            _buildToolCard(
-              context,
-              title: 'Overenie Firmy',
-              subtitle: 'Rýchla kontrola IČO cez zabezpečený register.',
-              icon: Icons.business,
-              color: BizTheme.slovakBlue,
-              onTap: () => context.go('/ai-tools/ico-lookup'),
-              isProminent: true,
               delay: 400.ms,
             ),
             const SizedBox(height: 24),
@@ -299,12 +306,14 @@ class _AiToolsScreenState extends ConsumerState<AiToolsScreen> {
     BuildContext context, {
     required String title,
     required String subtitle,
-    required IconData icon,
+    IconData? icon,
+    Widget? leading,
     required Color color,
     required VoidCallback onTap,
     bool isProminent = false,
     Duration delay = Duration.zero,
   }) {
+    assert(icon != null || leading != null, 'Provide either icon or leading');
     final theme = Theme.of(context);
     // final isDark = theme.brightness == Brightness.dark;
 
@@ -323,7 +332,10 @@ class _AiToolsScreenState extends ConsumerState<AiToolsScreen> {
                   color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(BizTheme.radiusMd),
                 ),
-                child: Icon(icon, size: 32, color: color),
+                child: IconTheme(
+                  data: IconThemeData(size: 32, color: color),
+                  child: leading ?? Icon(icon),
+                ),
               ),
               const SizedBox(width: BizTheme.spacingMd),
               Expanded(

@@ -29,6 +29,39 @@ if [ ! -f "pubspec.yaml" ]; then
     exit 1
 fi
 
+# Check Android signing config (prevent accidentally building debug-signed AAB for Play)
+KEY_PROPS="android/key.properties"
+if [ ! -f "$KEY_PROPS" ]; then
+    echo ""
+    echo -e "${RED}❌ Chýba $KEY_PROPS${NC}"
+    echo "   Pre Google Play musíš mať upload keystore + key.properties."
+    echo "   Použi šablónu: android/key.properties.example"
+    exit 1
+fi
+
+STORE_FILE=$(grep -E '^storeFile=' "$KEY_PROPS" | head -1 | cut -d= -f2- | tr -d '\r')
+KEY_ALIAS=$(grep -E '^keyAlias=' "$KEY_PROPS" | head -1 | cut -d= -f2- | tr -d '\r')
+
+if [ -z "$STORE_FILE" ] || [ -z "$KEY_ALIAS" ]; then
+    echo ""
+    echo -e "${RED}❌ $KEY_PROPS je nekompletný (storeFile/keyAlias).${NC}"
+    echo "   Skontroluj formát podľa android/key.properties.example"
+    exit 1
+fi
+
+if [[ "$STORE_FILE" = /* ]]; then
+    KEYSTORE_PATH="$STORE_FILE"
+else
+    KEYSTORE_PATH="android/app/$STORE_FILE"
+fi
+
+if [ ! -f "$KEYSTORE_PATH" ]; then
+    echo ""
+    echo -e "${RED}❌ Keystore súbor neexistuje: $KEYSTORE_PATH${NC}"
+    echo "   Skontroluj storeFile v $KEY_PROPS (podľa android/key.properties.example)."
+    exit 1
+fi
+
 # Clean previous builds
 echo ""
 echo -e "${YELLOW}🧹 Čistenie predchádzajúcich buildov...${NC}"

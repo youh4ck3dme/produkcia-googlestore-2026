@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/ui/biz_theme.dart';
+import '../../../core/debug/agent_log.dart';
 import '../providers/auth_repository.dart';
 
 class FirebaseLoginScreen extends ConsumerStatefulWidget {
@@ -86,15 +87,51 @@ class _FirebaseLoginScreenState extends ConsumerState<FirebaseLoginScreen> {
   Future<void> _signInWithGoogle() async {
     setState(() => _isLoading = true);
     try {
+      // #region agent log
+      agentLog(
+        hypothesisId: 'H2',
+        location: 'lib/features/auth/screens/firebase_login_screen.dart:_signInWithGoogle:tap',
+        message: 'User tapped Google sign-in button',
+        data: {'isSignIn': _isSignIn},
+      );
+      // #endregion agent log
+
       // Single source of truth: AuthRepository handles web/native specifics.
       final user = await ref.read(authRepositoryProvider).signInWithGoogle();
       if (user == null) {
         // Cancelled or failed without FirebaseAuthException.
+        // #region agent log
+        agentLog(
+          hypothesisId: 'H2',
+          location: 'lib/features/auth/screens/firebase_login_screen.dart:_signInWithGoogle:nullUser',
+          message: 'Google sign-in returned null user (cancel/fail)',
+          data: const {},
+        );
+        // #endregion agent log
         _showError('Prihlásenie bolo zrušené alebo zlyhalo.');
       }
     } on FirebaseAuthException catch (e) {
+      // #region agent log
+      agentLog(
+        hypothesisId: 'H3',
+        location: 'lib/features/auth/screens/firebase_login_screen.dart:_signInWithGoogle:FirebaseAuthException',
+        message: 'FirebaseAuthException during Google sign-in',
+        data: {'code': e.code},
+      );
+      // #endregion agent log
       _showError(_getFirebaseErrorMessage(e.code));
     } catch (e) {
+      // #region agent log
+      agentLog(
+        hypothesisId: 'H4',
+        location: 'lib/features/auth/screens/firebase_login_screen.dart:_signInWithGoogle:catch',
+        message: 'Non-Firebase exception during Google sign-in',
+        data: {
+          'type': e.runtimeType.toString(),
+          'msg': e.toString().substring(0, e.toString().length.clamp(0, 200)),
+        },
+      );
+      // #endregion agent log
       _showError('Došlo k chybe pri prihlasovaní: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);

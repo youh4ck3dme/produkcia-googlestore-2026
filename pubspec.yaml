@@ -10,6 +10,9 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # iOS-style icons
+  cupertino_icons: ^1.0.8
+
   # Firebase
   firebase_core: ^3.10.0
   firebase_app_check: ^0.3.0
@@ -82,6 +85,7 @@ dependencies:
   barcode_widget: ^2.0.4
   archive: ^4.0.7
   share_plus: ^12.0.1
+  receive_sharing_intent: ^1.8.1
   riverpod_annotation: ^2.2.0
   # Add for code generation
   riverpod_generator: ^2.2.0

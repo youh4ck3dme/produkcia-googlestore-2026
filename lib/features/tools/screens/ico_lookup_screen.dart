@@ -55,7 +55,18 @@ final icoPremiumProfileProvider =
 });
 
 class IcoLookupScreen extends ConsumerStatefulWidget {
-  const IcoLookupScreen({super.key});
+  const IcoLookupScreen({
+    super.key,
+    this.embedded = false,
+    this.showHeader = true,
+  });
+
+  /// When true, renders only the lookup content (no Scaffold/AppBar/scroll).
+  /// Intended to be embedded into a wrapper screen (e.g. ICOatlas home).
+  final bool embedded;
+
+  /// Shows the top branding/header copy above the search field.
+  final bool showHeader;
 
   @override
   ConsumerState<IcoLookupScreen> createState() => _IcoLookupScreenState();
@@ -64,6 +75,12 @@ class IcoLookupScreen extends ConsumerStatefulWidget {
 class _IcoLookupScreenState extends ConsumerState<IcoLookupScreen> {
   final TextEditingController _controller = TextEditingController();
   // bool _isSearching = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   void _handleSearch() {
     final queryDigits = _controller.text.replaceAll(RegExp(r'\D'), '');
@@ -96,101 +113,136 @@ class _IcoLookupScreenState extends ConsumerState<IcoLookupScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (widget.showHeader) ...[
+          Row(
+            children: [
+              Image.asset(
+                'assets/icons/icoatlas-logo.png',
+                width: 32,
+                height: 32,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => const SizedBox(width: 32, height: 32),
+              ),
+              const SizedBox(width: BizTheme.spacingSm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'ICOatlas',
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: BizTheme.slovakBlue,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Overovanie firiem podľa IČO (základné údaje + prehľad signálov).',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'icoatlas.sk',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: BizTheme.spacingXl),
+        ],
+
+        // Search Field
+        Container(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(BizTheme.radiusLg),
+            border: Border.all(color: isDark ? BizTheme.darkOutline : BizTheme.gray100),
+            boxShadow: isDark
+                ? null
+                : [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.03),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+          ),
+          child: TextField(
+            controller: _controller,
+            keyboardType: TextInputType.number,
+            maxLength: 8,
+            style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+            decoration: InputDecoration(
+              hintText: 'Zadajte IČO (napr. 35742364)',
+              counterText: '',
+              prefixIcon: const Icon(Icons.search, color: BizTheme.slovakBlue),
+              suffixIcon: IconButton(
+                icon: lookupAsync.isLoading
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.arrow_forward_rounded, color: BizTheme.slovakBlue),
+                onPressed: lookupAsync.isLoading ? null : _handleSearch,
+              ),
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              contentPadding: const EdgeInsets.all(BizTheme.spacingLg),
+            ),
+            onSubmitted: (_) => _handleSearch(),
+          ),
+        ),
+
+        const SizedBox(height: BizTheme.spacing2xl),
+
+        // Result Area
+        lookupAsync.when(
+          data: (result) {
+            if (result == null) {
+              return _buildEmptyState();
+            }
+            if (result.isRateLimited) {
+              return _buildRateLimitedState(result.resetIn);
+            }
+            if (result.isPaymentRequired) {
+              return _buildPaymentRequiredState();
+            }
+            return _buildResultCard(result);
+          },
+          loading: () => const Center(
+            child: Padding(
+              padding: EdgeInsets.all(BizTheme.spacing3xl),
+              child: CircularProgressIndicator(),
+            ),
+          ),
+          error: (e, _) {
+            // Better Offline / Error UX
+            final msg = e.toString().toLowerCase();
+            final isOffline = msg.contains('socket') || msg.contains('connection') || msg.contains('internet');
+            return _buildErrorState(isOffline ? 'Skontrolujte pripojenie na internet.' : 'Nepodarilo sa načítať údaje.');
+          },
+        ),
+      ],
+    );
+
+    if (widget.embedded) return content;
+
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
-        title: const Text('Overenie Firmy'),
+        title: const Text('ICOatlas – Overovanie firiem'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(BizTheme.spacingLg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'IČO Register',
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: BizTheme.slovakBlue,
-              ),
-            ),
-            const SizedBox(height: BizTheme.spacingXs),
-            Text(
-              'Okamžitá kontrola rizikovosti a stavu firmy.',
-              style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-            ),
-            const SizedBox(height: BizTheme.spacingXl),
-            
-            // Search Field
-            Container(
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(BizTheme.radiusLg),
-                border: Border.all(color: isDark ? BizTheme.darkOutline : BizTheme.gray100),
-                boxShadow: isDark ? null : [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.03),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: TextField(
-                controller: _controller,
-                keyboardType: TextInputType.number,
-                maxLength: 8,
-                style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
-                decoration: InputDecoration(
-                  hintText: 'Zadajte IČO (napr. 35742364)',
-                  counterText: '',
-                  prefixIcon: const Icon(Icons.search, color: BizTheme.slovakBlue),
-                  suffixIcon: IconButton(
-                    icon: lookupAsync.isLoading 
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Icon(Icons.arrow_forward_rounded, color: BizTheme.slovakBlue),
-                    onPressed: lookupAsync.isLoading ? null : _handleSearch,
-                  ),
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  contentPadding: const EdgeInsets.all(BizTheme.spacingLg),
-                ),
-                onSubmitted: (_) => _handleSearch(),
-              ),
-            ),
-            
-            const SizedBox(height: BizTheme.spacing2xl),
-            
-            // Result Area
-            lookupAsync.when(
-              data: (result) {
-                if (result == null) {
-                  return _buildEmptyState();
-                }
-                if (result.isRateLimited) {
-                  return _buildRateLimitedState(result.resetIn);
-                }
-                if (result.isPaymentRequired) {
-                  return _buildPaymentRequiredState();
-                }
-                return _buildResultCard(result);
-              },
-              loading: () => const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(BizTheme.spacing3xl),
-                  child: CircularProgressIndicator(),
-                ),
-              ),
-              error: (e, _) {
-                // Better Offline / Error UX
-                final msg = e.toString().toLowerCase();
-                final isOffline = msg.contains('socket') || msg.contains('connection') || msg.contains('internet');
-                return _buildErrorState(isOffline 
-                    ? 'Skontrolujte pripojenie na internet.' 
-                    : 'Nepodarilo sa načítať údaje.');
-              },
-            ),
-          ],
-        ),
+        child: content,
       ),
     );
   }

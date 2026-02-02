@@ -3,6 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bizagent/features/ai_tools/screens/biz_bot_screen.dart';
 import 'package:bizagent/features/ai_tools/services/biz_bot_service.dart';
+import 'package:bizagent/features/ai_tools/providers/bizbot_history_provider.dart';
+import 'package:bizagent/features/auth/models/user_model.dart';
+import 'package:bizagent/features/auth/providers/auth_repository.dart';
+import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:mockito/mockito.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
@@ -27,9 +31,19 @@ void main() {
   });
 
   Widget createWidgetUnderTest(MockBizBotService mockService) {
+    final fakeFs = FakeFirebaseFirestore();
+    const fakeUser = UserModel(
+      id: 'test-uid',
+      email: 'test@example.com',
+      displayName: 'Test User',
+      isAnonymous: false,
+    );
+
     return ProviderScope(
       overrides: [
         bizBotServiceProvider.overrideWithValue(mockService),
+        authStateProvider.overrideWith((ref) => Stream.value(fakeUser)),
+        bizBotHistoryRepositoryProvider.overrideWithValue(BizBotHistoryRepository(fakeFs)),
       ],
       child: const MaterialApp(
         home: BizBotScreen(),
@@ -67,14 +81,11 @@ void main() {
     await tester.tap(find.byKey(const Key('bizbot_send_btn')));
     await tester.pump(); // Start animation/loading
 
-    // 3. Verify User Message Appears
-    expect(find.text('Ako sa máš?'), findsOneWidget);
-
-    // 4. Verify Loading Indicator Logic (Wait for Mock Delay)
-    // Note: Due to pumpAndSettle, we jump to end state
+    // Wait for FakeFirestore write + mock delay + UI rebuilds.
     await tester.pumpAndSettle();
 
-    // 5. Verify Bot Response
+    // Verify User Message + Bot Response
+    expect(find.text('Ako sa máš?'), findsOneWidget);
     expect(find.textContaining('Toto je testovacia odpoveď na: Ako sa máš?'), findsOneWidget);
   });
 

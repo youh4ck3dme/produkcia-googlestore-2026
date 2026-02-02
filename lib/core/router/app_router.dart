@@ -39,6 +39,7 @@ import '../../features/export/screens/export_screen.dart';
 import '../../features/legal/screens/terms_and_conditions_screen.dart';
 import '../../features/legal/screens/privacy_policy_screen.dart';
 import '../../features/tools/screens/ico_lookup_screen.dart';
+import '../../features/tools/screens/icoatlas_home_screen.dart';
 import '../../features/tools/screens/watched_companies_screen.dart';
 import '../../shared/widgets/scaffold_with_navbar.dart';
 import '../../shared/widgets/biz_auth_required.dart';
@@ -123,8 +124,19 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/create-expense',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) {
-          final text = state.extra as String?;
-          return CreateExpenseScreen(initialText: text);
+          final extra = state.extra;
+          if (extra is String) {
+            return CreateExpenseScreen(initialText: extra);
+          }
+          if (extra is Map) {
+            final initialText = extra['initialText'] as String?;
+            final sharedImagePath = extra['sharedImagePath'] as String?;
+            return CreateExpenseScreen(
+              initialText: initialText,
+              sharedImagePath: sharedImagePath,
+            );
+          }
+          return const CreateExpenseScreen();
         },
       ),
       GoRoute(
@@ -164,6 +176,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/legal/privacy',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const PrivacyPolicyScreen(),
+      ),
+      GoRoute(
+        path: '/icoatlas',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const IcoAtlasHomeScreen(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {

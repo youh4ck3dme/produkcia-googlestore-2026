@@ -19,6 +19,8 @@ class InvoicesRepository {
     final localData = _persistence.getInvoices();
     final localInvoices = localData
         .map((data) => InvoiceModel.fromMap(data, data['id'] ?? ''))
+        // Prevent cross-account bleed when switching users on one device.
+        .where((invoice) => invoice.userId == userId)
         .where((invoice) => !invoice.isDeleted) // Filter out soft deleted
         .toList();
 
@@ -55,6 +57,8 @@ class InvoicesRepository {
     final localData = _persistence.getInvoices();
     yield localData
         .map((data) => InvoiceModel.fromMap(data, data['id'] ?? ''))
+        // Prevent cross-account bleed when switching users on one device.
+        .where((invoice) => invoice.userId == userId)
         .where((invoice) => !invoice.isDeleted)
         .toList();
 

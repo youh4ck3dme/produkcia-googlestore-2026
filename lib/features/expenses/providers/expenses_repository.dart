@@ -19,6 +19,8 @@ class ExpensesRepository {
     final localData = _persistence.getExpenses();
     yield localData
         .map((data) => ExpenseModel.fromMap(data, data['id'] ?? ''))
+        // Prevent cross-account bleed when switching users on one device.
+        .where((expense) => expense.userId == userId)
         .toList();
 
     final stream = _firestore

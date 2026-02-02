@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/debug/agent_log.dart';
 import '../models/user_model.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
@@ -129,6 +130,18 @@ class AuthRepository {
 
   Future<UserModel?> signInWithGoogle() async {
     try {
+      // #region agent log
+      unawaited(agentLog(
+        hypothesisId: 'H1',
+        location: 'lib/features/auth/providers/auth_repository.dart:signInWithGoogle:entry',
+        message: 'signInWithGoogle called',
+        data: {
+          'kIsWeb': kIsWeb,
+          'platform': defaultTargetPlatform.toString(),
+        },
+      ));
+      // #endregion agent log
+
       if (kIsWeb) {
         // Prefer FirebaseAuth popup on web (more reliable than google_sign_in web setup).
         final GoogleAuthProvider googleProvider = GoogleAuthProvider()..addScope('email');
@@ -153,13 +166,47 @@ class AuthRepository {
       try {
         googleUser = await googleSignIn.signIn();
       } catch (e) {
+        // #region agent log
+        unawaited(agentLog(
+          hypothesisId: 'H4',
+          location: 'lib/features/auth/providers/auth_repository.dart:signInWithGoogle:googleSignIn.catch',
+          message: 'googleSignIn.signIn threw',
+          data: {
+            'type': e.runtimeType.toString(),
+            'msg': e.toString().substring(0, e.toString().length.clamp(0, 200)),
+          },
+        ));
+        // #endregion agent log
         debugPrint('Google Sign-In error: $e');
         return null;
       }
 
+      // #region agent log
+      unawaited(agentLog(
+        hypothesisId: 'H2',
+        location: 'lib/features/auth/providers/auth_repository.dart:signInWithGoogle:afterGoogleSignIn',
+        message: 'googleSignIn.signIn completed',
+        data: {
+          'googleUserNull': googleUser == null,
+        },
+      ));
+      // #endregion agent log
+
       if (googleUser == null) return null;
 
       final googleAuth = await googleUser.authentication;
+
+      // #region agent log
+      unawaited(agentLog(
+        hypothesisId: 'H3',
+        location: 'lib/features/auth/providers/auth_repository.dart:signInWithGoogle:afterAuth',
+        message: 'googleUser.authentication completed',
+        data: {
+          'hasIdToken': googleAuth.idToken != null,
+          'hasAccessToken': googleAuth.accessToken != null,
+        },
+      ));
+      // #endregion agent log
 
       final AuthCredential credential = GoogleAuthProvider.credential(
         idToken: googleAuth.idToken,
@@ -168,6 +215,18 @@ class AuthRepository {
 
       final result = await _auth.signInWithCredential(credential);
       final user = result.user;
+
+      // #region agent log
+      unawaited(agentLog(
+        hypothesisId: 'H1',
+        location: 'lib/features/auth/providers/auth_repository.dart:signInWithGoogle:afterCredential',
+        message: 'FirebaseAuth.signInWithCredential completed',
+        data: {
+          'firebaseUserNull': user == null,
+          'isAnonymous': user?.isAnonymous ?? false,
+        },
+      ));
+      // #endregion agent log
 
       if (user == null) return null;
 
@@ -182,6 +241,17 @@ class AuthRepository {
       _authStateController.add(userModel);
       return userModel;
     } catch (e) {
+      // #region agent log
+      unawaited(agentLog(
+        hypothesisId: 'H5',
+        location: 'lib/features/auth/providers/auth_repository.dart:signInWithGoogle:outerCatch',
+        message: 'signInWithGoogle threw (outer catch)',
+        data: {
+          'type': e.runtimeType.toString(),
+          'msg': e.toString().substring(0, e.toString().length.clamp(0, 200)),
+        },
+      ));
+      // #endregion agent log
       debugPrint('Firebase Auth error: $e');
       rethrow;
     }

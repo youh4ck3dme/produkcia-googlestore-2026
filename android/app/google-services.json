@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "542280140779-14g1i4irra87ss1oaigr6h7c4a32c4hv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bizagent.live",
+            "certificate_hash": "6eed7b130c3bd82078f1aa46bb95ce631dc87010"
+          }
+        },
+        {
           "client_id": "542280140779-aat1tahi12f30au7dasrkp4ooliung84.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

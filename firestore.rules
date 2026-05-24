@@ -78,6 +78,18 @@ service cloud.firestore {
                     && request.resource.data.keys().size() == 4;
     }
 
+    // Notifications
+    match /notifications/{notificationId} {
+      allow read, update, delete: if request.auth != null && resource.data.uid == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+    }
+
+    // Company Snapshots – read-only for authenticated users
+    match /company_snapshots/{ico} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
     // Deletion Audit – admin SDK only, no client access
     match /deletion_audit/{document=**} {
       allow read, write: if false;

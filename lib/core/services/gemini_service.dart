@@ -2,14 +2,14 @@ import 'dart:math';
 import 'dart:collection';
 import 'dart:async';
 import 'dart:convert';
-import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:cloud_functions/cloud_functions.dart';
 
-class GeminiService {
-  final String _apiKey;
+// REMOVED: hardcoded key eliminated for security
+// All platforms now route through Cloud Functions — no client-side API key needed.
 
+class GeminiService {
   // Multi-model strategy with automatic fallback
   // Updated to use currently supported models (January 2026)
   static const List<String> _modelPriority = [
@@ -24,7 +24,7 @@ class GeminiService {
   static final LinkedHashMap<String, String> _cache = LinkedHashMap<String, String>();
   static const int _maxCacheSize = 100;
 
-  GeminiService({required String apiKey}) : _apiKey = apiKey;
+  GeminiService();
 
   Future<String> generateContent(String prompt) async {
     final startTime = DateTime.now();
@@ -47,160 +47,74 @@ class GeminiService {
       return cached;
     }
 
-    // On web, use Cloud Functions for security
-    if (kIsWeb) {
-      try {
-        debugPrint('Gemini API (Web): Using Cloud Function');
-        final functions = FirebaseFunctions.instance;
-        final callable = functions.httpsCallable('generateContent');
+    // All platforms: use Cloud Functions for security
+    try {
+      debugPrint('Gemini API: Using Cloud Function');
+      final functions = FirebaseFunctions.instance;
+      final callable = functions.httpsCallable('generateContent');
 
-        final result = await callable.call({
-          'prompt': prompt,
-        });
+      final result = await callable.call({
+        'prompt': prompt,
+      });
 
-        final responseText = result.data['text'] as String? ?? 'AI nevrátilo žiadny text.';
-        final usedModel = result.data['model'] as String? ?? modelName;
+      final responseText = result.data['text'] as String? ?? 'AI nevrátilo žiadny text.';
+      final usedModel = result.data['model'] as String? ?? modelName;
 
-        // Cache the successful result
-        _addToCache(cacheKey, responseText);
+      // Cache the successful result
+      _addToCache(cacheKey, responseText);
 
-        // Record successful analytics
-        _recordAnalytics(
-          model: usedModel,
-          fromCache: false,
-          responseTime: DateTime.now().difference(startTime),
-        );
-
-        // Update current model
-        if (usedModel != modelName) {
-          modelName = usedModel;
-          debugPrint('Switched to working model: $usedModel');
-        }
-
-        debugPrint('Gemini API (Web) success with $usedModel');
-
-        return responseText;
-
-      } on FirebaseFunctionsException catch (e) {
-        debugPrint('Cloud Function error: ${e.code} - ${e.message}');
-        
-        String errorMessage = 'AI Offline: Nepodarilo sa pripojiť k AI službe.';
-        
-        if (e.code == 'permission-denied' || e.code == 'unauthenticated') {
-          errorMessage = 'Chyba autentifikácie. Prosím, prihláste sa znova.';
-        } else if (e.code == 'resource-exhausted') {
-          errorMessage = 'Dosiahli ste limit bezplatných dopytov. Skúste to neskôr.';
-        } else if (e.code == 'failed-precondition') {
-          errorMessage = 'AI služba nie je správne nakonfigurovaná. Kontaktujte podporu.';
-        } else if (e.message?.contains('quota') == true) {
-          errorMessage = 'Dosiahli ste limit bezplatných dopytov (Quota Exceeded). Skúste to neskôr.';
-        }
-
-        _recordAnalytics(
-          model: 'cloud_function_error',
-          fromCache: false,
-          responseTime: DateTime.now().difference(startTime),
-          error: e.code,
-        );
-
-        return errorMessage;
-      } catch (e) {
-        debugPrint('Unexpected Cloud Function error: $e');
-        
-        _recordAnalytics(
-          model: 'cloud_function_unexpected',
-          fromCache: false,
-          responseTime: DateTime.now().difference(startTime),
-          error: 'unexpected_error',
-        );
-
-        return 'AI Offline: Nepodarilo sa pripojiť k AI službe. Skúste to neskôr.';
-      }
-    }
-
-    // Native platforms: use direct API call
-    if (_apiKey == 'DEVELOPER_API_KEY' || _apiKey.trim().isEmpty || _apiKey == 'test_key') {
+      // Record successful analytics
       _recordAnalytics(
-        model: 'invalid_key',
+        model: usedModel,
         fromCache: false,
         responseTime: DateTime.now().difference(startTime),
-        error: 'invalid_api_key',
       );
-      return 'Chyba: Gemini API kľúč nie je platný. Prosím, pridajte platný kľúč cez --dart-define=GEMINI_API_KEY=vaš_kľúč.';
-    }
 
-    final preferredModel = _selectOptimalModel(prompt);
-    final modelsToTry = <String>{preferredModel, ..._modelPriority}.toList();
-
-    // Try models in priority order with automatic fallback
-    for (final model in modelsToTry) {
-      try {
-        debugPrint('Gemini API attempting with model: $model, key length: ${_apiKey.length}');
-        final tempModel = GenerativeModel(model: model, apiKey: _apiKey);
-        final content = [Content.text(prompt)];
-        final response = await tempModel.generateContent(content);
-        final result = response.text ?? 'AI nevrátilo žiadny text.';
-
-        // Cache the successful result
-        _addToCache(cacheKey, result);
-
-        // Record successful analytics
-        _recordAnalytics(
-          model: model,
-          fromCache: false,
-          responseTime: DateTime.now().difference(startTime),
-        );
-
-        // If successful, update the current model for future requests
-        if (model != modelName) {
-          modelName = model;
-          debugPrint('Switched to working model: $model');
-        }
-
-        debugPrint('Gemini API success with $model: ${result.substring(0, min(20, result.length))}...');
-        return result;
-      } on GenerativeAIException catch (e) {
-        debugPrint('Model $model failed: ${e.message}');
-
-        // Record error analytics
-        _recordAnalytics(
-          model: model,
-          fromCache: false,
-          responseTime: DateTime.now().difference(startTime),
-          error: e.message.contains('quota') ? 'quota_exceeded' : 'api_error',
-        );
-
-        if (e.message.contains('quota')) {
-          return 'Dosiahli ste limit bezplatných dopytov (Quota Exceeded). Skúste to neskôr.';
-        }
-        // Try next model in priority list
-        continue;
-      } catch (e) {
-        debugPrint('Unexpected error with $model: $e');
-
-        // Record unexpected error analytics
-        _recordAnalytics(
-          model: model,
-          fromCache: false,
-          responseTime: DateTime.now().difference(startTime),
-          error: 'unexpected_error',
-        );
-
-        // Try next model in priority list
-        continue;
+      // Update current model
+      if (usedModel != modelName) {
+        modelName = usedModel;
+        debugPrint('Switched to working model: $usedModel');
       }
+
+      debugPrint('Gemini API success with $usedModel');
+
+      return responseText;
+
+    } on FirebaseFunctionsException catch (e) {
+      debugPrint('Cloud Function error: ${e.code} - ${e.message}');
+      
+      String errorMessage = 'AI Offline: Nepodarilo sa pripojiť k AI službe.';
+      
+      if (e.code == 'permission-denied' || e.code == 'unauthenticated') {
+        errorMessage = 'Chyba autentifikácie. Prosím, prihláste sa znova.';
+      } else if (e.code == 'resource-exhausted') {
+        errorMessage = 'Dosiahli ste limit bezplatných dopytov. Skúste to neskôr.';
+      } else if (e.code == 'failed-precondition') {
+        errorMessage = 'AI služba nie je správne nakonfigurovaná. Kontaktujte podporu.';
+      } else if (e.message?.contains('quota') == true) {
+        errorMessage = 'Dosiahli ste limit bezplatných dopytov (Quota Exceeded). Skúste to neskôr.';
+      }
+
+      _recordAnalytics(
+        model: 'cloud_function_error',
+        fromCache: false,
+        responseTime: DateTime.now().difference(startTime),
+        error: e.code,
+      );
+
+      return errorMessage;
+    } catch (e) {
+      debugPrint('Unexpected Cloud Function error: $e');
+      
+      _recordAnalytics(
+        model: 'cloud_function_unexpected',
+        fromCache: false,
+        responseTime: DateTime.now().difference(startTime),
+        error: 'unexpected_error',
+      );
+
+      return 'AI Offline: Nepodarilo sa pripojiť k AI službe. Skúste to neskôr.';
     }
-
-    // All models failed - record final failure
-    _recordAnalytics(
-      model: 'all_failed',
-      fromCache: false,
-      responseTime: DateTime.now().difference(startTime),
-      error: 'all_models_failed',
-    );
-
-    // All models failed
-    return 'AI Offline: Nepodarilo sa pripojiť k žiadnemu AI modelu. Skontrolujte pripojenie alebo skúste neskôr.';
   }
 
   String _generateCacheKey(String prompt) {
@@ -370,32 +284,7 @@ UŽÍVATEĽ: $userMessage
     debugPrint('Analytics reset');
   }
 
-  // Cost optimization - intelligent model selection
-  static String _selectOptimalModel(String prompt) {
-    final analytics = getAnalytics();
-    final modelUsage = analytics['modelUsage'] as Map<String, int>;
-    final avgResponseTime = analytics['averageResponseTimeMs'] as int;
 
-    // For simple/short prompts, prefer faster models
-    if (prompt.length < 100) {
-      // Use flash model if it's performing well
-      if ((modelUsage['gemini-1.5-flash'] ?? 0) > (modelUsage['gemini-1.5-pro'] ?? 0)) {
-        return 'gemini-1.5-flash';
-      }
-    }
-
-    // For complex prompts or if flash is failing, use pro models
-    if (avgResponseTime > 3000 || (modelUsage['gemini-1.5-flash'] ?? 0) < 5) {
-      return 'gemini-1.5-pro';
-    }
-
-    // Default to best performing model
-    return modelUsage.entries
-        .where((entry) => _modelPriority.contains(entry.key))
-        .fold<MapEntry<String, int>?>(null, (best, current) =>
-            best == null || current.value > best.value ? current : best)
-        ?.key ?? _modelPriority[0];
-  }
 
   // A/B Testing framework for prompt optimization
   static final Map<String, Map<String, dynamic>> _promptTests = {};
@@ -717,70 +606,14 @@ POSKYŤ ANALÝZU V TOMTO FORMÁTE:
   }
 
   // Streaming response for real-time UI updates
+  // Routes through Cloud Functions (yields final result since CF doesn't support streaming)
   Stream<String> generateContentStream(String prompt) async* {
-    // On web, fallback to non-streaming (Cloud Functions don't support streaming easily)
-    if (kIsWeb) {
-      try {
-        final result = await generateContent(prompt);
-        yield result;
-        return;
-      } catch (e) {
-        yield 'AI Chyba: $e';
-        return;
-      }
+    try {
+      final result = await generateContent(prompt);
+      yield result;
+    } catch (e) {
+      yield 'AI Chyba: $e';
     }
-
-    if (_apiKey == 'DEVELOPER_API_KEY' || _apiKey.trim().isEmpty || _apiKey == 'test_key') {
-      yield 'Chyba: Gemini API kľúč nie je platný. Prosím, pridajte platný kľúč cez --dart-define=GEMINI_API_KEY=vaš_kľúč.';
-      return;
-    }
-
-    final preferredModel = _selectOptimalModel(prompt);
-    final modelsToTry = <String>{preferredModel, ..._modelPriority}.toList();
-
-    // Try models in priority order with automatic fallback
-    for (final model in modelsToTry) {
-      try {
-        debugPrint('Gemini API streaming with model: $model');
-        final tempModel = GenerativeModel(model: model, apiKey: _apiKey);
-        final content = [Content.text(prompt)];
-        final response = tempModel.generateContentStream(content);
-
-        String fullResponse = '';
-        await for (final chunk in response) {
-          final text = chunk.text ?? '';
-          if (text.isNotEmpty) {
-            fullResponse += text;
-            yield fullResponse; // Yield accumulated response
-          }
-        }
-
-        // If we get here, streaming was successful
-        if (model != modelName) {
-          modelName = model;
-          debugPrint('Switched to working streaming model: $model');
-        }
-
-        // Cache the final result
-        _addToCache(_generateCacheKey(prompt), fullResponse);
-        return;
-
-      } on GenerativeAIException catch (e) {
-        debugPrint('Streaming model $model failed: ${e.message}');
-        if (e.message.contains('quota')) {
-          yield 'Dosiahli ste limit bezplatných dopytov (Quota Exceeded). Skúste to neskôr.';
-          return;
-        }
-        // Try next model
-        continue;
-      } catch (e) {
-        debugPrint('Unexpected streaming error with $model: $e');
-        continue;
-      }
-    }
-
-    // All models failed
-    yield 'AI Chyba: Všetky modely sú nedostupné. Skúste to neskôr.';
   }
 
   // Alias for backward compatibility if needed
@@ -799,9 +632,4 @@ $context
   }
 }
 
-// Securely load from environment: flutter run --dart-define=GEMINI_API_KEY=your_key
-final _apiKey = const String.fromEnvironment('GEMINI_API_KEY', defaultValue: 'AIzaSyD8Fq8rFgPA42Y5J_G-8cZ4RAfRGCt0zuw');
-
-final geminiServiceProvider = Provider<GeminiService>((ref) {
-  return GeminiService(apiKey: _apiKey);
-});
+final geminiServiceProvider = Provider<GeminiService>((ref) => GeminiService());

@@ -1,6 +1,11 @@
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { GoogleGenAI } = require("@google/genai");
 const { defineString } = require("firebase-functions/params");
+const admin = require("firebase-admin");
+
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
 
 const geminiApiKey = defineString("GEMINI_API_KEY");
 const icoAtlasApiKey = defineString("ICOATLAS_API_KEY");
@@ -54,7 +59,7 @@ exports.generateEmail = onCall({
     if (error.status === 403 || String(error.message || '').includes('API key')) {
       throw new HttpsError('permission-denied', 'Neplatný API kľúč pre AI službu.');
     }
-    throw new HttpsError('internal', 'Chyba pri generovaní e-mailu: ' + error.message);
+    throw new HttpsError('internal', 'Chyba pri generovaní e-mailu.');
   }
 });
 
@@ -117,7 +122,7 @@ ${text}`;
     return JSON.parse(jsonString);
   } catch (error) {
     console.error("Gemini Receipt Error:", error);
-    throw new HttpsError('internal', 'Chyba pri analýze dokladu: ' + error.message);
+    throw new HttpsError('internal', 'Chyba pri analýze dokladu.');
   }
 });
 
@@ -134,12 +139,16 @@ exports.lookupCompany = onCall({
     "http://localhost:62262"
   ]
 }, async (request) => {
-  // Allow unauthenticated for onboarding flow (strictly rate limited in prod)
-  // For now, allow it to speed up "Magic Setup"
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Autentifikácia je povinná.');
+  }
 
   const { ico, full } = request.data;
   if (!ico) {
     throw new HttpsError('invalid-argument', 'Chýba IČO.');
+  }
+  if (typeof ico !== 'string' || ico.length > 20 || !/^\d+$/.test(ico)) {
+    throw new HttpsError('invalid-argument', 'IČO musí byť reťazec obsahujúci iba číslice (max 20 znakov).');
   }
 
   // Pad ICO to 8 digits if numeric
@@ -276,12 +285,22 @@ exports.generateContent = onCall({
     "http://localhost:62262"
   ]
 }, async (request) => {
-  // Allow unauthenticated for demo/onboarding, but rate limit in production
-  // For production, consider requiring auth: if (!request.auth) { throw new HttpsError('unauthenticated', '...'); }
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Autentifikácia je povinná.');
+  }
+
+  // --- Rate limiting (per-UID) ---
+  // TODO: Implement Redis/Firestore-based rate limiter.
+  // For now, log UID for monitoring; Cloud Functions quotas provide basic protection.
+  const uid = request.auth.uid;
+  console.log(`generateContent called by uid=${uid}`);
 
   const { prompt } = request.data;
   if (!prompt) {
     throw new HttpsError('invalid-argument', 'Chýba parameter "prompt".');
+  }
+  if (typeof prompt !== 'string' || prompt.length > 10000) {
+    throw new HttpsError('invalid-argument', 'Parameter "prompt" musí byť reťazec s maximálnou dĺžkou 10 000 znakov.');
   }
 
   const apiKey = geminiApiKey.value();
@@ -324,5 +343,136 @@ exports.generateContent = onCall({
   }
 
   // All models failed
-  throw new HttpsError('internal', `AI Offline: Nepodarilo sa pripojiť k žiadnemu AI modelu. ${lastError?.message || 'Skúste to neskôr.'}`);
+  throw new HttpsError('internal', 'AI Offline: Nepodarilo sa pripojiť k žiadnemu AI modelu. Skúste to neskôr.');
+});
+
+/**
+ * Cascade-deletes all user data: Firestore documents, Storage files, and Auth record.
+ * Called from client before/instead of client-side user.delete().
+ *
+ * Deletes from all top-level collections keyed by userId as defined in firestore.rules:
+ * - users/{uid} (+ subcollections: settings, bizbot_threads/default/messages, etc.)
+ * - invoices/{uid} (+ subcollections)
+ * - expenses/{uid} (+ subcollections)
+ * - receipts/{uid} (+ subcollections)
+ * - invoice_numbering/{uid} (+ subcollections)
+ * - soft_deleted_invoices/{uid}/items/*
+ * - soft_deleted_bizbot_conversations/{uid}/items/*
+ * - soft_deleted_notepad_items/{uid}/items/*
+ * - ai_reports where userId == uid
+ * - Storage: users/{uid}/**
+ */
+exports.deleteUserData = onCall({
+  cors: [
+    "https://biz-agent-web.vercel.app",
+    "https://bizagent-live-2026.web.app",
+    "http://localhost:3000",
+    "http://localhost:5050",
+    "http://localhost:62262"
+  ]
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Autentifikácia je povinná.');
+  }
+
+  const uid = request.auth.uid;
+  console.log(`deleteUserData: starting cascade deletion for uid=${uid}`);
+
+  const db = admin.firestore();
+  const storage = admin.storage().bucket();
+  const auth = admin.auth();
+
+  // Audit log: record deletion attempt BEFORE starting
+  try {
+    await db.doc(`deletion_audit/${uid}`).set({
+      deletedAt: admin.firestore.FieldValue.serverTimestamp(),
+      uid: uid,
+    });
+    console.log(`deleteUserData: audit log written for uid=${uid}`);
+  } catch (e) {
+    // Audit failure should not block deletion, but log it
+    console.error(`deleteUserData: failed to write audit log:`, e.message);
+  }
+
+  let hasErrors = false;
+
+  // 1. Delete top-level documents with subcollections using recursiveDelete
+  // These are documents that act as parent containers keyed by uid
+  const documentsToRecursivelyDelete = [
+    `users/${uid}`,
+    `invoices/${uid}`,
+    `expenses/${uid}`,
+    `receipts/${uid}`,
+    `invoice_numbering/${uid}`,
+    `soft_deleted_invoices/${uid}`,
+    `soft_deleted_bizbot_conversations/${uid}`,
+    `soft_deleted_notepad_items/${uid}`,
+  ];
+
+  for (const docPath of documentsToRecursivelyDelete) {
+    try {
+      await db.recursiveDelete(db.doc(docPath));
+      console.log(`deleteUserData: recursiveDelete completed for ${docPath}`);
+    } catch (e) {
+      console.error(`deleteUserData: error deleting ${docPath}:`, e.message);
+      hasErrors = true;
+    }
+  }
+
+  // 2. Delete ai_reports where userId == uid (query-based, not path-based)
+  try {
+    const reportsQuery = db.collection('ai_reports').where('userId', '==', uid);
+    const reports = await reportsQuery.get();
+    if (!reports.empty) {
+      // Delete in batches of 500 (Firestore batch limit)
+      const batches = [];
+      let batch = db.batch();
+      let count = 0;
+      for (const doc of reports.docs) {
+        batch.delete(doc.ref);
+        count++;
+        if (count % 500 === 0) {
+          batches.push(batch.commit());
+          batch = db.batch();
+        }
+      }
+      if (count % 500 !== 0) {
+        batches.push(batch.commit());
+      }
+      await Promise.all(batches);
+      console.log(`deleteUserData: deleted ${reports.size} ai_reports`);
+    }
+  } catch (e) {
+    console.error(`deleteUserData: error deleting ai_reports:`, e.message);
+    hasErrors = true;
+  }
+
+  // 3. Delete Storage files under users/{uid}/
+  try {
+    const [files] = await storage.getFiles({ prefix: `users/${uid}/` });
+    if (files.length > 0) {
+      await Promise.all(files.map((file) => file.delete()));
+      console.log(`deleteUserData: deleted ${files.length} storage files`);
+    }
+  } catch (e) {
+    console.error(`deleteUserData: storage error:`, e.message);
+    hasErrors = true;
+  }
+
+  // 4. Delete Firebase Auth user
+  try {
+    await auth.deleteUser(uid);
+    console.log(`deleteUserData: deleted auth user ${uid}`);
+  } catch (e) {
+    console.error(`deleteUserData: auth deletion error:`, e.message);
+    hasErrors = true;
+  }
+
+  if (hasErrors) {
+    console.warn(`deleteUserData: completed with errors for uid=${uid}`);
+    throw new HttpsError('internal', 'Vymazanie účtu sa nepodarilo úplne dokončiť. Kontaktujte podporu.');
+  }
+
+  console.log(`deleteUserData: successfully completed for uid=${uid}`);
+  return { success: true };
 });

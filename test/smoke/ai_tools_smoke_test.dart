@@ -19,7 +19,7 @@ void main() {
     test('BizBot returns a non-empty response even with invalid key', () async {
       final container = ProviderContainer(
         overrides: [
-          geminiServiceProvider.overrideWithValue(GeminiService(apiKey: 'test_key')),
+          geminiServiceProvider.overrideWithValue(GeminiService()),
         ],
       );
       addTearDown(container.dispose);
@@ -32,7 +32,7 @@ void main() {
     test('VAT assistant returns fallback on invalid key', () async {
       final container = ProviderContainer(
         overrides: [
-          geminiServiceProvider.overrideWithValue(GeminiService(apiKey: 'test_key')),
+          geminiServiceProvider.overrideWithValue(GeminiService()),
         ],
       );
       addTearDown(container.dispose);
@@ -46,7 +46,7 @@ void main() {
     test('Reminder generator returns non-empty text on invalid key', () async {
       final container = ProviderContainer(
         overrides: [
-          geminiServiceProvider.overrideWithValue(GeminiService(apiKey: 'test_key')),
+          geminiServiceProvider.overrideWithValue(GeminiService()),
         ],
       );
       addTearDown(container.dispose);

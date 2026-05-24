@@ -35,11 +35,11 @@ class PrivacyPolicyScreen extends StatelessWidget {
             const SizedBox(height: 24),
             _buildSection(
               '1. Prevádzkovateľ',
-              'Prevádzkovateľom aplikácie BizAgent je:\n\nBizAgent s.r.o.\nAdresa: [Doplniť]\nIČO: [Doplniť]\nKontakt: support@bizagent.sk',
+              'Prevádzkovateľom aplikácie BizAgent je:\n\nBizAgent s.r.o.\nKontakt: support@bizagent.sk\n\nÚdaje o sídle a registrácii spoločnosti sú dostupné na vyžiadanie na uvedenej emailovej adrese.',
             ),
             _buildSection(
               '2. Aké údaje spracovávame',
-              'V aplikácii BizAgent spracovávame nasledujúce údaje:\n\n• Vaše identifikačné údaje (meno, IČO, DIČ, adresa)\n• Údaje o faktúrach a klientoch\n• Údaje o výdavkoch a príjmoch\n• Autentifikačné údaje (email, heslo - hashované)\n• Technické údaje (IP adresa, typ zariadenia)',
+              'V aplikácii BizAgent spracovávame nasledujúce údaje:\n\n• Vaše identifikačné údaje (meno, IČO, DIČ, adresa)\n• Údaje o faktúrach a klientoch\n• Údaje o výdavkoch a príjmoch\n• Fotografie účteniek (spracované lokálne pomocou Google ML Kit OCR)\n• Autentifikačné údaje (email, heslo - hashované)\n• Technické údaje (IP adresa, typ zariadenia)',
             ),
             _buildSection(
               '3. Účel spracovania',
@@ -55,7 +55,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
             ),
             _buildSection(
               '6. Zdieľanie údajov',
-              'Vaše údaje môžeme zdieľať s:\n\n• Firebase/Google Cloud (hosting a databáza)\n• Google AI (Gemini) - len pre AI funkcie\n• Úrady (len v prípade zákonnej povinnosti)\n\nVaše údaje NEZDIEĽAME s tretími stranami na marketingové účely.',
+              'Vaše údaje môžeme zdieľať s:\n\n• Firebase/Google Cloud (hosting a databáza)\n• Google AI (Gemini) - len pre AI funkcie\n• Google ML Kit - OCR spracovanie fotografií účteniek (lokálne na zariadení)\n• Úrady (len v prípade zákonnej povinnosti)\n\nVaše údaje NEZDIEĽAME s tretími stranami na marketingové účely.',
             ),
             _buildSection(
               '7. Vaše práva',
@@ -75,7 +75,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
             ),
             _buildSection(
               '11. Kontaktujte nás',
-              'V prípade otázok o ochrane vašich údajov:\n\nEmail: gdpr@bizagent.sk\nTelefón: [Doplniť]\nPoštová adresa: [Doplniť]',
+              'V prípade otázok o ochrane vašich údajov:\n\nEmail: gdpr@bizagent.sk\nEmail (všeobecný): support@bizagent.sk\n\nOdpovieme do 30 dní od doručenia vašej žiadosti.',
             ),
             const SizedBox(height: 32),
             Container(

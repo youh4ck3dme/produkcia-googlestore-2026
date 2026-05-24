@@ -1,39 +1,24 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_generative_ai/google_generative_ai.dart';
 import '../../expenses/models/expense_model.dart';
 import '../../expenses/models/expense_category.dart';
 import '../models/expense_insight_model.dart';
 import 'package:flutter/material.dart';
+import '../../../core/services/gemini_service.dart';
 
 final expenseInsightsServiceProvider = Provider<ExpenseInsightsService>((ref) {
-  // Use a placeholder or environment variable for the API key
-  const apiKey = String.fromEnvironment('GEMINI_API_KEY', defaultValue: '');
-  return ExpenseInsightsService(apiKey);
+  return ExpenseInsightsService(ref.watch(geminiServiceProvider));
 });
 
 class ExpenseInsightsService {
-  final String _apiKey;
-  late final GenerativeModel _model;
+  final GeminiService _gemini;
 
-  ExpenseInsightsService(this._apiKey) {
-    _model = GenerativeModel(
-      model: 'gemini-2.0-flash',
-      apiKey: _apiKey,
-      generationConfig: GenerationConfig(
-        responseMimeType: 'application/json',
-      ),
-    );
-  }
+  ExpenseInsightsService(this._gemini);
 
   Future<List<ExpenseInsight>> analyzeExpenses(
       List<ExpenseModel> expenses) async {
-    // Return empty list for empty expenses regardless of API key
+    // Return empty list for empty expenses
     if (expenses.isEmpty) return [];
-    
-    if (_apiKey.isEmpty) {
-      return _getDemoInsights();
-    }
 
     final expenseData = expenses
         .map((e) => {
@@ -68,9 +53,8 @@ Output MUST be a JSON array of objects with these fields:
 ''';
 
     try {
-      final response = await _model.generateContent([Content.text(prompt)]);
-      final text = response.text;
-      if (text == null) return [];
+      final text = await _gemini.generateContent(prompt);
+      if (text.isEmpty) return [];
 
       final List<dynamic> jsonList = jsonDecode(text);
       return jsonList

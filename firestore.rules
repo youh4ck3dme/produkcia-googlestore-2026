@@ -64,5 +64,23 @@ service cloud.firestore {
       allow read: if true;
       allow write: if request.auth != null;
     }
+
+    // AI Reports – authenticated users can only create reports (no read/update/delete)
+    match /ai_reports/{reportId} {
+      allow read, update, delete: if false;
+      allow create: if request.auth != null
+                    && request.resource.data.userId is string
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.timestamp is timestamp
+                    && request.resource.data.messageId is string
+                    && request.resource.data.messageExcerpt is string
+                    && request.resource.data.messageExcerpt.size() <= 200
+                    && request.resource.data.keys().size() == 4;
+    }
+
+    // Deletion Audit – admin SDK only, no client access
+    match /deletion_audit/{document=**} {
+      allow read, write: if false;
+    }
   }
 }

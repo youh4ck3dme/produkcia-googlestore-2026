@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -285,6 +286,40 @@ class AuthRepository {
     }
     await _auth.signOut();
     _authStateController.add(null);
+  }
+
+  /// Deletes the current user account and ALL associated data.
+  /// Calls the server-side deleteUserData Cloud Function which performs cascade deletion:
+  /// - Firestore documents (invoices, expenses, settings, messages, receipts)
+  /// - Storage files (users/{uid}/*)
+  /// - Firebase Auth user record
+  ///
+  /// Throws [FirebaseAuthException] if re-authentication is required.
+  Future<void> deleteAccount() async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('Žiadny prihlásený používateľ.');
+
+    try {
+      // Call Cloud Function for cascade deletion (Firestore + Storage + Auth)
+      final callable = FirebaseFunctions.instance.httpsCallable('deleteUserData');
+      await callable.call();
+
+      // Server deleted the auth user; sign out locally
+      _currentUser = null;
+      _authStateController.add(null);
+      try { await GoogleSignIn().signOut(); } catch (_) {}
+    } on FirebaseFunctionsException catch (e) {
+      if (e.code == 'unauthenticated') {
+        // Server reports auth issue — likely needs recent login
+        throw FirebaseAuthException(code: 'requires-recent-login', message: e.message ?? '');
+      }
+      rethrow;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'requires-recent-login') {
+        rethrow;
+      }
+      rethrow;
+    }
   }
 
   void dispose() {

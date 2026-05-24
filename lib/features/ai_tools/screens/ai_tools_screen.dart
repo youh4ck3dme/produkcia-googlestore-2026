@@ -109,24 +109,7 @@ class _AiToolsScreenState extends ConsumerState<AiToolsScreen> {
               ),
             ).animate().fadeIn().slideX(begin: -0.05),
             const SizedBox(height: BizTheme.spacingMd),
-            _buildToolCard(
-              context,
-              title: 'ICOatlas – Overovanie firiem',
-              subtitle: 'Overenie firmy podľa IČO (základné údaje + premium profil).',
-              icon: Icons.verified_outlined,
-              color: BizTheme.slovakBlue,
-              leading: Image.asset(
-                'assets/icons/icoatlas-logo.png',
-                width: 32,
-                height: 32,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) => const Icon(Icons.verified_outlined, size: 32),
-              ),
-              onTap: () => context.push('/icoatlas'),
-              isProminent: true,
-              delay: 0.ms,
-            ),
-            const SizedBox(height: BizTheme.spacingMd),
+
             _buildToolCard(
               context,
               title: 'BizBot AI Asistent',
@@ -137,36 +120,7 @@ class _AiToolsScreenState extends ConsumerState<AiToolsScreen> {
               isProminent: true,
               delay: 100.ms,
             ),
-            const SizedBox(height: BizTheme.spacingMd),
-            _buildToolCard(
-              context,
-              title: 'AI Email Generátor',
-              subtitle: 'Vytvorte profesionálne e-maily (upomienky, ponuky) za pár sekúnd.',
-              icon: Icons.auto_awesome,
-              color: Colors.purple,
-              onTap: () => context.go('/ai-tools/email-generator'),
-              delay: 200.ms,
-            ),
-            const SizedBox(height: BizTheme.spacingMd),
-            _buildToolCard(
-              context,
-              title: 'DPH Asistent',
-              subtitle: 'Overenie daňovej uznateľnosti a rizík pred zaúčtovaním.',
-              icon: Icons.receipt_long,
-              color: BizTheme.successGreen,
-              onTap: () => context.go('/ai-tools/expense-analysis'),
-              delay: 300.ms,
-            ),
-            const SizedBox(height: BizTheme.spacingMd),
-            _buildToolCard(
-              context,
-              title: 'Generátor Upomienok',
-              subtitle: 'Vytvorte citlivé alebo prísne upomienky jediným kliknutím.',
-              icon: Icons.notifications_active,
-              color: Colors.orange,
-              onTap: () => context.go('/ai-tools/reminder-generator'),
-              delay: 400.ms,
-            ),
+
             const SizedBox(height: 24),
             Row(
               children: [

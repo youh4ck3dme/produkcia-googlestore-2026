@@ -94,6 +94,9 @@ class MockAuthRepository implements AuthRepository {
   }
 
   @override
+  Future<void> deleteAccount() async {}
+
+  @override
   void dispose() {
     _authStateController.close();
   }

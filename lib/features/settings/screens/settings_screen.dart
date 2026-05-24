@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +10,7 @@ import '../../../shared/utils/biz_snackbar.dart';
 import '../../../shared/widgets/biz_widgets.dart';
 import '../../../core/services/company_lookup_service.dart';
 import '../../../core/services/local_persistence_service.dart';
+import '../../auth/providers/auth_repository.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -290,9 +292,42 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ElevatedButton.styleFrom(padding: const EdgeInsets.all(16)),
                 child: const Text('Uložiť zmeny'),
               ),
+              const Divider(height: 32),
+              _buildSectionTitle('Odstránenie účtu'),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Zmazanie účtu je trvalé a nevratné. Všetky vaše dáta (faktúry, výdavky, nastavenia) budú odstránené.',
+                      style: TextStyle(fontSize: 13, color: Colors.red),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () => _confirmDeleteAccount(),
+                        icon: const Icon(Icons.delete_forever, color: Colors.red),
+                        label: const Text('Zmazať účet a všetky dáta'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.red,
+                          side: const BorderSide(color: Colors.red),
+                          padding: const EdgeInsets.all(14),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               const SizedBox(height: 16),
               TextButton(
-                onPressed: () => _confirmReset(context),
+                onPressed: () => _confirmReset(),
                 style: TextButton.styleFrom(foregroundColor: Colors.red),
                 child: const Text('Resetovať aplikáciu (Smazať všetky dáta)'),
               ),
@@ -305,7 +340,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Future<void> _confirmReset(BuildContext context) async {
+  Future<void> _confirmReset() async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -328,8 +363,53 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (confirmed == true) {
       await ref.read(localPersistenceServiceProvider).clearAll();
       // Restart app or invalidate providers
-      if (!context.mounted) return;
+      if (!mounted) return;
       BizSnackbar.showSuccess(context, 'Dáta boli vymazané. Reštartujte aplikáciu.');
+    }
+  }
+
+  Future<void> _confirmDeleteAccount() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Zmazať účet?'),
+        content: const Text(
+          'Táto akcia je NEVRATNÁ. Váš účet a všetky súvisiace dáta (faktúry, výdavky, nastavenia) budú trvalo zmazané.\n\nAk používate Google prihlásenie, budete sa musieť znova prihlásiť pre potvrdenie.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Zrušiť'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Áno, zmazať účet'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await ref.read(authRepositoryProvider).deleteAccount();
+      if (!mounted) return;
+      BizSnackbar.showSuccess(context, 'Účet bol úspešne zmazaný.');
+      // Router redirect will handle navigation to login
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      if (e.code == 'requires-recent-login') {
+        BizSnackbar.showError(
+          context,
+          'Pre zmazanie účtu sa musíte znova prihlásiť. Odhláste sa a prihláste znova, potom skúste znova.',
+        );
+      } else {
+        BizSnackbar.showError(context, 'Chyba pri mazaní účtu: ${e.message}');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      BizSnackbar.showError(context, 'Neočakávaná chyba: $e');
     }
   }
 

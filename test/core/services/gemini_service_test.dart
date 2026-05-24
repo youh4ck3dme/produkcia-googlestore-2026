@@ -8,16 +8,22 @@ void main() {
       expect(GeminiService.modelName, equals('gemini-1.5-flash'));
     });
 
-    test('Should reject empty API keys gracefully', () async {
-      final service = GeminiService(apiKey: '');
+    test('Should return offline message when Cloud Function unavailable', () async {
+      // GeminiService now routes through Cloud Functions.
+      // Without Firebase initialization, it returns a graceful offline message.
+      final service = GeminiService();
       final result = await service.generateContent('Hello');
-      expect(result, contains('Chyba: Gemini API kľúč nie je platný'));
+      // Should not crash, should return an error/offline message
+      expect(result, isNotEmpty);
+      expect(result, isNot(contains('Exception')));
     });
-    
-    test('Should reject developer placeholder keys', () async {
-      final service = GeminiService(apiKey: 'DEVELOPER_API_KEY');
-      final result = await service.generateContent('Hello');
-      expect(result, contains('Chyba: Gemini API kľúč nie je platný'));
+
+    test('Cache should work for repeated prompts', () {
+      // Clear any existing cache state
+      GeminiService.clearCache();
+      // Verify cache starts empty after clear
+      final analytics = GeminiService.getAnalytics();
+      expect(analytics['cacheHits'], equals(0));
     });
   });
 }

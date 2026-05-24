@@ -15,9 +15,6 @@ import '../../features/settings/screens/trash_screen.dart';
 import '../../features/expenses/screens/expense_detail_screen.dart';
 import '../../features/ai_tools/screens/ai_tools_screen.dart';
 
-import '../../features/ai_tools/screens/ai_email_generator_screen.dart';
-import '../../features/ai_tools/screens/ai_expense_analysis_screen.dart';
-import '../../features/ai_tools/screens/ai_reminder_generator_screen.dart';
 import '../../features/ai_tools/screens/biz_bot_screen.dart';
 import '../../features/auth/screens/firebase_login_screen.dart';
 // import '../../features/auth/screens/chameleon_login_screen.dart'; // No longer used as default login
@@ -27,20 +24,18 @@ import '../../features/invoices/screens/create_invoice_screen.dart';
 import '../../features/invoices/screens/invoice_detail_screen.dart';
 import '../../features/invoices/screens/payment_reminders_screen.dart';
 import '../../features/invoices/screens/pdf_preview_screen.dart';
-import '../../features/tax/screens/cashflow_analytics_screen.dart';
+
 import '../../features/intro/screens/modern_onboarding_screen.dart';
 import '../../features/invoices/models/invoice_model.dart';
 import '../../features/expenses/models/expense_model.dart';
 import '../../features/expenses/screens/create_expense_screen.dart';
 import '../../features/expenses/screens/voice_expense_screen.dart';
 
-import '../../features/bank_import/screens/bank_import_screen.dart';
+
 import '../../features/export/screens/export_screen.dart';
 import '../../features/legal/screens/terms_and_conditions_screen.dart';
 import '../../features/legal/screens/privacy_policy_screen.dart';
-import '../../features/tools/screens/ico_lookup_screen.dart';
 import '../../features/tools/screens/icoatlas_home_screen.dart';
-import '../../features/tools/screens/watched_companies_screen.dart';
 import '../../shared/widgets/scaffold_with_navbar.dart';
 import '../../shared/widgets/biz_auth_required.dart';
 
@@ -144,16 +139,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const VoiceExpenseScreen(),
       ),
-      GoRoute(
-        path: '/bank-import',
-        parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const BankImportScreen(),
-      ),
-      GoRoute(
-        path: '/analytics',
-        parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const CashflowAnalyticsScreen(),
-      ),
+
       GoRoute(
         path: '/export',
         parentNavigatorKey: _rootNavigatorKey,
@@ -261,36 +247,12 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: '/ai-tools',
                 builder: (context, state) => const AiToolsScreen(),
                 routes: [
-                  GoRoute(
-                    path: 'email-generator',
-                    builder: (context, state) {
-                      final extra = state.extra as Map<String, dynamic>?;
-                      return AiEmailGeneratorScreen(
-                        initialType: extra?['type'],
-                        initialContext: extra?['context'],
-                      );
-                    },
-                  ),
-                  GoRoute(
-                    path: 'expense-analysis',
-                    builder: (context, state) => const AiExpenseAnalysisScreen(),
-                  ),
-                  GoRoute(
-                    path: 'reminder-generator',
-                    builder: (context, state) => const AiReminderGeneratorScreen(),
-                  ),
-                  GoRoute(
-                    path: 'ico-lookup',
-                    builder: (context, state) => const IcoLookupScreen(),
-                  ),
+
                   GoRoute(
                     path: 'biz-bot',
                     builder: (context, state) => const BizBotScreen(),
                   ),
-                  GoRoute(
-                    path: 'monitoring',
-                    builder: (context, state) => const WatchedCompaniesScreen(),
-                  ),
+
                 ],
               ),
             ],

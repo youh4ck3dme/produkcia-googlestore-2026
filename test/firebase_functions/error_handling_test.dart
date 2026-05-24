@@ -6,7 +6,7 @@ import 'package:bizagent/core/services/gemini_service.dart';
 void main() {
   group('Firebase Functions Error Handling', () {
     test('placeholder - GeminiService error handling tests need rewrite', () {
-      final geminiService = GeminiService(apiKey: 'test-key');
+      final geminiService = GeminiService();
       expect(geminiService, isNotNull);
     });
   }, skip: 'GeminiService API changed - tests need rewrite');

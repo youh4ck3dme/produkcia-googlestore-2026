@@ -5,6 +5,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 import '../../core/config.dart';
 import '../../core/remote_config.dart';
 import 'billing_service.dart';
+import 'package:go_router/go_router.dart';
 
 class PaywallScreen extends ConsumerWidget {
   const PaywallScreen({super.key});
@@ -89,6 +90,22 @@ class PaywallScreen extends ConsumerWidget {
                           style: TextStyle(color: Colors.white24, fontSize: 10),
                           textAlign: TextAlign.center,
                         ),
+                        const SizedBox(height: 10),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            TextButton(
+                              onPressed: () => context.push('/legal/terms'),
+                              child: const Text("Podmienky (EULA)", style: TextStyle(color: Colors.white54, fontSize: 10)),
+                            ),
+                            const Text("|", style: TextStyle(color: Colors.white54, fontSize: 10)),
+                            TextButton(
+                              onPressed: () => context.push('/legal/privacy'),
+                              child: const Text("Súkromie", style: TextStyle(color: Colors.white54, fontSize: 10)),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
                       ],
                     ),
                   ),

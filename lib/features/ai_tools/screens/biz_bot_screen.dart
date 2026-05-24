@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/biz_bot_service.dart';
 import '../../../core/ui/biz_theme.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -81,7 +82,7 @@ class _BizBotScreenState extends ConsumerState<BizBotScreen> {
       await repo.addMessage(uid: user.id, text: response, isUser: false);
     } catch (e) {
       String errorMessage = 'Prepáč, vyskytla sa chyba pri spájaní s AI.';
-      
+
       if (e.toString().contains('API kľúč')) {
         errorMessage = 'Chyba API kľúča (403/Invalid). Kontaktujte podporu.';
       } else if (e.toString().contains('quota')) {
@@ -91,7 +92,7 @@ class _BizBotScreenState extends ConsumerState<BizBotScreen> {
       } else {
         errorMessage = 'Chyba: $e';
       }
-      
+
       // Store the error as an assistant message so the user sees it in history.
       await repo.addMessage(uid: user.id, text: errorMessage, isUser: false);
     } finally {
@@ -139,6 +140,17 @@ class _BizBotScreenState extends ConsumerState<BizBotScreen> {
       ),
       body: Column(
         children: [
+          // AI Disclaimer banner
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            color: Colors.amber.withValues(alpha: 0.1),
+            child: const Text(
+              'ℹ️ Odpovede AI sú iba informatívne a nenahrádzajú účtovné, daňové ani právne poradenstvo.',
+              style: TextStyle(fontSize: 11, color: Colors.black54),
+              textAlign: TextAlign.center,
+            ),
+          ),
           Expanded(
             child: messagesAsync.when(
               data: (messages) => _buildMessagesList(messages),
@@ -193,7 +205,7 @@ class _BizBotScreenState extends ConsumerState<BizBotScreen> {
   }
 
   Widget _buildMessageBubble(BizBotMessage msg) {
-    return Align(
+    final bubble = Align(
       alignment: msg.isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 6),
@@ -237,6 +249,76 @@ class _BizBotScreenState extends ConsumerState<BizBotScreen> {
         ),
       ).animate().fade().slideY(begin: 0.1, duration: 300.ms, curve: Curves.easeOut),
     );
+
+    if (!msg.isUser && msg.id != 'welcome') {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          bubble,
+          Padding(
+            padding: const EdgeInsets.only(left: 4, top: 2),
+            child: GestureDetector(
+              onTap: () => _reportMessage(msg),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.flag_outlined, size: 14, color: Colors.grey),
+                  SizedBox(width: 4),
+                  Text('Nahlásiť', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return bubble;
+  }
+
+  Future<void> _reportMessage(BizBotMessage msg) async {
+    final user = ref.read(authStateProvider).valueOrNull;
+    if (user == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Nahlásiť odpoveď AI'),
+        content: const Text('Chcete nahlásiť túto odpoveď ako nesprávnu alebo nevhodnú?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Zrušiť'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Nahlásiť'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await FirebaseFirestore.instance.collection('ai_reports').add({
+        'userId': user.id,
+        'messageId': msg.id,
+        'messageExcerpt': msg.text.length > 100 ? msg.text.substring(0, 100) : msg.text,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Ďakujeme za nahlásenie. Budeme sa tým zaoberať.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Nepodarilo sa odoslať nahlásenie.')),
+        );
+      }
+    }
   }
 
   Widget _buildInput() {

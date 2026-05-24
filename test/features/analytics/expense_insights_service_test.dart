@@ -3,6 +3,7 @@ import 'package:mockito/mockito.dart';
 import 'package:bizagent/features/analytics/services/expense_insights_service.dart';
 import 'package:bizagent/features/expenses/models/expense_model.dart';
 import 'package:bizagent/features/expenses/models/expense_category.dart';
+import 'package:bizagent/core/services/gemini_service.dart';
 
 // Mock classes
 class MockGenerativeModel extends Mock {
@@ -17,13 +18,13 @@ void main() {
   late ExpenseInsightsService service;
 
   setUp(() {
-    // Use empty key to trigger demo fallback logic and avoid SDK validation errors
-    service = ExpenseInsightsService('');
+    // Use GeminiService() to trigger demo fallback logic and avoid SDK validation errors
+    service = ExpenseInsightsService(GeminiService());
   });
 
   group('ExpenseInsightsService', () {
     test('should return demo insights when API key is empty', () async {
-      final serviceWithoutKey = ExpenseInsightsService('');
+      final serviceWithoutKey = ExpenseInsightsService(GeminiService());
       // Use non-empty expenses to get demo insights
       final expenses = [
         ExpenseModel(

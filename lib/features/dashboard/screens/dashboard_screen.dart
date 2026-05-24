@@ -251,7 +251,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             SizedBox(width: 250, child: _buildActionTile(context, title: context.t(AppStr.invoiceTitle), subtitle: 'Nová faktúra pre klienta', icon: Icons.add_circle_outline, color: BizTheme.slovakBlue, onTap: () => context.push('/create-invoice'), widgetKey: _invoiceKey)),
                             SizedBox(width: 300, child: _buildActionTile(context, title: context.t(AppStr.magicScan), subtitle: context.t(AppStr.magicScanSubtitle), icon: Icons.auto_awesome, color: BizTheme.blueDark, onTap: () => context.push('/ai-tools'), widgetKey: _scanKey)),
                             SizedBox(width: 250, child: _buildActionTile(context, title: 'Pridať výdavok', subtitle: 'Evidencia nákladov', icon: Icons.shopping_bag_outlined, color: BizTheme.nationalRed, onTap: () => context.push('/create-expense'))),
-                            SizedBox(width: 250, child: _buildActionTile(context, title: 'Import bank CSV', subtitle: 'Automatické párovanie faktúr', icon: Icons.upload_file, color: BizTheme.gray500, onTap: () => context.push('/bank-import'))),
+
                             SizedBox(width: 250, child: _buildActionTile(context, title: 'Export pre účtovníka', subtitle: 'Zostava faktúr a výdavkov', icon: Icons.download, color: BizTheme.gray800, onTap: () => context.push('/export'))),
                           ],
                         ).animate().fade(delay: 700.ms)
@@ -284,14 +284,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               color: BizTheme.nationalRed, // Use theme color
                               onTap: () => context.push('/create-expense'),
                             ),
-                            _buildActionTile(
-                              context,
-                              title: 'Import bank CSV',
-                              subtitle: 'Automatické párovanie faktúr',
-                              icon: Icons.upload_file,
-                              color: BizTheme.gray500, // Use theme color
-                              onTap: () => context.push('/bank-import'),
-                            ),
+
                             _buildActionTile(
                               context,
                               title: 'Export pre účtovníka',
@@ -436,49 +429,46 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
         // Pie Chart
         if (revenue.totalRevenue > 0 || totalExpenses > 0)
-          GestureDetector(
-            onTap: () => context.push('/analytics'),
-            child: BizChartContainer(
-              title: 'Pomer Príjmy vs Výdavky',
-              height: 250,
-              chart: Column(
-                children: [
-                   SizedBox(
-                    height: 200,
-                    child: PieChart(
-                      PieChartData(
-                        sections: [
-                          PieChartSectionData(
-                            color: BizTheme.slovakBlue,
-                            value: revenue.totalRevenue,
-                            title: '',
-                            radius: 50,
-                          ),
-                          PieChartSectionData(
-                            color: BizTheme.nationalRed,
-                            value: totalExpenses,
-                            title: '',
-                            radius: 50,
-                          ),
-                        ],
-                        sectionsSpace: 2,
-                        centerSpaceRadius: 40,
-                      ),
+          BizChartContainer(
+            title: 'Pomer Príjmy vs Výdavky',
+            height: 250,
+            chart: Column(
+              children: [
+                 SizedBox(
+                  height: 200,
+                  child: PieChart(
+                    PieChartData(
+                      sections: [
+                        PieChartSectionData(
+                          color: BizTheme.slovakBlue,
+                          value: revenue.totalRevenue,
+                          title: '',
+                          radius: 50,
+                        ),
+                        PieChartSectionData(
+                          color: BizTheme.nationalRed,
+                          value: totalExpenses,
+                          title: '',
+                          radius: 50,
+                        ),
+                      ],
+                      sectionsSpace: 2,
+                      centerSpaceRadius: 40,
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _legendItem(
-                          context, context.t(AppStr.incomeTotal), BizTheme.slovakBlue),
-                      const SizedBox(width: 16),
-                      _legendItem(
-                          context, context.t(AppStr.expensesTotal), BizTheme.nationalRed),
-                    ],
-                  )
-                ],
-              ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _legendItem(
+                        context, context.t(AppStr.incomeTotal), BizTheme.slovakBlue),
+                    const SizedBox(width: 16),
+                    _legendItem(
+                        context, context.t(AppStr.expensesTotal), BizTheme.nationalRed),
+                  ],
+                )
+              ],
             ),
           ),
       ],

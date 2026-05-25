@@ -9,6 +9,7 @@ import 'core/i18n/l10n.dart';
 import 'core/services/review_service.dart';
 import 'features/notifications/services/notification_service.dart';
 import 'features/notifications/services/notification_scheduler.dart';
+import 'features/tools/services/monitoring_service.dart';
 import 'features/expenses/providers/expenses_provider.dart';
 import 'features/invoices/providers/invoices_provider.dart';
 import 'features/analytics/providers/expense_insights_provider.dart';
@@ -38,7 +39,7 @@ class _BizAgentAppState extends ConsumerState<BizAgentApp> {
       ref.read(notificationSchedulerProvider).scheduleAllAlerts();
       
       // Start Monitoring (Firestore Listener)
-      // ref.read(monitoringServiceProvider).notifications(); // Stream is lazy loaded by UI
+      ref.read(monitoringServiceProvider);
     });
   }
 

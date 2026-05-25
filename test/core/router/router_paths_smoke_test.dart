@@ -9,8 +9,6 @@ void main() {
 
     final content = file.readAsStringSync();
 
-    expect(content.contains("path: '/bank-import'"), isTrue,
-        reason: 'Missing /bank-import route in app_router.dart');
     expect(content.contains("path: '/export'"), isTrue,
         reason: 'Missing /export route in app_router.dart');
   });

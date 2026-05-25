@@ -9,7 +9,7 @@ import 'package:bizagent/core/router/app_router.dart';
 import 'package:bizagent/features/intro/providers/onboarding_provider.dart';
 import 'package:bizagent/core/services/analytics_service.dart';
 import 'package:bizagent/features/notifications/services/notification_service.dart';
-import 'package:bizagent/core/services/monitoring_service.dart';
+import 'package:bizagent/features/tools/services/monitoring_service.dart';
 import 'package:bizagent/features/invoices/providers/invoices_provider.dart';
 import 'package:bizagent/features/expenses/providers/expenses_provider.dart';
 import 'package:bizagent/features/settings/providers/settings_provider.dart';
@@ -185,4 +185,15 @@ class TestInitializationService extends InitializationService {
 
 class FakeNotificationService extends Fake implements NotificationService {}
 
-class FakeMonitoringService extends Fake implements MonitoringService {}
+class FakeMonitoringService extends Fake implements MonitoringService {
+  @override
+  void startListening(String uid) {}
+
+  @override
+  void stopListening() {}
+
+  @override
+  Stream<List<Map<String, dynamic>>> notifications() {
+    return Stream.value([]);
+  }
+}

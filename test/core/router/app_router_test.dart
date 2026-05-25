@@ -107,6 +107,12 @@ class FakeNotificationService extends Fake implements NotificationService {
 
 class FakeMonitoringService extends Fake implements MonitoringService {
   @override
+  void startListening(String uid) {}
+
+  @override
+  void stopListening() {}
+
+  @override
   Stream<List<Map<String, dynamic>>> notifications() {
     return Stream.value([]);
   }

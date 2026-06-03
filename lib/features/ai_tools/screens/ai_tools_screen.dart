@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -122,31 +123,53 @@ class _AiToolsScreenState extends ConsumerState<AiToolsScreen> {
             ),
 
             const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed:
-                        _isScanning ? null : () => _scan(ImageSource.camera),
-                    icon: const Icon(Icons.camera_alt),
-                    label: const Text('Kamera'),
-                    style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.all(16)),
-                  ),
+            if (kIsWeb)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed:
-                        _isScanning ? null : () => _scan(ImageSource.gallery),
-                    icon: const Icon(Icons.photo_library),
-                    label: const Text('Galéria'),
-                    style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.all(16)),
-                  ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.warning_amber_rounded, color: Colors.amber),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'OCR skenovanie je dostupné v Android aplikácii.',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              )
+            else
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed:
+                          _isScanning ? null : () => _scan(ImageSource.camera),
+                      icon: const Icon(Icons.camera_alt),
+                      label: const Text('Kamera'),
+                      style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.all(16)),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed:
+                          _isScanning ? null : () => _scan(ImageSource.gallery),
+                      icon: const Icon(Icons.photo_library),
+                      label: const Text('Galéria'),
+                      style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.all(16)),
+                    ),
+                  ),
+                ],
+              ),
             const SizedBox(height: 24),
             if (_isScanning)
               const Center(child: Padding(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../../../../core/utils/platform_image_provider.dart';
 import '../../../../shared/utils/biz_snackbar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -431,7 +432,23 @@ class _CreateExpenseScreenState extends ConsumerState<CreateExpenseScreen> {
                   ],
                 ),
               ),
-            ] else
+            ] else if (kIsWeb)
+              Container(
+                margin: const EdgeInsets.only(bottom: 24),
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: null,
+                  icon: const Icon(Icons.camera_alt),
+                  label: const Text('OCR skenovanie je dostupné v Android aplikácii.'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                ),
+              )
+            else
               // Scan Button (Default State)
               Container(
                 margin: const EdgeInsets.only(bottom: 24),

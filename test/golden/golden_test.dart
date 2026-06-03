@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +11,9 @@ import 'package:bizagent/features/analytics/providers/expense_insights_provider.
 import 'package:bizagent/core/i18n/l10n.dart';
 
 void main() {
+  // Goldens were captured on macOS; Ubuntu CI rasterizes fonts differently.
+  final skipOnLinuxCi = Platform.isLinux;
+
   group('Golden Tests - UI Screenshots', () {
     testWidgets('SmartInsightsWidget with demo insight matches golden', (tester) async {
       final demoInsights = DemoDataGenerator.generateInsights(DemoScenario.standard);
@@ -38,7 +43,7 @@ void main() {
         find.byType(SmartInsightsWidget),
         matchesGoldenFile('goldens/smart_insights_widget.png'),
       );
-    });
+    }, skip: skipOnLinuxCi ? 'Linux CI font raster differs from macOS goldens' : false);
 
     testWidgets('SmartInsightsWidget dark theme matches golden', (tester) async {
       final demoInsights = DemoDataGenerator.generateInsights(DemoScenario.taxOptimization);
@@ -69,6 +74,6 @@ void main() {
         find.byType(SmartInsightsWidget),
         matchesGoldenFile('goldens/smart_insights_widget_dark.png'),
       );
-    });
+    }, skip: skipOnLinuxCi ? 'Linux CI font raster differs from macOS goldens' : false);
   });
 }

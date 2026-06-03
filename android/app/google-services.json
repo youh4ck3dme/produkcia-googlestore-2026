@@ -80,6 +80,50 @@
           ]
         }
       }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:542280140779:android:7505323697645c83373bae",
+        "android_client_info": {
+          "package_name": "sk.bizagent.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "542280140779-5kmcifmm7um41kgf4km0mh69jdr9qao1.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "sk.bizagent.app",
+            "certificate_hash": "2ff413d047a75e0fe81d69cd38dce95dbb20bc0f"
+          }
+        },
+        {
+          "client_id": "542280140779-c5m14rqpih1j9tmf9km52aq1684l9qjd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBgjWn54uyCL6YBtsqPCkWpatrwy306rZM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "542280140779-c5m14rqpih1j9tmf9km52aq1684l9qjd.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "542280140779-fnbgni0vvqb9dgpl6q4k64p6s91s6jdi.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.bizagent.bizagent"
+              }
+            }
+          ]
+        }
+      }
     }
   ],
   "configuration_version": "1"

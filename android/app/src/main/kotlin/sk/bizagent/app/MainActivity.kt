@@ -1,4 +1,4 @@
-package com.bizagent.live
+package sk.bizagent.app
 
 import io.flutter.embedding.android.FlutterActivity
 

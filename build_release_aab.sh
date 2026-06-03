@@ -1,10 +1,31 @@
 #!/bin/bash
-# Build Release AAB for Google Play
+# BizAgent — release AAB pre NOVÝ Google Play listing (sk.bizagent.app)
+#
+# Toto NIE JE update starej appky (com.bizagent.live). Vytvor nový listing v Play Console.
+# SHA1 mismatch so starým listingom ignoruj — iná applicationId + nový upload kľúč.
+#
+# Predpoklady (spusti skôr):
+#   - flutter test          (celý test/) alebo ./run_all_tests.sh
+#   - ./verify_demo_account.sh
+#
+# Tento skript:
+#   - vyžaduje android/key.properties + upload keystore (storeFile musí existovať)
+#   - flutter clean, pub get, analyze, build appbundle --release --obfuscate
+#   - bez keystore ukončí s chybou (nepodpisuje debug AAB ako „release“)
+#
+# NOVÁ PLAY LISTING (2026): applicationId sk.bizagent.app — nie update starej com.bizagent.live.
+#   1) Play Console: Create app (new package), Play App Signing, upload AAB.
+#   2) Firebase: Project bizagent-live-2026 → Add Android app sk.bizagent.app + SHA-1/256 upload key.
+#      Stiahni google-services.json → android/app/ a spusti: dart run flutterfire_cli:flutterfire configure
+#   3) android/key.properties + upload keystore (starý .jks nemazať).
+#
+# Kedy: len pred uploadom do Play Console — nie pri bežnom commite.
+#
 # Usage: ./build_release_aab.sh
 
 set -e
 
-echo "🚀 BizAgent - Building Release AAB for Google Play"
+echo "🚀 BizAgent — Release AAB (NEW Play listing: sk.bizagent.app)"
 echo "=================================================="
 echo ""
 
@@ -106,10 +127,11 @@ if flutter build appbundle --release --obfuscate --split-debug-info=build/symbol
         echo -e "${GREEN}🎉 Aplikácia je pripravená na upload do Google Play!${NC}"
         echo ""
         echo "Ďalšie kroky:"
-        echo "1. Otvor Google Play Console"
+        echo "1. Otvor Google Play Console → Vytvor NOVÚ aplikáciu (package: sk.bizagent.app)"
         echo "2. Choď na Release > Production (alebo Internal Testing)"
         echo "3. Upload súbor: $AAB_PATH"
-        echo "4. Postupuj podľa GOOGLE_PLAY_UPLOAD_CHECKLIST.md"
+        echo "4. Pri prvom upload-e zapni Play App Signing (upload key z android/app/upload-keystore.jks)"
+        echo "5. Postupuj podľa GOOGLE_PLAY_UPLOAD_CHECKLIST.md"
     else
         echo -e "${RED}❌ AAB súbor nebol nájdený!${NC}"
         exit 1

@@ -1,5 +1,8 @@
 ## Example Android signing config (DO NOT COMMIT REAL ONE)
 #
+# NEW Play listing 2026: applicationId sk.bizagent.app (not com.bizagent.live).
+# Generate fresh upload keystore: ./setup_android_play_signing.sh
+#
 # Copy this file to: android/key.properties
 # The real android/key.properties MUST stay private (it contains secrets).
 #

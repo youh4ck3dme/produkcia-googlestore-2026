@@ -26,7 +26,7 @@ val hasReleaseKeystore =
         (keystoreProperties["keyAlias"] as? String).orEmpty().isNotBlank()
 
 android {
-    namespace = "com.bizagent.live"
+    namespace = "sk.bizagent.app"
     compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
@@ -41,8 +41,8 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.bizagent.live"
+        // NEW Play listing 2026 — sk.bizagent.app (not update to com.bizagent.live)
+        applicationId = "sk.bizagent.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

@@ -35,7 +35,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyBgjWn54uyCL6YBtsqPCkWpatrwy306rZM',
-    appId: '1:542280140779:android:4c205b8194929083373bae',
+    appId: '1:542280140779:android:7505323697645c83373bae',
     messagingSenderId: '542280140779',
     projectId: 'bizagent-live-2026',
     storageBucket: 'bizagent-live-2026.firebasestorage.app',

@@ -16,8 +16,22 @@ const icoAtlasApiKey = defineString("ICOATLAS_API_KEY");
 // NOTE (runtime evidence from Firebase logs):
 // The legacy @google/generative-ai SDK uses the v1beta endpoint and can return 404 for models.
 // We use the Google Gen AI SDK (@google/genai) which supports API version v1.
-const MODEL_PRIORITY = ["gemini-2.0-flash", "gemini-1.5-flash"];
-const DEFAULT_MODEL = "gemini-2.0-flash";
+const MODEL_PRIORITY = ["gemini-1.5-flash", "gemini-2.0-flash"];
+const DEFAULT_MODEL = "gemini-1.5-flash";
+
+const isApiKeyError = (err) => {
+  if (!err) return false;
+  if (err.status === 400 || err.status === 403) return true;
+  const msg = typeof err.message === 'string' ? err.message : JSON.stringify(err.message || '');
+  return msg.includes('API key') || msg.includes('API_KEY_INVALID') || msg.includes('INVALID_ARGUMENT');
+};
+
+const isQuotaError = (err) => {
+  if (!err) return false;
+  if (err.status === 429) return true;
+  const msg = typeof err.message === 'string' ? err.message : JSON.stringify(err.message || '');
+  return msg.includes('quota') || msg.includes('Quota Exceeded') || msg.includes('RESOURCE_EXHAUSTED');
+};
 
 /**
  * Generuje profesionálny e-mail na základe kontextu.
@@ -56,8 +70,11 @@ exports.generateEmail = onCall({
 
   } catch (error) {
     console.error("Gemini Email Error:", error);
-    if (error.status === 403 || String(error.message || '').includes('API key')) {
+    if (isApiKeyError(error)) {
       throw new HttpsError('permission-denied', 'Neplatný API kľúč pre AI službu.');
+    }
+    if (isQuotaError(error)) {
+      throw new HttpsError('resource-exhausted', 'Dosiahli ste limit bezplatných dopytov. Skúste to neskôr.');
     }
     throw new HttpsError('internal', 'Chyba pri generovaní e-mailu.');
   }
@@ -122,6 +139,12 @@ ${text}`;
     return JSON.parse(jsonString);
   } catch (error) {
     console.error("Gemini Receipt Error:", error);
+    if (isApiKeyError(error)) {
+      throw new HttpsError('permission-denied', 'Neplatný API kľúč pre AI službu.');
+    }
+    if (isQuotaError(error)) {
+      throw new HttpsError('resource-exhausted', 'Dosiahli ste limit bezplatných dopytov. Skúste to neskôr.');
+    }
     throw new HttpsError('internal', 'Chyba pri analýze dokladu.');
   }
 });
@@ -329,11 +352,11 @@ exports.generateContent = onCall({
       console.error(`Gemini ${modelName} Error:`, error);
       lastError = error;
       
-      if (error.status === 403 || String(error.message || '').includes('API key')) {
+      if (isApiKeyError(error)) {
         throw new HttpsError('permission-denied', 'Neplatný API kľúč pre AI službu.');
       }
       
-      if (String(error.message || '').includes('quota') || error.status === 429) {
+      if (isQuotaError(error)) {
         throw new HttpsError('resource-exhausted', 'Dosiahli ste limit bezplatných dopytov. Skúste to neskôr.');
       }
 

@@ -52,6 +52,11 @@ class LocalPersistenceService {
     await box.delete(id);
   }
 
+  Future<void> clearExpenses() async {
+    final box = Hive.box(expensesBoxName);
+    await box.clear();
+  }
+
   // --- Settings ---
   
   dynamic getSetting(String key, {dynamic defaultValue}) {

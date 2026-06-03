@@ -10,9 +10,10 @@ import 'core/services/review_service.dart';
 import 'features/notifications/services/notification_service.dart';
 import 'features/notifications/services/notification_scheduler.dart';
 import 'features/tools/services/monitoring_service.dart';
-import 'features/expenses/providers/expenses_provider.dart';
-import 'features/invoices/providers/invoices_provider.dart';
 import 'features/analytics/providers/expense_insights_provider.dart';
+import 'features/auth/providers/auth_repository.dart';
+import 'core/services/local_persistence_service.dart';
+
 
 class BizAgentApp extends ConsumerStatefulWidget {
   const BizAgentApp({super.key});
@@ -45,6 +46,15 @@ class _BizAgentAppState extends ConsumerState<BizAgentApp> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(authStateProvider, (previous, next) {
+      if (next.valueOrNull == null && previous?.valueOrNull != null) {
+        ref.read(localPersistenceServiceProvider).clearAll();
+        if (DemoModeService.instance.isDemoMode) {
+          DemoModeService.instance.deactivateDemoMode();
+        }
+      }
+    });
+
     final router = ref.watch(routerProvider);
     final themeMode = ref.watch(themeProvider);
     final demo = DemoModeService.instance;
@@ -55,8 +65,6 @@ class _BizAgentAppState extends ConsumerState<BizAgentApp> {
         final overrides = <Override>[];
         if (demo.isDemoMode && !kReleaseMode) {
           overrides.addAll([
-            expensesProvider.overrideWith((ref) => Stream.value(demo.getDemoExpenses())),
-            invoicesProvider.overrideWith((ref) => Stream.value(demo.getDemoInvoices())),
             expenseInsightsProvider.overrideWith((ref) => Future.value(demo.getDemoInsights())),
           ]);
         }

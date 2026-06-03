@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import '../../features/expenses/models/expense_model.dart';
 import '../../features/invoices/models/invoice_model.dart';
 import '../../features/analytics/models/expense_insight_model.dart';
+import '../services/local_persistence_service.dart';
 import 'demo_scenarios.dart';
 import 'demo_data_generator.dart';
 
@@ -10,6 +11,8 @@ import 'demo_data_generator.dart';
 class DemoModeService extends ChangeNotifier {
   DemoModeService._();
   static final DemoModeService instance = DemoModeService._();
+
+  LocalPersistenceService? persistence;
 
   bool _isDemoMode = false;
   DemoScenario _currentScenario = DemoScenario.standard;
@@ -36,6 +39,7 @@ class DemoModeService extends ChangeNotifier {
     if (kReleaseMode) return;
     _isDemoMode = false;
     _currentScenario = DemoScenario.standard;
+    _clearDemoData();
     notifyListeners();
   }
 
@@ -60,15 +64,44 @@ class DemoModeService extends ChangeNotifier {
     if (_logoTapCount >= 3) {
       _logoTapCount = 0;
       _isDemoMode = !_isDemoMode;
-      if (_isDemoMode) _injectDemoData();
+      if (_isDemoMode) {
+        _injectDemoData();
+      } else {
+        _clearDemoData();
+      }
       notifyListeners();
     }
   }
 
-  /// Interné „injektovanie“ demo dát – v tejto implementácii len notifikácia.
-  /// Skutočné dáta sa vracia cez [getDemoExpenses], [getDemoInvoices], [getDemoInsights].
+  /// Vymaže demo dáta z lokálneho úložiska.
+  void _clearDemoData() {
+    persistence?.clearInvoices();
+    persistence?.clearExpenses();
+  }
+
+  /// Interné „injektovanie“ demo dát – uložíme ich do lokálneho úložiska Hive.
   void _injectDemoData() {
-    notifyListeners();
+    final p = persistence;
+    if (p == null) return;
+
+    // Najprv vyčistíme staré demo/lokálne dáta
+    _clearDemoData();
+
+    // Generovanie a zápis faktúr do Hive
+    final demoInvoices = DemoDataGenerator.generateInvoices(_currentScenario);
+    for (final invoice in demoInvoices) {
+      final data = invoice.toMap();
+      data['id'] = invoice.id;
+      p.saveInvoice(invoice.id, data);
+    }
+
+    // Generovanie a zápis výdavkov do Hive
+    final demoExpenses = DemoDataGenerator.generateExpenses(_currentScenario);
+    for (final expense in demoExpenses) {
+      final data = expense.toMap();
+      data['id'] = expense.id;
+      p.saveExpense(expense.id, data);
+    }
   }
 
   /// Vráti demo výdavky pre aktuálny scenár (ak je demo mód zapnutý).

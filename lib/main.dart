@@ -8,6 +8,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'firebase_options.dart';
 import 'app.dart';
 import 'core/services/local_persistence_service.dart';
+import 'core/demo_mode/demo_mode_service.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -18,7 +19,9 @@ Future<void> _initFirebaseAppCheck() async {
 
   if (kIsWeb) {
     if (webSiteKey.isEmpty) {
-      debugPrint('App Check: missing APP_CHECK_WEB_SITE_KEY, skipping web activation.');
+      if (kDebugMode) {
+        debugPrint('App Check: missing APP_CHECK_WEB_SITE_KEY, skipping web activation.');
+      }
       return;
     }
 
@@ -62,6 +65,7 @@ void main() async {
   await initializeDateFormatting('sk', null);
   final persistenceService = LocalPersistenceService();
   await persistenceService.init();
+  DemoModeService.instance.persistence = persistenceService;
 
   final sharedPrefs = await SharedPreferences.getInstance();
   

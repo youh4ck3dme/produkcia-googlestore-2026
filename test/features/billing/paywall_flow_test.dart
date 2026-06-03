@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:bizagent/features/billing/billing_copy.dart';
 import 'package:bizagent/features/billing/billing_service.dart';
-import 'package:bizagent/features/billing/feature_paywall_sheet.dart';
 import 'package:bizagent/features/billing/paywall_flow.dart';
 import 'package:bizagent/features/billing/subscription_guard.dart';
 import 'package:bizagent/features/entitlements/user_entitlements.dart';

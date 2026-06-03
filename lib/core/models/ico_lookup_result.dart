@@ -101,6 +101,14 @@ class IcoLookupResult {
     );
   }
 
+  factory IcoLookupResult.notFound() {
+    return const IcoLookupResult._(
+      name: '',
+      status: 'Firma sa nenašla',
+      city: '',
+    );
+  }
+
   factory IcoLookupResult.offline() {
     return IcoLookupResult(
       name: '',

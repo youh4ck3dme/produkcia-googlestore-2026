@@ -66,7 +66,7 @@ class CompanyLookupService {
       final fresh = await _remote.publicLookup(ico);
 
       if (fresh == null) {
-        return IcoLookupResult.invalid(); // Not found or error
+        return IcoLookupResult.notFound(); // Not found or error
       }
 
       if (!fresh.isValid) {
@@ -85,7 +85,7 @@ class CompanyLookupService {
     } on SocketException {
       return IcoLookupResult.offline();
     } catch (e) {
-      return IcoLookupResult.invalid();
+      return IcoLookupResult.notFound();
     }
   }
 

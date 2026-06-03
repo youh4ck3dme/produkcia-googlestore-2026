@@ -68,7 +68,11 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
       final company = await service.lookupByIco(ico);
 
       if (mounted) {
-        // Result is never null or throws exception
+        if (company.name.isEmpty) {
+          BizSnackbar.showError(context, 'Firma sa nenašla');
+          return;
+        }
+
         setState(() {
           _nameController.text = company.name;
           _addressController.text = company.fullAddress;

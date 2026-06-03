@@ -209,6 +209,9 @@ class _IcoLookupScreenState extends ConsumerState<IcoLookupScreen> {
             if (result == null) {
               return _buildEmptyState();
             }
+            if (result.name.isEmpty) {
+              return _buildErrorState('Firma sa nenašla.');
+            }
             if (result.isRateLimited) {
               return _buildRateLimitedState(result.resetIn);
             }

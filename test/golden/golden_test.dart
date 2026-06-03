@@ -43,7 +43,7 @@ void main() {
         find.byType(SmartInsightsWidget),
         matchesGoldenFile('goldens/smart_insights_widget.png'),
       );
-    }, skip: skipOnLinuxCi ? 'Linux CI font raster differs from macOS goldens' : false);
+    }, skip: skipOnLinuxCi);
 
     testWidgets('SmartInsightsWidget dark theme matches golden', (tester) async {
       final demoInsights = DemoDataGenerator.generateInsights(DemoScenario.taxOptimization);
@@ -74,6 +74,6 @@ void main() {
         find.byType(SmartInsightsWidget),
         matchesGoldenFile('goldens/smart_insights_widget_dark.png'),
       );
-    }, skip: skipOnLinuxCi ? 'Linux CI font raster differs from macOS goldens' : false);
+    }, skip: skipOnLinuxCi);
   });
 }

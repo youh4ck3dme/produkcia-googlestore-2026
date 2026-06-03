@@ -1,13 +1,22 @@
 #!/bin/bash
-# Komplexný testovací skript pre všetky funkcie BizAgent
+# BizAgent — statická kontrola štruktúry projektu (grep / existencia súborov)
+#
+# ⚠️  TOTO NIE SÚ flutter testy. Žiadny kód sa nespúšťa.
+#     PASS tu neznamená „aplikácia funguje“ — len že súbor/funkcia v repozitári existuje.
+#
+# Kedy: rýchly audit po refaktore, onboarding, pred deploy skriptom — voliteľne.
+# Commit/PR: ./run_core_tests.sh
+# Skutočné testy: ./run_all_tests.sh alebo flutter test
+#
 # Spustenie: ./comprehensive_test.sh
 
 set +e
 PROJECT_ID="bizagent-live-2026"
 DEMO_EMAIL="bizbizagent@bizbizagent.com"
 
-echo "🧪 BizAgent Comprehensive Test Suite"
-echo "===================================="
+echo "📁 BizAgent — static structure check (NOT unit tests)"
+echo "====================================================="
+echo "⚠️  Výsledok PASS = súbor existuje / grep našiel reťazec. Nie test beh."
 echo ""
 
 RED='\033[0;31m'
@@ -271,7 +280,7 @@ fi
 # Summary
 echo ""
 echo "===================================="
-echo "📊 TEST SUMMARY"
+echo "📊 STRUCTURE CHECK SUMMARY"
 echo "===================================="
 echo -e "${GREEN}Passed: $PASSED${NC}"
 echo -e "${RED}Failed: $FAILED${NC}"
@@ -279,9 +288,10 @@ echo -e "${YELLOW}Warnings: $WARNINGS${NC}"
 echo ""
 
 if [ $FAILED -eq 0 ]; then
-    echo -e "${GREEN}✅ All critical tests passed!${NC}"
+    echo -e "${GREEN}✅ Structure checks passed (not a substitute for flutter test).${NC}"
+    echo "   Spusti: ./run_core_tests.sh alebo ./run_all_tests.sh"
     exit 0
 else
-    echo -e "${RED}❌ Some tests failed. Please fix issues above.${NC}"
+    echo -e "${RED}❌ Some structure checks failed. Fix paths/files above.${NC}"
     exit 1
 fi

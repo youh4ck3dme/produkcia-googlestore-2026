@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/ui/biz_theme.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/router/app_router.dart';
+import 'core/config/play_release_scope.dart';
 import 'core/demo_mode/demo_mode_service.dart';
 import 'core/i18n/l10n.dart';
 import 'core/services/review_service.dart';
@@ -30,10 +31,10 @@ class _BizAgentAppState extends ConsumerState<BizAgentApp> {
   }
 
   void _initializeServices() {
-    // Initialize Review Monitoring
     ref.read(reviewServiceProvider).monitorMilestones();
 
-    // Initialize Notifications
+    if (!PlayReleaseScope.showBackgroundMonitoring) return;
+
     ref.read(notificationServiceProvider).init().then((_) {
       if (!mounted) return;
       ref.read(notificationServiceProvider).requestPermissions();
@@ -63,7 +64,7 @@ class _BizAgentAppState extends ConsumerState<BizAgentApp> {
       listenable: demo,
       builder: (context, _) {
         final overrides = <Override>[];
-        if (demo.isDemoMode && !kReleaseMode) {
+        if (demo.isDemoMode && !kReleaseMode && PlayReleaseScope.allowDemoMode) {
           overrides.addAll([
             expenseInsightsProvider.overrideWith((ref) => Future.value(demo.getDemoInsights())),
           ]);

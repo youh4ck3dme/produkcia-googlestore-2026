@@ -5,6 +5,8 @@ import '../services/ai_tax_assistant_service.dart';
 import '../../../shared/widgets/biz_card.dart';
 import '../../../shared/widgets/biz_buttons.dart';
 import '../../../core/ui/biz_theme.dart';
+import '../../billing/subscription_guard.dart';
+import '../../billing/paywall_flow.dart';
 
 class AiExpenseAnalysisScreen extends ConsumerStatefulWidget {
   const AiExpenseAnalysisScreen({super.key});
@@ -21,6 +23,10 @@ class _AiExpenseAnalysisScreenState extends ConsumerState<AiExpenseAnalysisScree
   Future<void> _analyze() async {
     final name = _expenseNameController.text.trim();
     if (name.isEmpty) return;
+
+    if (!await PaywallFlow.ensureAccess(context, ref, BizFeature.aiAnalysis)) {
+      return;
+    }
 
     setState(() => _isLoading = true);
 

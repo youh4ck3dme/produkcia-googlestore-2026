@@ -1,8 +1,16 @@
 #!/bin/bash
-# Rýchly test produkčného API - jednoduchá verzia
+# BizAgent — rýchla manuálna kontrola Firebase infra (CLI + súbory + grep v functions)
+#
+# Čo robí: firebase login/project, existencia rules/options, grep exports v index.js, secrets hint.
+# Čo NEROBÍ: žiadne flutter testy, žiadne volania live CF API.
+#
+# Kedy: pred prvým deployom, po zmene functions/ — voliteľne.
+# Commit/PR gate: ./run_core_tests.sh
+# Po CF deploy: ./test_production_firebase.sh
+#
 # Spustenie: ./quick_test.sh
 
-echo "🚀 BizAgent Quick Production Test"
+echo "🚀 BizAgent — Firebase infra quick check (manual)"
 echo "================================"
 echo ""
 
@@ -98,10 +106,10 @@ fi
 # Summary
 echo ""
 echo "================================"
-echo -e "${GREEN}✅ Basic checks passed!${NC}"
+echo -e "${GREEN}✅ Infra quick checks passed (not app tests).${NC}"
 echo ""
-echo "📝 Next steps:"
-echo "   1. Run full test: ./test_production_firebase.sh"
-echo "   2. Create demo account: ./create_demo_account.sh"
-echo "   3. Deploy functions: firebase deploy --only functions"
-echo "   4. See docs/PRODUCTION_API_TEST.md for details"
+echo "📝 Ďalšie kroky:"
+echo "   1. Kód: ./run_core_tests.sh (commit) alebo ./run_all_tests.sh (release)"
+echo "   2. Po deploy CF: ./test_production_firebase.sh"
+echo "   3. Demo účet: ./create_demo_account.sh / ./verify_demo_account.sh"
+echo "   4. docs/PRODUCTION_API_TEST.md"

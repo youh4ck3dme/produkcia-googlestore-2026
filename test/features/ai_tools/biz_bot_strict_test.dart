@@ -6,9 +6,13 @@ import 'package:bizagent/features/ai_tools/services/biz_bot_service.dart';
 import 'package:bizagent/features/ai_tools/providers/bizbot_history_provider.dart';
 import 'package:bizagent/features/auth/models/user_model.dart';
 import 'package:bizagent/features/auth/providers/auth_repository.dart';
+import 'package:bizagent/features/billing/billing_service.dart';
+import 'package:bizagent/features/entitlements/user_entitlements.dart';
+import 'package:bizagent/features/limits/usage_limiter.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:mockito/mockito.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Generate Mocks (Manual implementation for simplicity in one file)
 class MockBizBotService extends Mock implements BizBotService {
@@ -25,8 +29,12 @@ class MockBizBotService extends Mock implements BizBotService {
 }
 
 void main() {
+  late UsageLimiter testLimiter;
+
   setUpAll(() async {
-    // FIX: Initialize locale data for tests
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    testLimiter = UsageLimiter(prefs);
     await initializeDateFormatting('sk', null);
   });
 
@@ -44,6 +52,12 @@ void main() {
         bizBotServiceProvider.overrideWithValue(mockService),
         authStateProvider.overrideWith((ref) => Stream.value(fakeUser)),
         bizBotHistoryRepositoryProvider.overrideWithValue(BizBotHistoryRepository(fakeFs)),
+        billingProvider.overrideWith(
+          (ref) => BillingService.forTest(
+            BillingState(entitlements: UserEntitlements(isPro: true)),
+            testLimiter,
+          ),
+        ),
       ],
       child: const MaterialApp(
         home: BizBotScreen(),

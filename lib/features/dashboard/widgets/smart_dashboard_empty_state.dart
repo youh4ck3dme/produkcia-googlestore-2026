@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/config/play_release_scope.dart';
+import '../../../core/config/product_copy.dart';
 import '../../settings/providers/settings_provider.dart';
 import '../../invoices/providers/invoices_provider.dart';
 import '../../expenses/providers/expenses_provider.dart';
+import '../../billing/subscription_guard.dart';
+import '../../billing/paywall_flow.dart';
 
 class SmartDashboardEmptyState extends ConsumerWidget {
   const SmartDashboardEmptyState({super.key});
@@ -82,16 +86,20 @@ class SmartDashboardEmptyState extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Vitajte v BizAgent!',
-                            style: TextStyle(
+                          Text(
+                            PlayReleaseScope.playMvp
+                                ? ProductCopy.emptyStateTitle
+                                : 'Vitajte v BizAgent!',
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           Text(
-                            'Pripravte svoju firmu na úspech',
+                            PlayReleaseScope.playMvp
+                                ? ProductCopy.emptyStateSubtitle
+                                : 'Pripravte svoju firmu na úspech',
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.9),
                               fontSize: 11.2, // Reduced by 20% (14 * 0.8)
@@ -126,7 +134,15 @@ class SmartDashboardEmptyState extends ConsumerWidget {
                     subtitle: 'Vystavte doklad pre klienta',
                     icon: Icons.receipt_long,
                     isCompleted: isInvoiceCompleted,
-                    onTap: () => context.push('/create-invoice'),
+                    onTap: () async {
+                      if (await PaywallFlow.ensureAccess(
+                        context,
+                        ref,
+                        BizFeature.createInvoice,
+                      )) {
+                        if (context.mounted) context.push('/create-invoice');
+                      }
+                    },
                   ),
                   const Divider(height: 1),
                   _buildChecklistItem(

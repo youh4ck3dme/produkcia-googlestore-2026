@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/config/play_release_scope.dart';
 import '../../../core/providers/theme_provider.dart';
 import '../../../core/services/tutorial_service.dart';
 import '../providers/settings_provider.dart';
@@ -11,6 +12,8 @@ import '../../../shared/widgets/biz_widgets.dart';
 import '../../../core/services/company_lookup_service.dart';
 import '../../../core/services/local_persistence_service.dart';
 import '../../auth/providers/auth_repository.dart';
+import '../../billing/subscription_guard.dart';
+import '../../billing/paywall_flow.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -124,15 +127,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       appBar: AppBar(
         title: const Text('Nastavenia'),
         actions: [
-          BizTutorialButton(
-            onPressed: () {
-              TutorialService.showSettingsTutorial(
-                context: context,
-                saveKey: _saveKey,
-                sectionKey: _sectionKey,
-              );
-            },
-          ),
+          if (PlayReleaseScope.showCoachMarkTutorials)
+            BizTutorialButton(
+              onPressed: () {
+                TutorialService.showSettingsTutorial(
+                  context: context,
+                  saveKey: _saveKey,
+                  sectionKey: _sectionKey,
+                );
+              },
+            ),
           IconButton(key: _saveKey, onPressed: _save, icon: const Icon(Icons.save)),
         ],
       ),
@@ -266,6 +270,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 title: const Text('Jazyk'),
                 trailing: const Text('Slovenčina'),
                 onTap: () {},
+              ),
+              const Divider(height: 32),
+              _buildSectionTitle('Export'),
+              ListTile(
+                leading: const Icon(Icons.archive_outlined),
+                title: const Text('Export pre účtovníčku'),
+                subtitle: const Text('PDF, CSV a fotky výdavkov'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () async {
+                  if (await PaywallFlow.ensureAccess(
+                    context,
+                    ref,
+                    BizFeature.exportExcel,
+                  )) {
+                    if (context.mounted) context.push('/export');
+                  }
+                },
               ),
               const Divider(height: 32),
               _buildSectionTitle('Správa dát'),

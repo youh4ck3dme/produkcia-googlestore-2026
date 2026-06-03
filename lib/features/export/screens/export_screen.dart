@@ -13,6 +13,8 @@ import '../../../shared/widgets/biz_section_header.dart';
 import '../../../shared/utils/biz_snackbar.dart';
 import '../models/export_models.dart';
 import '../providers/export_provider.dart';
+import '../../billing/subscription_guard.dart';
+import '../../billing/paywall_flow.dart';
 
 class ExportScreen extends ConsumerStatefulWidget {
   const ExportScreen({super.key, required this.uid});
@@ -120,7 +122,18 @@ class _ExportScreenState extends ConsumerState<ExportScreen> {
                   isLoading: st.isRunning,
                   onPressed: st.isRunning
                       ? null
-                      : () => ctrl.run(uid: widget.uid, period: _period),
+                      : () async {
+                          if (!await PaywallFlow.ensureAccess(
+                            context,
+                            ref,
+                            BizFeature.exportExcel,
+                          )) {
+                            return;
+                          }
+                          if (context.mounted) {
+                            ctrl.run(uid: widget.uid, period: _period);
+                          }
+                        },
                 ),
               ],
             ),

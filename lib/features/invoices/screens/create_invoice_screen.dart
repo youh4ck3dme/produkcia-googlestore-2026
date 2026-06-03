@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../models/invoice_model.dart';
+import '../../../core/config/play_release_scope.dart';
 import '../../../core/ui/biz_theme.dart';
 import '../../settings/providers/settings_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -276,9 +277,9 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       _isDetailsExpanded = false;
     });
     
-    BizSnackbar.showSuccess(
-      context, 
-      'AI: Formulár predvyplnený',
+      BizSnackbar.showSuccess(
+      context,
+      'Formulár predvyplnený',
     );
     
     // Tu by sa dal pridať ScaffoldMessenger pre Undo akciu, 
@@ -306,19 +307,22 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       _previousStates = null;
     });
     
-    BizSnackbar.showInfo(context, 'AI zmeny vrátené späť');
+    BizSnackbar.showInfo(context, 'Zmeny vrátené späť');
   }
 
   InputDecoration _aiInputDecoration(String label, String fieldKey) {
-    final isAiFilled = _aiPopulatedFields.contains(fieldKey);
+    final isAiFilled =
+        PlayReleaseScope.showInvoiceAiFeatures &&
+            _aiPopulatedFields.contains(fieldKey);
     return InputDecoration(
       labelText: label,
       filled: isAiFilled,
       fillColor: isAiFilled ? BizTheme.slovakBlue.withValues(alpha: 0.05) : null,
-      suffixIcon: isAiFilled 
-        ? const Icon(Icons.auto_awesome, size: 16, color: BizTheme.slovakBlue) 
-        : null,
-      helperText: isAiFilled ? 'Navrhnuté AI' : null,
+      suffixIcon: isAiFilled
+          ? const Icon(Icons.check_circle_outline,
+              size: 16, color: BizTheme.slovakBlue)
+          : null,
+      helperText: isAiFilled ? 'Predvyplnené' : null,
       helperStyle: const TextStyle(color: BizTheme.slovakBlue, fontSize: 10),
     );
   }
@@ -359,23 +363,25 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       appBar: AppBar(
         title: const Text('Nová faktúra'),
         actions: [
-          if (_previousStates != null)
-            IconButton(
-              onPressed: _undoMagicFill,
-              icon: const Icon(Icons.undo),
-              tooltip: 'Vrátiť AI zmeny',
-            ),
-          Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: TextButton.icon(
-              onPressed: _applyMagicFill,
-              icon: const Icon(Icons.auto_awesome, size: 18),
-              label: const Text('AI Vyplniť'),
-              style: TextButton.styleFrom(
-                backgroundColor: BizTheme.slovakBlue.withValues(alpha: 0.1),
+          if (PlayReleaseScope.showInvoiceAiFeatures) ...[
+            if (_previousStates != null)
+              IconButton(
+                onPressed: _undoMagicFill,
+                icon: const Icon(Icons.undo),
+                tooltip: 'Vrátiť zmeny',
+              ),
+            Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: TextButton.icon(
+                onPressed: _applyMagicFill,
+                icon: const Icon(Icons.auto_awesome, size: 18),
+                label: const Text('AI Vyplniť'),
+                style: TextButton.styleFrom(
+                  backgroundColor: BizTheme.slovakBlue.withValues(alpha: 0.1),
+                ),
               ),
             ),
-          ),
+          ],
         ],
       ),
       bottomNavigationBar: Container(
@@ -701,8 +707,9 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 12),
-        // AI Verdict Section (High value)
-        if (_lookupResult!.headline != null) ...[
+        // Risk / IČO lookup (Play MVP: bez AI verdict copy)
+        if (PlayReleaseScope.showIcoRiskVerdict &&
+            _lookupResult!.headline != null) ...[
           Container(
             padding: const EdgeInsets.all(BizTheme.spacingMd),
             decoration: BoxDecoration(

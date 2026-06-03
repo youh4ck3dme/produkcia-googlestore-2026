@@ -5,6 +5,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 import '../../core/config.dart';
 import '../../core/remote_config.dart';
 import 'billing_service.dart';
+import 'billing_copy.dart';
 import 'package:go_router/go_router.dart';
 
 class PaywallScreen extends ConsumerWidget {
@@ -51,9 +52,9 @@ class PaywallScreen extends ConsumerWidget {
                       children: [
                         const SizedBox(height: 20),
                         const Text(
-                          "Odomknite plný potenciál",
+                          BillingCopy.paywallTitle,
                           style: TextStyle(
-                            fontSize: 22.4, // Reduced by 20% (28 * 0.8)
+                            fontSize: 22.4,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                           ),
@@ -61,9 +62,9 @@ class PaywallScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 12),
                         const Text(
-                          "Neobmedzené faktúry, AI analýza a exporty.",
+                          BillingCopy.paywallSubtitle,
                           style: TextStyle(
-                            fontSize: 12.8, // Reduced by 20% (16 * 0.8)
+                            fontSize: 12.8,
                             color: Colors.white70,
                           ),
                           textAlign: TextAlign.center,
@@ -125,10 +126,9 @@ class PaywallScreen extends ConsumerWidget {
     final oneTime = products.firstWhere((p) => p.id == BizConfig.productOneTimeStarter, orElse: () => _mockProduct(BizConfig.productOneTimeStarter));
 
     return [
-      const _FeatureRow(icon: Icons.check, text: "Neobmedzené faktúry"),
-      const _FeatureRow(icon: Icons.check, text: "AI Daňový poradca"),
-      const _FeatureRow(icon: Icons.check, text: "Excel Exporty"),
-      const _FeatureRow(icon: Icons.check, text: "Prioritná podpora"),
+      ...BillingCopy.paywallBenefits.map(
+        (text) => _FeatureRow(icon: Icons.check, text: text),
+      ),
       const SizedBox(height: 30),
 
       // Yearly Deal (Highlight)
@@ -166,7 +166,13 @@ class PaywallScreen extends ConsumerWidget {
   ProductDetails _mockProduct(String id) {
      return ProductDetails(
        id: id,
-       title: id.contains('year') ? "Ročné PRO" : (id.contains('one') ? "Doživotný Štart" : "Mesačné PRO"),
+       title: id.contains('year')
+           ? "Pro ročne"
+           : (id.contains('one')
+               ? "Pro jednorazovo"
+               : id.contains('business')
+                   ? "Pro Business"
+                   : "Pro mesačne"),
        description: "Description",
        price: id.contains('year') ? "99.99 €" : (id.contains('one') ? "14.99 €" : "9.99 €"),
        rawPrice: 10,

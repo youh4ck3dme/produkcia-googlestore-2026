@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/tools/services/watched_companies_service.dart';
-import '../../features/billing/subscription_guard.dart'; 
-import '../../features/billing/paywall_screen.dart'; // For showing paywall
+import '../../features/billing/subscription_guard.dart';
+import '../../features/billing/paywall_flow.dart';
 import '../../features/billing/billing_service.dart';
 
 class WatchedCompanyButton extends ConsumerWidget {
@@ -59,7 +59,12 @@ class WatchedCompanyButton extends ConsumerWidget {
         await service.watch(icoNorm, name);
       } else {
         if (!context.mounted) return;
-        _showPaywall(context);
+        final guard = ref.read(subscriptionGuardProvider);
+        await PaywallFlow.showFeaturePaywall(
+          context,
+          feature: BizFeature.watchedCompanies,
+          reason: guard.getUpgradeMessage(BizFeature.watchedCompanies),
+        );
       }
     }
   }
@@ -98,11 +103,5 @@ class WatchedCompanyButton extends ConsumerWidget {
     final watchedService = ref.read(watchedCompaniesServiceProvider);
     final count = await watchedService.getWatchedCount();
     return count < 3;
-  }
-
-  void _showPaywall(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const PaywallScreen()),
-    );
   }
 }

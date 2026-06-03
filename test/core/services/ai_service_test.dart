@@ -1,29 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
 import 'package:cloud_functions/cloud_functions.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bizagent/core/services/ai_service.dart';
-
-class MockFirebaseFunctions extends Mock implements FirebaseFunctions {}
-
-class MockHttpsCallable extends Mock implements HttpsCallable {
-  @override
-  final String functionName;
-  
-  MockHttpsCallable(this.functionName);
-  
-  @override
-  Future<HttpsCallableResult> call([dynamic data]) async {
-    return HttpsCallableResult(data: {'text': 'Test response'});
-  }
-}
-
-class MockHttpsCallableResult extends Mock implements HttpsCallableResult {
-  @override
-  final Map<String, dynamic> data;
-  
-  MockHttpsCallableResult(this.data);
-}
 
 void main() {
   group('AiService Tests', () {
@@ -74,8 +51,8 @@ void main() {
           details: null,
         );
         
-        final result = service._mapError(error);
-        expect(result, contains('autentifikácii'));
+        final result = service.mapErrorForTesting(error);
+        expect(result, contains('autentifikácie'));
       });
 
       test('maps resource-exhausted to quota message', () {
@@ -86,7 +63,7 @@ void main() {
           details: null,
         );
         
-        final result = service._mapError(error);
+        final result = service.mapErrorForTesting(error);
         expect(result, contains('limit'));
       });
 
@@ -98,7 +75,7 @@ void main() {
           details: null,
         );
         
-        final result = service._mapError(error);
+        final result = service.mapErrorForTesting(error);
         expect(result, contains('nakonfigurovaná'));
       });
 
@@ -110,7 +87,7 @@ void main() {
           details: null,
         );
         
-        final result = service._mapError(error);
+        final result = service.mapErrorForTesting(error);
         expect(result, contains('limit'));
       });
 
@@ -122,7 +99,7 @@ void main() {
           details: null,
         );
         
-        final result = service._mapError(error);
+        final result = service.mapErrorForTesting(error);
         expect(result, contains('Offline'));
       });
     });

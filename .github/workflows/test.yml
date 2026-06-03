@@ -35,19 +35,19 @@ jobs:
         run: flutter analyze --no-fatal-infos
 
       - name: Unit & widget tests
-        run: flutter test
+        run: flutter test --dart-define=PLAY_MVP=false
 
       - name: E2E / demo tests
-        run: flutter test test/e2e/
+        run: flutter test --dart-define=PLAY_MVP=false test/e2e/
 
       - name: Integration tests
-        run: flutter test test/integration/
+        run: flutter test --dart-define=PLAY_MVP=false test/integration/
 
       - name: Performance tests
-        run: flutter test test/performance/
+        run: flutter test --dart-define=PLAY_MVP=false test/performance/
 
       - name: Golden tests (check)
-        run: flutter test test/golden/
+        run: flutter test --dart-define=PLAY_MVP=false test/golden/
 
   golden-update:
     name: Update golden files

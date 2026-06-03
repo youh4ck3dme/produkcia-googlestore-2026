@@ -38,14 +38,13 @@ class AiService {
     required String systemPrompt,
     required String userMessage,
   }) async {
-    final fullPrompt = '
+    final fullPrompt = '''
 
 $systemPrompt
 
-
 UŽÍVATEĽ: $userMessage
 
-';
+''';
     return generateContent(fullPrompt);
   }
 
@@ -96,6 +95,9 @@ UŽÍVATEĽ: $userMessage
   }
 
   /// Map Firebase Functions errors to user-friendly messages
+  @visibleForTesting
+  String mapErrorForTesting(FirebaseFunctionsException e) => _mapError(e);
+
   String _mapError(FirebaseFunctionsException e) {
     if (e.code == 'permission-denied' || e.code == 'unauthenticated') {
       return 'Chyba autentifikácie. Prosím, prihláste sa znova.';

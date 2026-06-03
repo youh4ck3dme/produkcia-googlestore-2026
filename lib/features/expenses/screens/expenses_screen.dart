@@ -14,6 +14,7 @@ import '../../../shared/widgets/biz_widgets.dart';
 import '../../../shared/widgets/biz_glass_appbar.dart';
 import '../../../core/ui/biz_theme.dart';
 import '../../../core/services/tutorial_service.dart';
+import '../../../core/config/play_release_scope.dart';
 
 // Provider pre filtre
 final expenseFilterProvider = StateProvider<ExpenseFilterCriteria>((ref) {
@@ -52,12 +53,13 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
             },
           ),
           // Analytics Button
-          IconButton(
-            key: _analyticsKey,
-            icon: const Icon(Icons.pie_chart),
-            tooltip: 'Analytika',
-            onPressed: () => context.push('/expenses/analytics'),
-          ),
+          if (PlayReleaseScope.showExpenseAnalytics)
+            IconButton(
+              key: _analyticsKey,
+              icon: const Icon(Icons.pie_chart),
+              tooltip: 'Analytika',
+              onPressed: () => context.push('/expenses/analytics'),
+            ),
           // Filter Button
           IconButton(
             key: _filterKey,
@@ -86,7 +88,13 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         key: _fabKey,
-        onPressed: () => _showAddExpenseMenu(context),
+        onPressed: () {
+          if (PlayReleaseScope.showVoiceExpense) {
+            _showAddExpenseMenu(context);
+          } else {
+            context.push('/create-expense');
+          }
+        },
         child: const Icon(Icons.add),
       ),
       body: RefreshIndicator(
@@ -325,20 +333,22 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                     },
                   ),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildMenuOption(
-                    context: context,
-                    icon: Icons.mic,
-                    title: 'Hlasom',
-                    subtitle: 'Povedzte výdavok',
-                    onTap: () {
-                      Navigator.pop(context);
-                      context.push('/voice-expense');
-                    },
-                    isPrimary: true,
+                if (PlayReleaseScope.showVoiceExpense) ...[
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildMenuOption(
+                      context: context,
+                      icon: Icons.mic,
+                      title: 'Hlasom',
+                      subtitle: 'Povedzte výdavok',
+                      onTap: () {
+                        Navigator.pop(context);
+                        context.push('/voice-expense');
+                      },
+                      isPrimary: true,
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
             const SizedBox(height: 24),

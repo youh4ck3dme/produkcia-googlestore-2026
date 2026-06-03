@@ -9,7 +9,8 @@ import '../../../core/models/ico_lookup_result.dart';
 import '../../../core/models/ico_premium_profile.dart';
 import '../../../shared/widgets/watched_company_button.dart';
 import '../../billing/subscription_guard.dart';
-import '../../billing/paywall_screen.dart';
+import '../../billing/paywall_flow.dart';
+import '../../billing/billing_copy.dart';
 import '../../limits/usage_limiter.dart';
 import '../../billing/billing_service.dart';
 
@@ -82,24 +83,20 @@ class _IcoLookupScreenState extends ConsumerState<IcoLookupScreen> {
     super.dispose();
   }
 
-  void _handleSearch() {
+  void _handleSearch() async {
     final queryDigits = _controller.text.replaceAll(RegExp(r'\D'), '');
     if (queryDigits.length == 8) {
-      final guard = ref.read(subscriptionGuardProvider);
-      if (guard.canAccess(BizFeature.icoLookup)) {
-        // Debounce protection: Check if already loading
-        if (ref.read(icoLookupFutureProvider).isLoading) return;
-
-        // Force refresh even if the same IČO is searched again.
-        ref.read(icoSearchQueryProvider.notifier).state = queryDigits;
-        ref.invalidate(icoLookupFutureProvider);
-        ref.read(usageLimiterProvider).incrementIco();
-        ref.read(billingProvider.notifier).refreshUsage();
-      } else {
-         Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const PaywallScreen()),
-         );
+      if (!await PaywallFlow.ensureAccess(context, ref, BizFeature.icoLookup)) {
+        return;
       }
+      // Debounce protection: Check if already loading
+      if (ref.read(icoLookupFutureProvider).isLoading) return;
+
+      // Force refresh even if the same IČO is searched again.
+      ref.read(icoSearchQueryProvider.notifier).state = queryDigits;
+      ref.invalidate(icoLookupFutureProvider);
+      ref.read(usageLimiterProvider).incrementIco();
+      ref.read(billingProvider.notifier).refreshUsage();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Zadajte platné 8-miestne IČO')),
@@ -440,7 +437,7 @@ class _IcoLookupScreenState extends ConsumerState<IcoLookupScreen> {
                 const Icon(Icons.lock_outline, color: BizTheme.slovakBlue, size: 18),
                 const SizedBox(width: 8),
                 Text(
-                  'Rozšírený profil firmy (Premium)',
+                  'Detail firmy (Pro)',
                   style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                 ),
               ],
@@ -454,10 +451,15 @@ class _IcoLookupScreenState extends ConsumerState<IcoLookupScreen> {
             SizedBox(
               width: double.infinity,
               child: FilledButton(
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const PaywallScreen()),
-                ),
-                child: const Text('ODOMKNÚŤ PREMIUM PROFIL'),
+                onPressed: () {
+                  final guard = ref.read(subscriptionGuardProvider);
+                  PaywallFlow.showFeaturePaywall(
+                    context,
+                    feature: BizFeature.icoPremiumProfile,
+                    reason: guard.getUpgradeMessage(BizFeature.icoPremiumProfile),
+                  );
+                },
+                child: const Text(BillingCopy.ctaUpgrade),
               ),
             ),
           ],
@@ -588,7 +590,7 @@ class _IcoLookupScreenState extends ConsumerState<IcoLookupScreen> {
           const Icon(Icons.lock_person_outlined, size: 48, color: BizTheme.slovakBlue),
           const SizedBox(height: BizTheme.spacingMd),
           Text(
-            'Secure Gateway: Premium',
+            'IČO detail (Pro)',
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
               color: BizTheme.slovakBlue,

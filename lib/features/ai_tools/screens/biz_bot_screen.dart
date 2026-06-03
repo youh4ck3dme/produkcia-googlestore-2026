@@ -8,6 +8,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../auth/providers/auth_repository.dart';
 import '../models/bizbot_message.dart';
 import '../providers/bizbot_history_provider.dart';
+import '../../billing/subscription_guard.dart';
+import '../../billing/paywall_flow.dart';
 
 class BizBotScreen extends ConsumerStatefulWidget {
   const BizBotScreen({super.key});
@@ -66,6 +68,10 @@ class _BizBotScreenState extends ConsumerState<BizBotScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Na chat je potrebné byť prihlásený.')),
       );
+      return;
+    }
+
+    if (!await PaywallFlow.ensureAccess(context, ref, BizFeature.aiAnalysis)) {
       return;
     }
 

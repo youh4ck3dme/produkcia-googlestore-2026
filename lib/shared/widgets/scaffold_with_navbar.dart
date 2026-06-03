@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/config/play_release_scope.dart';
 import '../../core/ui/biz_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
@@ -26,6 +27,26 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
   Timer? _fabToggleTimer;
   _FabMode _fabMode = _FabMode.bizbot;
 
+  /// Play MVP: shell má 5 vetiev, AI (index 3) nie je v bottom nav.
+  static const int _aiToolsShellIndex = 3;
+  static const int _settingsShellIndex = 4;
+
+  int _shellIndexForNav(int navIndex) {
+    if (!PlayReleaseScope.showAiToolsNav && navIndex >= 3) {
+      return _settingsShellIndex;
+    }
+    return navIndex;
+  }
+
+  int _navIndexFromShell(int shellIndex) {
+    if (!PlayReleaseScope.showAiToolsNav) {
+      if (shellIndex == _settingsShellIndex) return 3;
+      if (shellIndex == _aiToolsShellIndex) return 0;
+      return shellIndex;
+    }
+    return shellIndex;
+  }
+
   void _startFabToggleTimer() {
     _fabToggleTimer?.cancel();
     _fabToggleTimer = Timer.periodic(const Duration(seconds: 5), (_) {
@@ -36,25 +57,58 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
     });
   }
 
-  void _goBranch(int index) {
+  void _goBranch(int navIndex) {
+    final shellIndex = _shellIndexForNav(navIndex);
     widget.navigationShell.goBranch(
-      index,
-      initialLocation: index == widget.navigationShell.currentIndex,
+      shellIndex,
+      initialLocation: shellIndex == widget.navigationShell.currentIndex,
     );
+  }
+
+  List<NavigationDestination> _destinations() {
+    final all = [
+      const NavigationDestination(
+        icon: Icon(Icons.dashboard_outlined),
+        selectedIcon: Icon(Icons.dashboard),
+        label: 'Prehľad',
+      ),
+      const NavigationDestination(
+        icon: Icon(Icons.receipt_long_outlined),
+        selectedIcon: Icon(Icons.receipt_long),
+        label: 'Faktúry',
+      ),
+      const NavigationDestination(
+        icon: Icon(Icons.attach_money),
+        selectedIcon: Icon(Icons.attach_money),
+        label: 'Výdavky',
+      ),
+      if (PlayReleaseScope.showAiToolsNav)
+        const NavigationDestination(
+          icon: Icon(Icons.auto_awesome_outlined),
+          selectedIcon: Icon(Icons.auto_awesome),
+          label: 'AI Tools',
+        ),
+      const NavigationDestination(
+        icon: Icon(Icons.settings_outlined),
+        selectedIcon: Icon(Icons.settings),
+        label: 'Nastavenia',
+      ),
+    ];
+    return all;
   }
 
   @override
   void initState() {
     super.initState();
-    // Start FAB toggling only on mobile.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final width = MediaQuery.of(context).size.width;
       final isMobile = width < 600;
-      if (isMobile) _startFabToggleTimer();
+      if (isMobile && PlayReleaseScope.showMobilePromoFab) {
+        _startFabToggleTimer();
+      }
     });
 
-    // Android share intent -> open Create Expense screen and prefill via OCR.
     if (!kIsWeb) {
       ReceiveSharingIntent.instance.getInitialMedia().then((list) {
         if (!mounted || list.isEmpty) return;
@@ -86,70 +140,43 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
     final width = MediaQuery.of(context).size.width;
     final theme = Theme.of(context);
 
-    // Breakpoints
     final isDesktop = width >= 1240;
     final isTablet = width >= 600 && width < 1240;
     final isMobile = width < 600;
 
-    final destinations = [
-      const NavigationDestination(
-        icon: Icon(Icons.dashboard_outlined),
-        selectedIcon: Icon(Icons.dashboard),
-        label: 'Dashboard',
-      ),
-      const NavigationDestination(
-        icon: Icon(Icons.receipt_long_outlined),
-        selectedIcon: Icon(Icons.receipt_long),
-        label: 'Faktúry',
-      ),
-      const NavigationDestination(
-        icon: Icon(Icons.attach_money),
-        selectedIcon: Icon(Icons.attach_money),
-        label: 'Výdavky',
-      ),
-      const NavigationDestination(
-        icon: Icon(Icons.auto_awesome_outlined),
-        selectedIcon: Icon(Icons.auto_awesome),
-        label: 'AI Tools',
-      ),
-      const NavigationDestination(
-        icon: Icon(Icons.settings_outlined),
-        selectedIcon: Icon(Icons.settings),
-        label: 'Nastavenia',
-      ),
-    ];
-
-    // Shared Destinations for Rail/Drawer need generic type mapping if strict, 
-    // but here we manually map to RailDestination/DrawerDestination for simplicity.
+    final destinations = _destinations();
+    final selectedNavIndex = _navIndexFromShell(widget.navigationShell.currentIndex);
 
     if (isMobile) {
       return Scaffold(
         body: widget.navigationShell,
-        floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            final router = ref.read(routerProvider);
-            switch (_fabMode) {
-              case _FabMode.bizbot:
-                router.push('/ai-tools/biz-bot');
-                break;
-              case _FabMode.icoatlas:
-                router.push('/icoatlas');
-                break;
-            }
-          },
-          backgroundColor: BizTheme.slovakBlue,
-          child: _fabMode == _FabMode.bizbot
-              ? const Icon(Icons.smart_toy_outlined, color: Colors.white)
-              : Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Image.asset(
-                    'assets/icons/icoatlas-logo.png',
-                    fit: BoxFit.contain,
-                  ),
-                ),
-        ),
+        floatingActionButton: PlayReleaseScope.showMobilePromoFab
+            ? FloatingActionButton(
+                onPressed: () {
+                  final router = ref.read(routerProvider);
+                  switch (_fabMode) {
+                    case _FabMode.bizbot:
+                      router.push('/ai-tools/biz-bot');
+                      break;
+                    case _FabMode.icoatlas:
+                      router.push('/icoatlas');
+                      break;
+                  }
+                },
+                backgroundColor: BizTheme.slovakBlue,
+                child: _fabMode == _FabMode.bizbot
+                    ? const Icon(Icons.smart_toy_outlined, color: Colors.white)
+                    : Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Image.asset(
+                          'assets/icons/icoatlas-logo.png',
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+              )
+            : null,
         bottomNavigationBar: NavigationBar(
-          selectedIndex: widget.navigationShell.currentIndex,
+          selectedIndex: selectedNavIndex,
           onDestinationSelected: _goBranch,
           destinations: destinations,
           backgroundColor: theme.colorScheme.surface,
@@ -158,49 +185,53 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
         ),
       );
     }
-    
+
     return Scaffold(
       body: Row(
         children: [
           if (isTablet)
             NavigationRail(
-              selectedIndex: widget.navigationShell.currentIndex,
+              selectedIndex: selectedNavIndex,
               onDestinationSelected: _goBranch,
               labelType: NavigationRailLabelType.all,
               backgroundColor: theme.colorScheme.surface,
               indicatorColor: theme.colorScheme.primaryContainer,
-              destinations: destinations.map((d) => NavigationRailDestination(
-                icon: d.icon,
-                selectedIcon: d.selectedIcon,
-                label: Text(d.label),
-              )).toList(),
+              destinations: destinations
+                  .map(
+                    (d) => NavigationRailDestination(
+                      icon: d.icon,
+                      selectedIcon: d.selectedIcon,
+                      label: Text(d.label),
+                    ),
+                  )
+                  .toList(),
             ),
-            
           if (isDesktop)
             NavigationDrawer(
-              selectedIndex: widget.navigationShell.currentIndex,
+              selectedIndex: selectedNavIndex,
               onDestinationSelected: _goBranch,
               backgroundColor: theme.colorScheme.surface,
               indicatorColor: theme.colorScheme.primaryContainer,
               children: [
-                 Padding(
-                   padding: const EdgeInsets.all(BizTheme.spacingLg),
-                   child: Text(
-                     'BizAgent',
-                     style: theme.textTheme.headlineSmall?.copyWith(
-                       color: theme.colorScheme.primary, 
-                       fontWeight: FontWeight.bold
-                     ),
-                   ),
-                 ),
-                 ...destinations.map((d) => NavigationDrawerDestination(
-                  icon: d.icon,
-                  selectedIcon: d.selectedIcon,
-                  label: Text(d.label),
-                )),
+                Padding(
+                  padding: const EdgeInsets.all(BizTheme.spacingLg),
+                  child: Text(
+                    'BizAgent',
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                ...destinations.map(
+                  (d) => NavigationDrawerDestination(
+                    icon: d.icon,
+                    selectedIcon: d.selectedIcon,
+                    label: Text(d.label),
+                  ),
+                ),
               ],
             ),
-            
           const VerticalDivider(thickness: 1, width: 1),
           Expanded(child: widget.navigationShell),
         ],

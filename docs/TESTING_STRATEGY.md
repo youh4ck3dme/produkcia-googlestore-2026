@@ -434,4 +434,44 @@ Widget testApp({required Widget child, List<Override> overrides = const []}) { .
 
 ---
 
+## Test pyramid (2026)
+
+Tri vrstvy — nepúšťaj ich do jedného „mega skriptu“, každá má iný účel.
+
+### 1. Core tests (každý commit / PR)
+
+**Skript:** `./run_core_tests.sh`
+
+| Krok | Príkaz |
+|------|--------|
+| Analýza | `dart analyze lib` |
+| Testy | `flutter test test/core test/features/auth test/features/invoices test/features/expenses test/features/billing` |
+
+Toto je **minimum gate** — rýchle, bez integration_test, bez Firebase shell, bez AAB.
+
+### 2. Release gate (pred uploadom do Google Play)
+
+Spusti **v tomto poradí** (všetko musí prejsť):
+
+1. `flutter test` — celý adresár `test/`
+2. `./verify_demo_account.sh` — demo účet / Hive dáta
+3. `./build_release_aab.sh` — len ak existuje `android/key.properties` a upload keystore
+
+Pomocné (nie náhrada bodov 1–3):
+
+- `./run_all_tests.sh` — celé `test/` + voliteľný coverage + debug APK; **nie** core gate
+- `./comprehensive_test.sh` — **iba** grep/existencia súborov, **nie** flutter test
+
+### 3. Manuálne / voliteľné
+
+| Čo | Kedy |
+|----|------|
+| `flutter test integration_test/` | Fyzické zariadenie alebo emulátor; E2E UI |
+| `./test_production_firebase.sh` | Po deploy Cloud Functions; živé API |
+| `./quick_test.sh` | Rýchly Firebase CLI + súbory checklist |
+| `./comprehensive_test.sh` | Štruktúra repa, nie kvalita testov |
+| Ostatné shell skripty | Podľa dokumentácie konkrétneho skriptu |
+
+---
+
 **Poznámka:** Tento dokument by mal byť aktualizovaný po implementácii každého testu.

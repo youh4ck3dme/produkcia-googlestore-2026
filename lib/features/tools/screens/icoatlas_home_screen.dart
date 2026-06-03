@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/ui/biz_theme.dart';
 import '../../billing/subscription_guard.dart';
-import '../../billing/paywall_screen.dart';
+import '../../billing/paywall_flow.dart';
+import '../../billing/billing_copy.dart';
 import 'ico_lookup_screen.dart';
 
 class IcoAtlasHomeScreen extends ConsumerWidget {
@@ -110,7 +111,7 @@ class IcoAtlasHomeScreen extends ConsumerWidget {
             if (!hasPremium) ...[
               const SizedBox(height: BizTheme.spacing2xl),
               Text(
-                'Premium profil firmy',
+                'Detail firmy (Pro)',
                 style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: BizTheme.spacingSm),
@@ -122,7 +123,7 @@ class IcoAtlasHomeScreen extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Rozšírené detaily sú dostupné v PRO/BUSINESS.',
+                        BillingCopy.icoPremiumLocked,
                         style: theme.textTheme.bodyMedium,
                       ),
                       const SizedBox(height: BizTheme.spacingMd),
@@ -130,11 +131,13 @@ class IcoAtlasHomeScreen extends ConsumerWidget {
                         width: double.infinity,
                         child: ElevatedButton(
                           onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => const PaywallScreen()),
+                            PaywallFlow.showFeaturePaywall(
+                              context,
+                              feature: BizFeature.icoPremiumProfile,
+                              reason: guard.getUpgradeMessage(BizFeature.icoPremiumProfile),
                             );
                           },
-                          child: const Text('Získať Premium'),
+                          child: const Text(BillingCopy.ctaUpgrade),
                         ),
                       ),
                     ],

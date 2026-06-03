@@ -12,7 +12,8 @@ import '../../../shared/widgets/biz_widgets.dart';
 import '../../../shared/widgets/biz_glass_appbar.dart';
 import '../../../core/services/tutorial_service.dart';
 import '../../billing/subscription_guard.dart';
-import '../../billing/paywall_screen.dart';
+import '../../billing/paywall_flow.dart';
+import '../../../core/config/play_release_scope.dart';
 
 class InvoicesScreen extends ConsumerStatefulWidget {
   const InvoicesScreen({super.key});
@@ -98,26 +99,29 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
               onPressed: _deleteSelected,
             )
           else ...[
-            IconButton(
-              icon: const Icon(Icons.smart_toy_outlined),
-              tooltip: 'AI',
-              onPressed: () => context.push('/ai-tools/biz-bot'),
-            ),
-            BizTutorialButton(
-              onPressed: () {
-                TutorialService.showInvoicesTutorial(
-                  context: context,
-                  fabKey: _fabKey,
-                  remindersKey: _remindersKey,
-                );
-              },
-            ),
-            IconButton(
-              key: _remindersKey,
-              icon: const Icon(Icons.notifications_active_outlined),
-              tooltip: 'Upomienky',
-              onPressed: () => context.push('/invoices/reminders'),
-            ),
+            if (PlayReleaseScope.showAiToolsRoutes)
+              IconButton(
+                icon: const Icon(Icons.smart_toy_outlined),
+                tooltip: 'AI',
+                onPressed: () => context.push('/ai-tools/biz-bot'),
+              ),
+            if (PlayReleaseScope.showCoachMarkTutorials)
+              BizTutorialButton(
+                onPressed: () {
+                  TutorialService.showInvoicesTutorial(
+                    context: context,
+                    fabKey: _fabKey,
+                    remindersKey: _remindersKey,
+                  );
+                },
+              ),
+            if (PlayReleaseScope.showPaymentReminders)
+              IconButton(
+                key: _remindersKey,
+                icon: const Icon(Icons.notifications_active_outlined),
+                tooltip: 'Upomienky',
+                onPressed: () => context.push('/invoices/reminders'),
+              ),
           ]
         ],
       ),
@@ -127,14 +131,13 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
               key: _fabKey,
               backgroundColor: BizTheme.nationalRed,
               foregroundColor: Colors.white,
-              onPressed: () {
-                final guard = ref.read(subscriptionGuardProvider);
-                if (guard.canAccess(BizFeature.createInvoice)) {
-                  context.push('/create-invoice');
-                } else {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const PaywallScreen()),
-                  );
+              onPressed: () async {
+                if (await PaywallFlow.ensureAccess(
+                  context,
+                  ref,
+                  BizFeature.createInvoice,
+                )) {
+                  if (context.mounted) context.push('/create-invoice');
                 }
               },
               child: const Icon(Icons.add),
@@ -163,7 +166,17 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
                             title: context.t(AppStr.invoiceEmptyTitle),
                             body: context.t(AppStr.invoiceEmptyMsg),
                             ctaLabel: context.t(AppStr.invoiceEmptyCta),
-                            onCta: () => context.push('/create-invoice'),
+                            onCta: () async {
+                              if (await PaywallFlow.ensureAccess(
+                                context,
+                                ref,
+                                BizFeature.createInvoice,
+                              )) {
+                                if (context.mounted) {
+                                  context.push('/create-invoice');
+                                }
+                              }
+                            },
                             icon: Icons.receipt_long,
                             imageAsset: 'assets/images/invoices_empty_state.png',
                           ),

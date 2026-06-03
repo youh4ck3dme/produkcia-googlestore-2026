@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../core/ui/biz_theme.dart';
+import '../../../core/config/play_release_scope.dart';
+import '../../../core/config/product_copy.dart';
 import '../providers/onboarding_provider.dart';
 import '../../../core/services/analytics_service.dart';
 
@@ -19,7 +21,7 @@ class _ModernOnboardingScreenState extends ConsumerState<ModernOnboardingScreen>
   int _currentPage = 0;
   String _selectedBusinessType = 'IT služby';
 
-  final List<ModernOnboardingStep> _steps = [
+  static final _legacySteps = [
     ModernOnboardingStep(
       title: 'Vitajte',
       subtitle: 'AI Business Asistent pre SZČO a malé firmy',
@@ -52,6 +54,31 @@ class _ModernOnboardingScreenState extends ConsumerState<ModernOnboardingScreen>
     ),
   ];
 
+  List<ModernOnboardingStep> get _steps {
+    if (PlayReleaseScope.simplifiedOnboarding) {
+      return [
+        ModernOnboardingStep(
+          title: ProductCopy.onboardingWelcomeTitle,
+          subtitle: ProductCopy.onboardingWelcomeSubtitle,
+          type: OnboardingStepType.welcome,
+        ),
+        ModernOnboardingStep(
+          title: ProductCopy.onboardingHowTitle,
+          subtitle: ProductCopy.onboardingHowSubtitle,
+          type: OnboardingStepType.welcome,
+        ),
+        ModernOnboardingStep(
+          title: ProductCopy.onboardingFinishTitle,
+          subtitle: ProductCopy.onboardingFinishSubtitle,
+          type: OnboardingStepType.finish,
+        ),
+      ];
+    }
+    return _legacySteps;
+  }
+
+  // legacy field removed — use getter _steps above
+
   @override
   void initState() {
     super.initState();
@@ -78,6 +105,10 @@ class _ModernOnboardingScreenState extends ConsumerState<ModernOnboardingScreen>
   }
 
   void _skipToDemo() {
+    if (PlayReleaseScope.simplifiedOnboarding) {
+      _completeOnboarding();
+      return;
+    }
     _pageController.animateToPage(
       2,
       duration: const Duration(milliseconds: 600),

@@ -26,6 +26,10 @@ import '../../../shared/widgets/biz_widgets.dart';
 import '../../../shared/widgets/notification_bell.dart';
 import '../../../shared/widgets/biz_glass_appbar.dart';
 import '../../../core/demo_mode/demo_mode.dart';
+import '../../../core/config/play_release_scope.dart';
+import '../../../core/config/product_copy.dart';
+import '../../billing/subscription_guard.dart';
+import '../../billing/paywall_flow.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -41,6 +45,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   final GlobalKey _invoiceKey = GlobalKey();
   final GlobalKey _botKey = GlobalKey();
 
+  Future<void> _openCreateInvoice() async {
+    if (await PaywallFlow.ensureAccess(context, ref, BizFeature.createInvoice)) {
+      if (mounted) context.push('/create-invoice');
+    }
+  }
+
+  Future<void> _openExport() async {
+    if (await PaywallFlow.ensureAccess(context, ref, BizFeature.exportExcel)) {
+      if (mounted) context.push('/export');
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -51,6 +67,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Future<void> _checkAndShowTutorial() async {
+    if (!PlayReleaseScope.showCoachMarkTutorials) return;
+
     final user = ref.read(authStateProvider).valueOrNull;
     if (user == null) return;
 
@@ -91,20 +109,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           children: [
             Flexible(
               child: GestureDetector(
-                onTap: () {
-                  final demo = DemoModeService.instance;
-                  demo.recordLogoTap();
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          demo.isDemoMode ? 'Demo mód zapnutý' : 'Demo mód vypnutý',
-                        ),
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
-                  }
-                },
+                onTap: PlayReleaseScope.showDemoModeGesture
+                    ? () {
+                        final demo = DemoModeService.instance;
+                        demo.recordLogoTap();
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                demo.isDemoMode ? 'Demo mód zapnutý' : 'Demo mód vypnutý',
+                              ),
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      }
+                    : null,
                 child: Text(
                   context.t(AppStr.spdTitle),
                   style: Theme.of(context).appBarTheme.titleTextStyle,
@@ -132,7 +152,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ],
         ),
         actions: [
-          const NotificationBell(), 
+          if (PlayReleaseScope.showNotificationBell) const NotificationBell(),
           BizTutorialButton(
             onPressed: () {
               TutorialService.showDashboardTutorial(
@@ -187,7 +207,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             ),
                       ).animate().fade().moveY(begin: 10, duration: 400.ms),
                       const SizedBox(height: 4),
-                      Text(context.t(AppStr.spdDisclaimer),
+                      Text(ProductCopy.dashboardGreetingHint,
                           style: Theme.of(context).textTheme.bodySmall).animate().fade(delay: 100.ms),
                       const SizedBox(height: 24),
 
@@ -223,18 +243,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         ).animate().fade(delay: 300.ms),
 
                       const SizedBox(height: 24),
-                      // AI Insights
-                      const SmartInsightsWidget().animate().fade(delay: 400.ms),
-
-                      const SizedBox(height: 16),
-                      // BizBot Quick Chat Card
-                      _buildBizBotCard(context).animate().fade(delay: 450.ms),
-
-                      const SizedBox(height: 16),
-                      // Tax Widget
-                      const DashboardTaxWidget().animate().fade(delay: 500.ms),
-
-                      const SizedBox(height: 32),
+                      if (PlayReleaseScope.showSmartInsights)
+                        const SmartInsightsWidget().animate().fade(delay: 400.ms),
+                      if (PlayReleaseScope.showSmartInsights) const SizedBox(height: 16),
+                      if (PlayReleaseScope.showBizBotCard)
+                        _buildBizBotCard(context).animate().fade(delay: 450.ms),
+                      if (PlayReleaseScope.showBizBotCard) const SizedBox(height: 16),
+                      if (PlayReleaseScope.showTaxWidget)
+                        const DashboardTaxWidget().animate().fade(delay: 500.ms),
+                      if (PlayReleaseScope.showTaxWidget) const SizedBox(height: 32),
+                      if (!PlayReleaseScope.showSmartInsights &&
+                          !PlayReleaseScope.showBizBotCard &&
+                          !PlayReleaseScope.showTaxWidget)
+                        const SizedBox(height: 8),
 
                       // Quick Actions
                       BizSectionHeader(title: context.t(AppStr.quickActions))
@@ -248,11 +269,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           spacing: 16,
                           runSpacing: 16,
                           children: [
-                            SizedBox(width: 250, child: _buildActionTile(context, title: context.t(AppStr.invoiceTitle), subtitle: 'Nová faktúra pre klienta', icon: Icons.add_circle_outline, color: BizTheme.slovakBlue, onTap: () => context.push('/create-invoice'), widgetKey: _invoiceKey)),
-                            SizedBox(width: 300, child: _buildActionTile(context, title: context.t(AppStr.magicScan), subtitle: context.t(AppStr.magicScanSubtitle), icon: Icons.auto_awesome, color: BizTheme.blueDark, onTap: () => context.push('/ai-tools'), widgetKey: _scanKey)),
+                            SizedBox(width: 250, child: _buildActionTile(context, title: context.t(AppStr.invoiceTitle), subtitle: 'Nová faktúra pre klienta', icon: Icons.add_circle_outline, color: BizTheme.slovakBlue, onTap: _openCreateInvoice, widgetKey: _invoiceKey)),
                             SizedBox(width: 250, child: _buildActionTile(context, title: 'Pridať výdavok', subtitle: 'Evidencia nákladov', icon: Icons.shopping_bag_outlined, color: BizTheme.nationalRed, onTap: () => context.push('/create-expense'))),
-
-                            SizedBox(width: 250, child: _buildActionTile(context, title: 'Export pre účtovníka', subtitle: 'Zostava faktúr a výdavkov', icon: Icons.download, color: BizTheme.gray800, onTap: () => context.push('/export'))),
+                            SizedBox(width: 250, child: _buildActionTile(context, title: 'Export pre účtovníka', subtitle: 'Zostava faktúr a výdavkov', icon: Icons.download, color: BizTheme.gray800, onTap: _openExport)),
+                            if (PlayReleaseScope.showMagicScanQuickAction)
+                              SizedBox(width: 300, child: _buildActionTile(context, title: context.t(AppStr.magicScan), subtitle: context.t(AppStr.magicScanSubtitle), icon: Icons.auto_awesome, color: BizTheme.blueDark, onTap: () => context.push('/ai-tools'), widgetKey: _scanKey)),
                           ],
                         ).animate().fade(delay: 700.ms)
                       else
@@ -264,35 +285,35 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               subtitle: 'Nová faktúra pre klienta',
                               icon: Icons.add_circle_outline,
                               color: BizTheme.slovakBlue, // Use theme color
-                              onTap: () => context.push('/create-invoice'),
+                              onTap: _openCreateInvoice,
                               widgetKey: _invoiceKey,
-                            ),
-                            _buildActionTile(
-                              context,
-                              title: context.t(AppStr.magicScan),
-                              subtitle: context.t(AppStr.magicScanSubtitle),
-                              icon: Icons.auto_awesome,
-                              color: BizTheme.blueDark,
-                              onTap: () => context.push('/ai-tools'),
-                              widgetKey: _scanKey,
                             ),
                             _buildActionTile(
                               context,
                               title: 'Pridať výdavok',
                               subtitle: 'Evidencia nákladov',
                               icon: Icons.shopping_bag_outlined,
-                              color: BizTheme.nationalRed, // Use theme color
+                              color: BizTheme.nationalRed,
                               onTap: () => context.push('/create-expense'),
                             ),
-
                             _buildActionTile(
                               context,
                               title: 'Export pre účtovníka',
                               subtitle: 'Zostava faktúr a výdavkov',
                               icon: Icons.download,
-                              color: BizTheme.gray800, // Use theme color
-                              onTap: () => context.push('/export'),
+                              color: BizTheme.gray800,
+                              onTap: _openExport,
                             ),
+                            if (PlayReleaseScope.showMagicScanQuickAction)
+                              _buildActionTile(
+                                context,
+                                title: context.t(AppStr.magicScan),
+                                subtitle: context.t(AppStr.magicScanSubtitle),
+                                icon: Icons.auto_awesome,
+                                color: BizTheme.blueDark,
+                                onTap: () => context.push('/ai-tools'),
+                                widgetKey: _scanKey,
+                              ),
                           ].animate(interval: 50.ms).fade(duration: 300.ms).slideX(begin: 0.1),
                         ),
 
@@ -339,7 +360,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         color: BizTheme.accentRedLight,
         borderRadius: BorderRadius.circular(BizTheme.radiusLg),
         child: InkWell(
-          onTap: () => context.push('/invoices/reminders'),
+          onTap: PlayReleaseScope.showPaymentReminders
+              ? () => context.push('/invoices/reminders')
+              : () => context.go('/invoices'),
 
           borderRadius: BorderRadius.circular(BizTheme.radiusLg),
           child: Padding(

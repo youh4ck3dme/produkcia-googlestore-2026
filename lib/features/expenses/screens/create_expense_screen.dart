@@ -5,6 +5,7 @@ import '../../../../shared/utils/biz_snackbar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import '../../../core/config/play_release_scope.dart';
 import '../../../core/services/ocr_service.dart';
 import '../../../core/services/ai_ocr_service.dart';
 
@@ -90,7 +91,12 @@ class _CreateExpenseScreenState extends ConsumerState<CreateExpenseScreen> {
         if (result.date != null) _tryParseDate(result.date!);
       });
 
-      BizSnackbar.showInfo(context, 'Upravujeme údaje pomocou AI...');
+      BizSnackbar.showInfo(
+        context,
+        PlayReleaseScope.showExpenseAiBranding
+            ? 'Upravujeme údaje pomocou AI...'
+            : 'Spracovávame údaje z bločku...',
+      );
 
       // AI Refinement
       final refined =
@@ -108,7 +114,7 @@ class _CreateExpenseScreenState extends ConsumerState<CreateExpenseScreen> {
           _onVendorChanged();
         });
 
-        BizSnackbar.showSuccess(context, 'Údaje úspešne spracované cez Gemini AI');
+        BizSnackbar.showSuccess(context, 'Údaje úspešne spracované');
       }
     }
   }
@@ -181,7 +187,12 @@ class _CreateExpenseScreenState extends ConsumerState<CreateExpenseScreen> {
 
       // Show "Refining with AI" feedback
       // Show "Refining with AI" feedback
-      BizSnackbar.showInfo(context, 'Upravujeme údaje pomocou AI...');
+      BizSnackbar.showInfo(
+        context,
+        PlayReleaseScope.showExpenseAiBranding
+            ? 'Upravujeme údaje pomocou AI...'
+            : 'Spracovávame údaje z bločku...',
+      );
 
       // AI Refinement
       final refined = await aiOcrService.refineWithAi(result.originalText,
@@ -199,8 +210,7 @@ class _CreateExpenseScreenState extends ConsumerState<CreateExpenseScreen> {
           _onVendorChanged();
         });
 
-        BizSnackbar.showSuccess(
-            context, 'Údaje úspešne spracované cez Gemini AI');
+        BizSnackbar.showSuccess(context, 'Údaje úspešne spracované');
       }
     }
   }
@@ -392,11 +402,11 @@ class _CreateExpenseScreenState extends ConsumerState<CreateExpenseScreen> {
                         ),
                       ),
                     ),
-                    // AI Trust Badge
-                    Positioned(
-                      top: 12,
-                      right: 12,
-                      child: Container(
+                    if (PlayReleaseScope.showExpenseAiBranding)
+                      Positioned(
+                        top: 12,
+                        right: 12,
+                        child: Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
@@ -455,7 +465,11 @@ class _CreateExpenseScreenState extends ConsumerState<CreateExpenseScreen> {
                 child: ElevatedButton.icon(
                   onPressed: _scanReceipt,
                   icon: const Icon(Icons.camera_alt),
-                  label: const Text('Skenovať bloček (AI)'),
+                  label: Text(
+                    PlayReleaseScope.showExpenseAiBranding
+                        ? 'Skenovať bloček (AI)'
+                        : 'Skenovať bloček',
+                  ),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 24),
                     backgroundColor: const Color(0xFFEFF6FF), // Light Blue

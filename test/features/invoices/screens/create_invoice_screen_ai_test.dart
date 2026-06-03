@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:bizagent/core/config/play_release_scope.dart';
 import 'package:bizagent/features/invoices/screens/create_invoice_screen.dart';
 import 'package:bizagent/features/auth/providers/auth_repository.dart';
 import 'package:bizagent/features/settings/providers/settings_provider.dart';
@@ -49,7 +50,9 @@ void main() {
     );
   }
 
-  testWidgets('AI Magic Fill populates fields and can be undone', (WidgetTester tester) async {
+  testWidgets(
+    'AI Magic Fill populates fields and can be undone',
+    (WidgetTester tester) async {
     await tester.pumpWidget(createTestWidget());
     await tester.pumpAndSettle();
 
@@ -65,8 +68,8 @@ void main() {
     // 3. Verify data is populated
     expect(find.text('Oatmeal Digital s.r.o.'), findsOneWidget);
     
-    // 4. Verify highlighting: InputDecorations should have "Navrhnuté AI" helper
-    expect(find.text('Navrhnuté AI'), findsAtLeast(1));
+    // 4. Verify highlighting: InputDecorations show AI helper
+    expect(find.text('Predvyplnené'), findsAtLeast(1));
 
     // 5. Verify adaptive UI: Details should be hidden now
     expect(find.text('DIČ'), findsNothing);
@@ -80,7 +83,7 @@ void main() {
     
     // Data should be cleared (or restored to empty)
     expect(find.text('Oatmeal Digital s.r.o.'), findsNothing);
-    expect(find.text('Navrhnuté AI'), findsNothing);
+    expect(find.text('Predvyplnené'), findsNothing);
     
     // 7. Re-apply and verify Item
     await tester.tap(aiButton);
@@ -97,5 +100,5 @@ void main() {
     expect(itemFinder, findsOneWidget);
     // Verified item presence via title, avoiding strict formatting checks for amount in unit tests
     expect(find.byType(ListTile), findsAtLeast(1));
-  });
+  }, skip: PlayReleaseScope.playMvp);
 }

@@ -16,6 +16,8 @@ import '../../features/expenses/screens/expense_detail_screen.dart';
 import '../../features/ai_tools/screens/ai_tools_screen.dart';
 
 import '../../features/ai_tools/screens/biz_bot_screen.dart';
+import '../../features/ai_tools/screens/ai_email_generator_screen.dart';
+import '../../features/tax/screens/cashflow_analytics_screen.dart';
 import '../../features/auth/screens/firebase_login_screen.dart';
 // import '../../features/auth/screens/chameleon_login_screen.dart'; // No longer used as default login
 import '../../features/auth/providers/auth_repository.dart';
@@ -38,6 +40,7 @@ import '../../features/legal/screens/privacy_policy_screen.dart';
 import '../../features/tools/screens/icoatlas_home_screen.dart';
 import '../../shared/widgets/scaffold_with_navbar.dart';
 import '../../shared/widgets/biz_auth_required.dart';
+import '../../core/config/play_release_scope.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final firebaseAnalyticsProvider = Provider((ref) => FirebaseAnalytics.instance);
@@ -89,6 +92,11 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // 5. Already Logged In
       if (path == '/login' || path == '/splash' || path == '/onboarding') {
+        return '/dashboard';
+      }
+
+      // Play MVP: skryté moduly → dashboard
+      if (PlayReleaseScope.isRouteDisabled(path)) {
         return '/dashboard';
       }
 
@@ -152,6 +160,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             },
           );
         },
+      ),
+      GoRoute(
+        path: '/analytics/cashflow',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const CashflowAnalyticsScreen(),
       ),
       GoRoute(
         path: '/legal/terms',
@@ -252,7 +265,19 @@ final routerProvider = Provider<GoRouter>((ref) {
                     path: 'biz-bot',
                     builder: (context, state) => const BizBotScreen(),
                   ),
-
+                  GoRoute(
+                    path: 'email-generator',
+                    builder: (context, state) {
+                      final extra = state.extra;
+                      if (extra is Map<String, dynamic>) {
+                        return AiEmailGeneratorScreen(
+                          initialType: extra['type'] as String?,
+                          initialContext: extra['context'] as String?,
+                        );
+                      }
+                      return const AiEmailGeneratorScreen();
+                    },
+                  ),
                 ],
               ),
             ],

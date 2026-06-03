@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/remote_config.dart';
 import '../billing/billing_service.dart';
+import 'billing_copy.dart';
 
 enum BizFeature {
   createInvoice,
@@ -28,8 +29,7 @@ class SubscriptionGuard {
       case BizFeature.createInvoice:
         if (isPro) return true;
         final remoteConfig = BizRemoteConfig();
-        // Check local usage limit (mocked for now, needs persistent storage)
-        // ideally usage is tracked in a separate provider
+        if (!remoteConfig.showPaywallOnLimit) return true;
         return billingState.entitlements.invoiceCount < remoteConfig.invoiceLimit;
         
       case BizFeature.icoLookup:
@@ -75,24 +75,18 @@ class SubscriptionGuard {
     return billingState.entitlements.isPro || billingState.entitlements.isBusiness;
   }
 
-  String getUpgradeMessage(BizFeature feature) {
+  /// Má UI zobraziť paywall namiesto tichého failu.
+  bool shouldShowPaywallUi(BizFeature feature) {
+    if (canAccess(feature)) return false;
     switch (feature) {
       case BizFeature.createInvoice:
-        return "Dosiahli ste limit faktúr vo verzii ZDARMA.";
-      case BizFeature.icoLookup:
-        return "IČO Lookup je obmedzený vo verzii ZDARMA.";
-      case BizFeature.icoPremiumProfile:
-        return "Rozšírený profil firmy je dostupný v PRO verzii.";
-      case BizFeature.aiAnalysis:
-        return "AI Analýza je prémiová funkcia.";
-      case BizFeature.exportExcel:
-        return "Export do Excelu je dostupný v PRO verzii.";
-      case BizFeature.removeWatermark:
-        return "Odstránenie vodoznaku vyžaduje PRO verziu.";
-      case BizFeature.watchedCompanies:
-        return "Na sledovanie viac ako 3 firiem potrebujete PRO verziu.";
+        return BizRemoteConfig().showPaywallOnLimit;
+      default:
+        return true;
     }
   }
+
+  String getUpgradeMessage(BizFeature feature) => BillingCopy.messageFor(feature);
 }
 
 final subscriptionGuardProvider = Provider<SubscriptionGuard>((ref) {

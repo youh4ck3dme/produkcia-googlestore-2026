@@ -1,12 +1,48 @@
 {
   "version": 2,
-  "public": true,
-  "buildCommand": "flutter build web --release",
+  "buildCommand": "flutter pub get && flutter build web --release --web-renderer canvaskit --dart-define=FLUTTER_WEB_USE_SKIA=true",
   "outputDirectory": "build/web",
+  "public": true,
+  "env": {
+    "FLUTTER_MODE": "release",
+    "FLUTTER_WEB_USE_SKIA": "true"
+  },
   "rewrites": [
     {
       "source": "/(.*)",
       "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.+)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, must-revalidate"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        }
+      ]
+    },
+    {
+      "source": "/index.html",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
     }
   ]
 }

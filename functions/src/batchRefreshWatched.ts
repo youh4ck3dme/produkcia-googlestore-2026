@@ -1,11 +1,15 @@
 import * as functions from "firebase-functions/v1";
 import * as admin from "firebase-admin";
-import fetch from "node-fetch";
 
 admin.initializeApp();
 const db = admin.firestore();
 
 const ICOATLAS = "https://icoatlas.sk/api/lookup";
+
+type CompanyLookupPayload = Record<string, unknown> & {
+  name?: string;
+  address?: string;
+};
 
 export const batchRefreshWatched = functions.pubsub
   .schedule("every 24 hours")
@@ -47,7 +51,7 @@ async function refreshCompany(icoNorm: string, uid: string) {
 
   if (!res.ok) return;
 
-  const fresh = await res.json();
+  const fresh = (await res.json()) as CompanyLookupPayload;
   const ref = db.collection("companies").doc(icoNorm);
   const snap = await ref.get();
 
@@ -80,7 +84,7 @@ async function refreshCompany(icoNorm: string, uid: string) {
         diff: diff(old, fresh),
       });
 
-    await notifyUser(uid, icoNorm, fresh.name);
+    await notifyUser(uid, icoNorm, fresh.name ?? icoNorm);
   }
 }
 

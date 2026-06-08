@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../core/supabase/supabase_config.dart';
 import '../services/biz_bot_service.dart';
 import '../../../core/ui/biz_theme.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -81,31 +81,45 @@ class _BizBotScreenState extends ConsumerState<BizBotScreen> {
     });
 
     final repo = ref.read(bizBotHistoryRepositoryProvider);
+    await repo.addMessage(uid: user.id, text: text, isUser: true);
+    await _askAndStore(user.id, text);
+  }
+
+  /// Zavolá AI a uloží odpoveď. Pri chybe ponúkne „Skúsiť znova" bez duplikovania otázky.
+  Future<void> _askAndStore(String uid, String question) async {
+    final repo = ref.read(bizBotHistoryRepositoryProvider);
+    if (!mounted) return;
+    setState(() => _isLoading = true);
     try {
-      await repo.addMessage(uid: user.id, text: text, isUser: true);
-
-      final response = await ref.read(bizBotServiceProvider).ask(text);
-      await repo.addMessage(uid: user.id, text: response, isUser: false);
+      final response = await ref.read(bizBotServiceProvider).ask(question);
+      await repo.addMessage(uid: uid, text: response, isUser: false);
     } catch (e) {
-      String errorMessage = 'Prepáč, vyskytla sa chyba pri spájaní s AI.';
-
-      if (e.toString().contains('API kľúč')) {
-        errorMessage = 'Chyba API kľúča (403/Invalid). Kontaktujte podporu.';
-      } else if (e.toString().contains('quota')) {
-        errorMessage = 'Dosiahli ste denný limit bezplatných dopytov (429).';
-      } else if (e.toString().toLowerCase().contains('network') || e.toString().contains('ClientException')) {
+      final lower = e.toString().toLowerCase();
+      String errorMessage = 'AI je dočasne nedostupné. Skúste to o chvíľu znova.';
+      if (e.toString().contains('API kľúč') || lower.contains('permission')) {
+        errorMessage = 'Chyba API kľúča AI služby. Kontaktujte podporu.';
+      } else if (lower.contains('quota') || lower.contains('resource-exhausted')) {
+        errorMessage = 'Dosiahli ste denný limit bezplatných dopytov. Skúste neskôr.';
+      } else if (lower.contains('network') || lower.contains('clientexception') || lower.contains('unavailable')) {
         errorMessage = 'Sieťová chyba. Skontrolujte pripojenie na internet.';
-      } else {
-        errorMessage = 'Chyba: $e';
       }
 
-      // Store the error as an assistant message so the user sees it in history.
-      await repo.addMessage(uid: user.id, text: errorMessage, isUser: false);
+      await repo.addMessage(uid: uid, text: errorMessage, isUser: false);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('AI dočasne nedostupné.'),
+            action: SnackBarAction(
+              label: 'Skúsiť znova',
+              onPressed: () => _askAndStore(uid, question),
+            ),
+          ),
+        );
+      }
     } finally {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() => _isLoading = false);
       }
     }
   }
@@ -307,12 +321,13 @@ class _BizBotScreenState extends ConsumerState<BizBotScreen> {
     if (confirmed != true) return;
 
     try {
-      await FirebaseFirestore.instance.collection('ai_reports').add({
-        'userId': user.id,
-        'messageId': msg.id,
-        'messageExcerpt': msg.text.length > 100 ? msg.text.substring(0, 100) : msg.text,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
+      if (SupabaseConfig.isConfigured) {
+        await SupabaseConfig.client.from('ai_reports').insert({
+          'user_id': user.id,
+          'message_id': msg.id,
+          'excerpt': msg.text.length > 100 ? msg.text.substring(0, 100) : msg.text,
+        });
+      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Ďakujeme za nahlásenie. Budeme sa tým zaoberať.')),

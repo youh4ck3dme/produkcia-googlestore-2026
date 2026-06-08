@@ -5,9 +5,14 @@
 -keep class io.flutter.view.** { *; }
 -keep class io.flutter.** { *; }
 -keep class io.flutter.plugins.** { *; }
+-keep class io.flutter.embedding.** { *; }
+-keep class com.baseflow.** { *; }
 -dontwarn io.flutter.embedding.android.FlutterFragment
 -dontwarn io.flutter.embedding.android.FlutterFragmentActivity
 -dontwarn io.flutter.embedding.engine.deferredcomponents.**
+
+# Generated Flutter code
+-keep class io.flutter.plugins.GeneratedPluginRegistrant { *; }
 
 # ML Kit Vision & Text Recognition
 -keep class com.google.mlkit.** { *; }
@@ -32,6 +37,12 @@
 -keep class net.bytebuddy.** { *; }
 -dontwarn net.bytebuddy.**
 
-# General
+# Generic Android & Java
 -dontwarn java.lang.invoke.*
 -dontwarn **.R$*
+-keep class **.R$* {
+    <fields>;
+}
+
+# Desugaring
+-dontwarn com.android.tools.desugar.**

@@ -32,13 +32,9 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.validateRecaptcha = void 0;
 const functions = __importStar(require("firebase-functions"));
-const node_fetch_1 = __importDefault(require("node-fetch"));
 /**
  * Validates reCAPTCHA Enterprise token.
  * This should be called before sensitive operations.
@@ -56,7 +52,7 @@ exports.validateRecaptcha = functions.https.onCall(async (request) => {
         throw new functions.https.HttpsError("invalid-argument", "Missing reCAPTCHA token.");
     }
     try {
-        const response = await (0, node_fetch_1.default)(`https://recaptchaenterprise.googleapis.com/v1/projects/${projectID}/assessments?key=${apiKey}`, {
+        const response = await fetch(`https://recaptchaenterprise.googleapis.com/v1/projects/${projectID}/assessments?key=${apiKey}`, {
             method: "POST",
             body: JSON.stringify({
                 event: {

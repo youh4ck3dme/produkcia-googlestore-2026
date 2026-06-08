@@ -1,28 +1,31 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../core/supabase/supabase_config.dart';
 import '../../auth/providers/auth_repository.dart';
 import '../models/bizbot_message.dart';
 
+/// História BizBot konverzácie — Supabase (tabuľka `bizbot_messages`).
 class BizBotHistoryRepository {
-  BizBotHistoryRepository(this._firestore);
+  BizBotHistoryRepository(this._client);
 
-  final FirebaseFirestore _firestore;
+  final SupabaseClient? _client;
 
-  CollectionReference<Map<String, dynamic>> _messagesCol(String uid) {
-    return _firestore
-        .collection('users')
-        .doc(uid)
-        .collection('bizbot_threads')
-        .doc('default')
-        .collection('messages');
-  }
+  static const _table = 'bizbot_messages';
+  static const _thread = 'main';
 
   Stream<List<BizBotMessage>> streamMessages(String uid, {int limit = 100}) {
-    return _messagesCol(uid)
-        .orderBy('clientCreatedAt', descending: false)
-        .limitToLast(limit)
-        .snapshots()
-        .map((snap) => snap.docs.map(BizBotMessage.fromDoc).toList());
+    final client = _client;
+    if (client == null) return Stream.value(const <BizBotMessage>[]);
+
+    return client
+        .from(_table)
+        .stream(primaryKey: ['id'])
+        .eq('user_id', uid)
+        .order('created_at')
+        .limit(limit)
+        .map((rows) => rows
+            .map((r) => BizBotMessage.fromRow(Map<String, dynamic>.from(r)))
+            .toList());
   }
 
   Future<void> addMessage({
@@ -30,28 +33,27 @@ class BizBotHistoryRepository {
     required String text,
     required bool isUser,
   }) async {
-    final nowMs = DateTime.now().millisecondsSinceEpoch;
-    await _messagesCol(uid).add({
+    await _client?.from(_table).insert({
+      'user_id': uid,
+      'thread_id': _thread,
       'text': text,
-      'isUser': isUser,
-      'clientCreatedAt': nowMs,
-      'createdAt': FieldValue.serverTimestamp(),
+      'is_user': isUser,
     });
   }
 
   Future<void> clearThread(String uid) async {
-    final col = _messagesCol(uid);
-    final snap = await col.get();
-    final batch = _firestore.batch();
-    for (final doc in snap.docs) {
-      batch.delete(doc.reference);
-    }
-    await batch.commit();
+    await _client
+        ?.from(_table)
+        .delete()
+        .eq('user_id', uid)
+        .eq('thread_id', _thread);
   }
 }
 
 final bizBotHistoryRepositoryProvider = Provider<BizBotHistoryRepository>((ref) {
-  return BizBotHistoryRepository(FirebaseFirestore.instance);
+  return BizBotHistoryRepository(
+    SupabaseConfig.isConfigured ? SupabaseConfig.client : null,
+  );
 });
 
 final bizBotMessagesProvider = StreamProvider<List<BizBotMessage>>((ref) {
@@ -60,4 +62,3 @@ final bizBotMessagesProvider = StreamProvider<List<BizBotMessage>>((ref) {
   final repo = ref.watch(bizBotHistoryRepositoryProvider);
   return repo.streamMessages(user.id);
 });
-

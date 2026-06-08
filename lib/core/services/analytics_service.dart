@@ -59,15 +59,6 @@ class AnalyticsService {
     await logEvent('try_no_reg');
   }
 
-  // Voice Expense Funnel
-  Future<void> logVoiceExpenseStarted() async {
-    await logEvent('voice_expense_started');
-  }
-
-  Future<void> logVoiceExpenseCompleted({required bool success}) async {
-    await logEvent('voice_expense_completed', parameters: {'success': success});
-  }
-
   // App Lifecycle
   Future<void> logAppOpen() async {
     await _analytics.logAppOpen();

@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class BizBotMessage {
   final String id;
   final String text;
@@ -13,29 +11,24 @@ class BizBotMessage {
     required this.createdAt,
   });
 
-  static BizBotMessage fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
-    final data = doc.data() ?? const <String, dynamic>{};
-    final text = (data['text'] as String?)?.trim() ?? '';
-    final isUser = data['isUser'] == true;
-
-    final clientCreatedAtMs = (data['clientCreatedAt'] as num?)?.toInt();
-    final createdAtTs = data['createdAt'];
+  /// Z riadku Supabase tabuľky `bizbot_messages`.
+  static BizBotMessage fromRow(Map<String, dynamic> row) {
+    final text = (row['text'] as String?)?.trim() ?? '';
+    final isUser = row['is_user'] == true;
 
     DateTime createdAt;
-    if (createdAtTs is Timestamp) {
-      createdAt = createdAtTs.toDate();
-    } else if (clientCreatedAtMs != null) {
-      createdAt = DateTime.fromMillisecondsSinceEpoch(clientCreatedAtMs);
+    final created = row['created_at'];
+    if (created is String) {
+      createdAt = DateTime.tryParse(created) ?? DateTime.fromMillisecondsSinceEpoch(0);
     } else {
       createdAt = DateTime.fromMillisecondsSinceEpoch(0);
     }
 
     return BizBotMessage(
-      id: doc.id,
+      id: row['id']?.toString() ?? '',
       text: text,
       isUser: isUser,
       createdAt: createdAt,
     );
   }
 }
-

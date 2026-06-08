@@ -6,6 +6,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'firebase_options.dart';
+import 'core/supabase/supabase_config.dart';
 import 'app.dart';
 import 'core/services/local_persistence_service.dart';
 import 'core/demo_mode/demo_mode_service.dart';
@@ -74,6 +75,9 @@ void main() async {
   );
 
   await _initFirebaseAppCheck();
+
+  // Supabase (DB/Auth/Storage). No-op ak nie sú dodané SUPABASE_URL/ANON_KEY.
+  await SupabaseConfig.initialize();
   
   runApp(
     ProviderScope(

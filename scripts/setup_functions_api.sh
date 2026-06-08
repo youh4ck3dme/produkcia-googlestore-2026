@@ -15,7 +15,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
-PROJECT="${FIREBASE_PROJECT:-bizagent-live-2026}"
+PROJECT="${FIREBASE_PROJECT:-bizagent-pro-2026}"
 ENV_FILE="functions/.env"
 EXAMPLE="functions/.env.example"
 
@@ -55,7 +55,12 @@ fi
 
 if [ -n "${MISTRAL_API_KEY:-}" ]; then
   _set_env_var "MISTRAL_API_KEY" "$MISTRAL_API_KEY"
-  echo "✓ MISTRAL_API_KEY zapísaný do $ENV_FILE (backend zatiaľ používa Gemini — pozri scripts/setup_mistral_api.sh)"
+  echo "✓ MISTRAL_API_KEY (primárny) zapísaný do $ENV_FILE"
+fi
+
+if [ -n "${MISTRAL_API_KEY_BACKUP:-}" ]; then
+  _set_env_var "MISTRAL_API_KEY_BACKUP" "$MISTRAL_API_KEY_BACKUP"
+  echo "✓ MISTRAL_API_KEY_BACKUP (záložný) zapísaný do $ENV_FILE"
 fi
 
 if [ -n "${MISTRAL_MODEL:-}" ]; then
@@ -79,11 +84,21 @@ fi
 
 if command -v firebase >/dev/null && [ -n "${MISTRAL_API_KEY:-}" ]; then
   echo ""
-  read -r -p "Nahrať MISTRAL_API_KEY do Firebase Secret (pre budúcu migráciu)? [y/N] " ans || true
+  read -r -p "Nahrať MISTRAL_API_KEY (primárny) do Firebase Secret? [y/N] " ans || true
   if [[ "${ans:-}" =~ ^[Yy]$ ]]; then
     firebase use "$PROJECT"
     printf '%s' "$MISTRAL_API_KEY" | firebase functions:secrets:set MISTRAL_API_KEY --project "$PROJECT"
-    echo "✓ Firebase secret MISTRAL_API_KEY uložený (index.js ešte nemusí volať Mistral)"
+    echo "✓ Firebase secret MISTRAL_API_KEY uložený"
+  fi
+fi
+
+if command -v firebase >/dev/null && [ -n "${MISTRAL_API_KEY_BACKUP:-}" ]; then
+  echo ""
+  read -r -p "Nahrať MISTRAL_API_KEY_BACKUP do Firebase Secret? [y/N] " ans || true
+  if [[ "${ans:-}" =~ ^[Yy]$ ]]; then
+    firebase use "$PROJECT"
+    printf '%s' "$MISTRAL_API_KEY_BACKUP" | firebase functions:secrets:set MISTRAL_API_KEY_BACKUP --project "$PROJECT"
+    echo "✓ Firebase secret MISTRAL_API_KEY_BACKUP uložený"
   fi
 fi
 

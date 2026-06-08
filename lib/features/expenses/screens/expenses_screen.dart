@@ -88,13 +88,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         key: _fabKey,
-        onPressed: () {
-          if (PlayReleaseScope.showVoiceExpense) {
-            _showAddExpenseMenu(context);
-          } else {
-            context.push('/create-expense');
-          }
-        },
+        onPressed: () => context.push('/create-expense'),
         child: const Icon(Icons.add),
       ),
       body: RefreshIndicator(
@@ -296,124 +290,6 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     }
 
     return result;
-  }
-
-  void _showAddExpenseMenu(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Pridať výdavok',
-              style: TextStyle(
-                fontSize: 16, // Reduced by 20% (20 * 0.8)
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildMenuOption(
-                    context: context,
-                    icon: Icons.edit,
-                    title: 'Manuálne',
-                    subtitle: 'Vyplniť formulár',
-                    onTap: () {
-                      Navigator.pop(context);
-                      context.push('/create-expense');
-                    },
-                  ),
-                ),
-                if (PlayReleaseScope.showVoiceExpense) ...[
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildMenuOption(
-                      context: context,
-                      icon: Icons.mic,
-                      title: 'Hlasom',
-                      subtitle: 'Povedzte výdavok',
-                      onTap: () {
-                        Navigator.pop(context);
-                        context.push('/voice-expense');
-                      },
-                      isPrimary: true,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-            const SizedBox(height: 24),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMenuOption({
-    required BuildContext context,
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-    bool isPrimary = false,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: isPrimary ? BizTheme.slovakBlue.withValues(alpha: 0.1) : Colors.grey[50],
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isPrimary ? BizTheme.slovakBlue : Colors.grey[200]!,
-            width: isPrimary ? 2 : 1,
-          ),
-        ),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isPrimary ? BizTheme.slovakBlue : Colors.white,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                size: 32,
-                color: isPrimary ? Colors.white : BizTheme.slovakBlue,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 12.8, // Reduced by 20% (16 * 0.8)
-                fontWeight: FontWeight.w600,
-                color: isPrimary ? BizTheme.slovakBlue : Colors.black,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: TextStyle(
-                fontSize: 9.6, // Reduced by 20% (12 * 0.8)
-                color: Colors.grey[600],
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   Widget _buildExpenseItem(

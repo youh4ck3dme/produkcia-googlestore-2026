@@ -1,103 +1,120 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../core/supabase/supabase_config.dart';
 import '../../../core/services/local_persistence_service.dart';
 import '../models/invoice_model.dart';
 
 final invoicesRepositoryProvider = Provider<InvoicesRepository>((ref) {
   final persistence = ref.watch(localPersistenceServiceProvider);
-  return InvoicesRepository(FirebaseFirestore.instance, persistence);
+  return InvoicesRepository(
+    SupabaseConfig.isConfigured ? SupabaseConfig.client : null,
+    persistence,
+  );
 });
 
+/// Faktúry — Supabase Postgres (tabuľka `invoices`) + lokálna Hive cache.
 class InvoicesRepository {
-  final FirebaseFirestore _firestore;
+  final SupabaseClient? _client;
   final LocalPersistenceService _persistence;
 
-  InvoicesRepository(this._firestore, this._persistence);
+  InvoicesRepository(this._client, this._persistence);
+
+  static const _table = 'invoices';
+
+  List<InvoiceModel> _localInvoices(String userId) {
+    return _persistence
+        .getInvoices()
+        .map((data) => InvoiceModel.fromMap(data, data['id'] ?? ''))
+        .where((invoice) => invoice.userId == userId)
+        .where((invoice) => !invoice.isDeleted)
+        .toList();
+  }
+
+  InvoiceModel _rowToInvoice(Map<String, dynamic> row) {
+    final data = Map<String, dynamic>.from(row['data'] as Map);
+    data['id'] = row['id'];
+    return InvoiceModel.fromMap(data, row['id'] as String);
+  }
+
+  Map<String, dynamic> _invoiceToRow(String userId, InvoiceModel invoice, String id) {
+    final data = invoice.toMap();
+    data['id'] = id;
+    return {
+      'id': id,
+      'user_id': userId,
+      'data': data,
+      'date_issued': data['dateIssued'],
+      'status': data['status'],
+      'is_deleted': invoice.isDeleted,
+      'updated_at': DateTime.now().toIso8601String(),
+    };
+  }
 
   Future<List<InvoiceModel>> getInvoices(String userId) async {
-    // 1. Try local data first for immediate UI response
-    final localData = _persistence.getInvoices();
-    final localInvoices = localData
-        .map((data) => InvoiceModel.fromMap(data, data['id'] ?? ''))
-        // Prevent cross-account bleed when switching users on one device.
-        .where((invoice) => invoice.userId == userId)
-        .where((invoice) => !invoice.isDeleted) // Filter out soft deleted
-        .toList();
+    final local = _localInvoices(userId);
+    final client = _client;
+    if (client == null) return local;
 
     try {
-      // 2. Fetch from Firestore (will work offline if persistence enabled in Firestore,
-      // but Hive gives us more control over explicit sync)
-      final snapshot = await _firestore
-          .collection('users')
-          .doc(userId)
-          .collection('invoices')
-          .orderBy('dateIssued', descending: true)
-          .get(const GetOptions(source: Source.serverAndCache));
+      final rows = await client
+          .from(_table)
+          .select()
+          .eq('user_id', userId)
+          .eq('is_deleted', false)
+          .order('date_issued', ascending: false);
 
-      final remoteInvoices = snapshot.docs.map((doc) {
-        final data = doc.data();
-        data['id'] = doc.id;
-        final invoice = InvoiceModel.fromMap(data, doc.id);
-        // Only save to local cache if not soft deleted
-        if (!invoice.isDeleted) {
-          _persistence.saveInvoice(doc.id, data);
-        }
+      final remote = (rows as List).map((r) {
+        final row = Map<String, dynamic>.from(r as Map);
+        final invoice = _rowToInvoice(row);
+        final cache = Map<String, dynamic>.from(row['data'] as Map);
+        cache['id'] = invoice.id;
+        _persistence.saveInvoice(invoice.id, cache);
         return invoice;
-      }).where((invoice) => !invoice.isDeleted).toList(); // Filter out soft deleted
+      }).toList();
 
-      return remoteInvoices;
-    } catch (e) {
-      // Return local if remote fails
-      return localInvoices;
+      return remote;
+    } catch (_) {
+      return local;
     }
   }
 
   Stream<List<InvoiceModel>> watchInvoices(String userId) async* {
-    // Emit local first (filter out soft deleted)
-    final localData = _persistence.getInvoices();
-    yield localData
-        .map((data) => InvoiceModel.fromMap(data, data['id'] ?? ''))
-        // Prevent cross-account bleed when switching users on one device.
-        .where((invoice) => invoice.userId == userId)
-        .where((invoice) => !invoice.isDeleted)
-        .toList();
+    yield _localInvoices(userId);
 
-    final stream = _firestore
-        .collection('users')
-        .doc(userId)
-        .collection('invoices')
-        .orderBy('dateIssued', descending: true)
-        .snapshots();
+    final client = _client;
+    if (client == null) return;
 
-    await for (final snapshot in stream) {
-      final invoices = snapshot.docs.map((doc) {
-        final data = doc.data();
-        data['id'] = doc.id;
-        final invoice = InvoiceModel.fromMap(data, doc.id);
-        // Only save to local cache if not soft deleted
-        if (!invoice.isDeleted) {
-          _persistence.saveInvoice(doc.id, data);
-        }
+    final stream = client
+        .from(_table)
+        .stream(primaryKey: ['id'])
+        .eq('user_id', userId)
+        .order('date_issued', ascending: false);
+
+    await for (final rows in stream) {
+      final invoices = rows
+          .map((r) => Map<String, dynamic>.from(r))
+          .where((row) => row['is_deleted'] != true)
+          .map((row) {
+        final invoice = _rowToInvoice(row);
+        final cache = Map<String, dynamic>.from(row['data'] as Map);
+        cache['id'] = invoice.id;
+        _persistence.saveInvoice(invoice.id, cache);
         return invoice;
-      }).where((invoice) => !invoice.isDeleted).toList(); // Filter out soft deleted
+      }).toList();
 
       yield invoices;
     }
   }
 
   Future<void> addInvoice(String userId, InvoiceModel invoice) async {
-    // Optimistic local save
-    final id = invoice.id.isEmpty ? DateTime.now().millisecondsSinceEpoch.toString() : invoice.id;
+    final id = invoice.id.isEmpty
+        ? DateTime.now().millisecondsSinceEpoch.toString()
+        : invoice.id;
     final data = invoice.toMap();
     data['id'] = id;
     await _persistence.saveInvoice(id, data);
 
-    await _firestore
-        .collection('users')
-        .doc(userId)
-        .collection('invoices')
-        .doc(id)
-        .set(invoice.toMap());
+    await _client?.from(_table).upsert(_invoiceToRow(userId, invoice, id));
   }
 
   Future<void> updateInvoice(String userId, InvoiceModel invoice) async {
@@ -105,39 +122,36 @@ class InvoicesRepository {
     data['id'] = invoice.id;
     await _persistence.saveInvoice(invoice.id, data);
 
-    await _firestore
-        .collection('users')
-        .doc(userId)
-        .collection('invoices')
-        .doc(invoice.id)
-        .update(invoice.toMap());
+    await _client?.from(_table).upsert(_invoiceToRow(userId, invoice, invoice.id));
   }
 
   Future<void> updateInvoiceStatus(
       String userId, String invoiceId, InvoiceStatus status) async {
-    // Update local cache first
     final localInvoices = _persistence.getInvoices();
     final index = localInvoices.indexWhere((inv) => inv['id'] == invoiceId);
+    Map<String, dynamic>? updated;
     if (index != -1) {
       localInvoices[index]['status'] = status.name;
-      await _persistence.saveInvoice(invoiceId, localInvoices[index]);
+      updated = Map<String, dynamic>.from(localInvoices[index]);
+      await _persistence.saveInvoice(invoiceId, updated);
     }
 
-    await _firestore
-        .collection('users')
-        .doc(userId)
-        .collection('invoices')
-        .doc(invoiceId)
-        .update({'status': status.name});
+    final client = _client;
+    if (client == null) return;
+
+    await client.from(_table).update({
+      'status': status.name,
+      if (updated != null) 'data': updated,
+      'updated_at': DateTime.now().toIso8601String(),
+    }).eq('id', invoiceId).eq('user_id', userId);
   }
 
   Future<void> deleteInvoice(String userId, String invoiceId) async {
     await _persistence.deleteInvoice(invoiceId);
-    await _firestore
-        .collection('users')
-        .doc(userId)
-        .collection('invoices')
-        .doc(invoiceId)
-        .delete();
+    await _client
+        ?.from(_table)
+        .delete()
+        .eq('id', invoiceId)
+        .eq('user_id', userId);
   }
 }

@@ -18,15 +18,18 @@ fi
 echo ""
 echo "🔨 Build TypeScript funkcií..."
 cd functions
-npm install
+npm install --no-fund
 npm run build
 cd ..
 
 echo ""
 echo "☁️  Deploy Firebase Functions..."
-# Firebase Functions v2 s defineString vyžaduje .env súbor počas deployu
-# Secrets sa použijú automaticky v produkcii, .env je len pre build proces
-firebase deploy --only functions
+PROJECT="${FIREBASE_PROJECT:-bizagent-pro-2026}"
+echo "   Projekt: $PROJECT (Blaze / platený)"
+firebase use "$PROJECT"
+
+firebase deploy --only functions --project "$PROJECT"
 
 echo ""
-echo "✅ Hotovo! Funkcie sú nasadené."
+echo "✅ Hotovo! Functions nasadené na $PROJECT"
+echo "   URL: https://us-central1-${PROJECT}.cloudfunctions.net/generateContent"

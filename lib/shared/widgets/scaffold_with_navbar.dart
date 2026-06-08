@@ -32,14 +32,14 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
   static const int _settingsShellIndex = 4;
 
   int _shellIndexForNav(int navIndex) {
-    if (!PlayReleaseScope.showAiToolsNav && navIndex >= 3) {
+    if (!PlayReleaseScope.showAssistantNav && navIndex >= 3) {
       return _settingsShellIndex;
     }
     return navIndex;
   }
 
   int _navIndexFromShell(int shellIndex) {
-    if (!PlayReleaseScope.showAiToolsNav) {
+    if (!PlayReleaseScope.showAssistantNav) {
       if (shellIndex == _settingsShellIndex) return 3;
       if (shellIndex == _aiToolsShellIndex) return 0;
       return shellIndex;
@@ -82,12 +82,18 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
         selectedIcon: Icon(Icons.attach_money),
         label: 'Výdavky',
       ),
-      if (PlayReleaseScope.showAiToolsNav)
-        const NavigationDestination(
-          icon: Icon(Icons.auto_awesome_outlined),
-          selectedIcon: Icon(Icons.auto_awesome),
-          label: 'AI Tools',
-        ),
+      if (PlayReleaseScope.showAssistantNav)
+        PlayReleaseScope.showAiToolsNav
+            ? const NavigationDestination(
+                icon: Icon(Icons.auto_awesome_outlined),
+                selectedIcon: Icon(Icons.auto_awesome),
+                label: 'AI Tools',
+              )
+            : const NavigationDestination(
+                icon: Icon(Icons.smart_toy_outlined),
+                selectedIcon: Icon(Icons.smart_toy),
+                label: 'Asistent',
+              ),
       const NavigationDestination(
         icon: Icon(Icons.settings_outlined),
         selectedIcon: Icon(Icons.settings),

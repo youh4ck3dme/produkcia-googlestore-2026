@@ -2,6 +2,7 @@ const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { GoogleGenAI } = require("@google/genai");
 const { defineString } = require("firebase-functions/params");
 const admin = require("firebase-admin");
+const { callMistralWithFallback } = require("./mistral_client");
 
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -9,6 +10,12 @@ if (!admin.apps.length) {
 
 const geminiApiKey = defineString("GEMINI_API_KEY");
 const icoAtlasApiKey = defineString("ICOATLAS_API_KEY");
+const mistralApiKey = defineString("MISTRAL_API_KEY", { default: "" });
+const mistralApiKeyBackup = defineString("MISTRAL_API_KEY_BACKUP", { default: "" });
+const mistralModel = defineString("MISTRAL_MODEL", { default: "mistral-small-latest" });
+// Primárny AI poskytovateľ pre chat (generateContent): "mistral" | "gemini".
+// Default mistral — stabilnejší/lacnejší pre BizBot, Gemini je fallback.
+const aiPrimary = defineString("AI_PRIMARY", { default: "mistral" });
 
 // Model configuration
 // Updated to use currently supported models (January 2026)
@@ -39,7 +46,10 @@ const isQuotaError = (err) => {
 exports.generateEmail = onCall({ 
   cors: [
     "https://biz-agent-web.vercel.app",
+    "https://produkcia-googlestore-2026.vercel.app",
     "https://bizagent-live-2026.web.app",
+    "https://bizagent-pro-2026.web.app",
+    "https://bizagent-pro-2026.firebaseapp.com",
     "http://localhost:3000",
     "http://localhost:5050",
     "http://localhost:62262"
@@ -86,7 +96,10 @@ exports.generateEmail = onCall({
 exports.analyzeReceipt = onCall({ 
   cors: [
     "https://biz-agent-web.vercel.app",
+    "https://produkcia-googlestore-2026.vercel.app",
     "https://bizagent-live-2026.web.app",
+    "https://bizagent-pro-2026.web.app",
+    "https://bizagent-pro-2026.firebaseapp.com",
     "http://localhost:3000",
     "http://localhost:5050",
     "http://localhost:62262"
@@ -156,7 +169,10 @@ ${text}`;
 exports.lookupCompany = onCall({
   cors: [
     "https://biz-agent-web.vercel.app",
+    "https://produkcia-googlestore-2026.vercel.app",
     "https://bizagent-live-2026.web.app",
+    "https://bizagent-pro-2026.web.app",
+    "https://bizagent-pro-2026.firebaseapp.com",
     "http://localhost:3000",
     "http://localhost:5050",
     "http://localhost:62262"
@@ -302,7 +318,10 @@ exports.lookupCompany = onCall({
 exports.generateContent = onCall({
   cors: [
     "https://biz-agent-web.vercel.app",
+    "https://produkcia-googlestore-2026.vercel.app",
     "https://bizagent-live-2026.web.app",
+    "https://bizagent-pro-2026.web.app",
+    "https://bizagent-pro-2026.firebaseapp.com",
     "http://localhost:3000",
     "http://localhost:5050",
     "http://localhost:62262"
@@ -326,46 +345,74 @@ exports.generateContent = onCall({
     throw new HttpsError('invalid-argument', 'Parameter "prompt" musí byť reťazec s maximálnou dĺžkou 10 000 znakov.');
   }
 
-  const apiKey = geminiApiKey.value();
-  if (!apiKey) {
-    throw new HttpsError('failed-precondition', 'Server nie je správne nakonfigurovaný (chýba API kľúč).');
+  const geminiKey = geminiApiKey.value();
+  const mistralKeys = [mistralApiKey.value(), mistralApiKeyBackup.value()].filter((k) => k && k.trim());
+
+  if (!geminiKey && mistralKeys.length === 0) {
+    throw new HttpsError('failed-precondition', 'Server nie je správne nakonfigurovaný (chýba AI API kľúč).');
   }
 
-  // Model priority fallback (SERVER-SIDE ONLY)
-  // We intentionally ignore any client-provided model to keep behavior stable and prevent breakage.
-  const modelsToTry = [DEFAULT_MODEL, ...MODEL_PRIORITY.filter(m => m !== DEFAULT_MODEL)];
+  // Spustí Gemini cez prioritný zoznam modelov. Vyhodí poslednú chybu, ak všetky zlyhajú.
+  const runGemini = async () => {
+    if (!geminiKey) throw new Error('Gemini: chýba API kľúč');
+    const modelsToTry = [DEFAULT_MODEL, ...MODEL_PRIORITY.filter((m) => m !== DEFAULT_MODEL)];
+    let err = null;
+    for (const modelName of modelsToTry) {
+      try {
+        const ai = new GoogleGenAI({ vertexai: false, apiKey: geminiKey });
+        const response = await ai.models.generateContent({ model: modelName, contents: prompt });
+        return { text: response.text || "AI nevrátilo žiadny text.", model: modelName, provider: "gemini" };
+      } catch (error) {
+        console.error(`Gemini ${modelName} Error:`, error);
+        err = error;
+        // Pri chybe kľúča/kvóty nemá zmysel skúšať ďalšie Gemini modely.
+        if (isApiKeyError(error) || isQuotaError(error)) break;
+      }
+    }
+    throw err || new Error('Gemini: všetky modely zlyhali');
+  };
+
+  // Spustí Mistral (primárny → záložný kľúč).
+  const runMistral = async () => {
+    if (mistralKeys.length === 0) throw new Error('Mistral: chýba API kľúč');
+    const r = await callMistralWithFallback({
+      prompt,
+      keys: mistralKeys,
+      model: mistralModel.value() || "mistral-small-latest",
+    });
+    return { text: r.text, model: r.model, provider: "mistral", keySlot: r.keySlot };
+  };
+
+  // Poradie poskytovateľov podľa AI_PRIMARY (default mistral), druhý je fallback.
+  const primary = (aiPrimary.value() || "mistral").toLowerCase();
+  const order = primary === "gemini" ? ["gemini", "mistral"] : ["mistral", "gemini"];
 
   let lastError = null;
-  for (const modelName of modelsToTry) {
+  for (const provider of order) {
     try {
-      const ai = new GoogleGenAI({ vertexai: false, apiKey });
-      const response = await ai.models.generateContent({
-        model: modelName,
-        contents: prompt,
-      });
-      return { 
-        text: response.text || "AI nevrátilo žiadny text.",
-        model: modelName
-      };
-
+      if (provider === "gemini") {
+        if (!geminiKey) continue;
+        return await runGemini();
+      } else {
+        if (mistralKeys.length === 0) continue;
+        console.log(`generateContent: skúšam ${provider} (primary=${primary})`);
+        return await runMistral();
+      }
     } catch (error) {
-      console.error(`Gemini ${modelName} Error:`, error);
+      console.error(`generateContent: ${provider} zlyhal, skúšam ďalší poskytovateľ...`, error.message);
       lastError = error;
-      
-      if (isApiKeyError(error)) {
-        throw new HttpsError('permission-denied', 'Neplatný API kľúč pre AI službu.');
-      }
-      
-      if (isQuotaError(error)) {
-        throw new HttpsError('resource-exhausted', 'Dosiahli ste limit bezplatných dopytov. Skúste to neskôr.');
-      }
-
-      // Try next model (continue loop)
       continue;
     }
   }
 
-  // All models failed
+  if (lastError && isApiKeyError(lastError)) {
+    throw new HttpsError('permission-denied', 'Neplatný API kľúč pre AI službu.');
+  }
+  if (lastError && isQuotaError(lastError)) {
+    throw new HttpsError('resource-exhausted', 'Dosiahli ste limit bezplatných dopytov. Skúste to neskôr.');
+  }
+
+  // All providers failed
   throw new HttpsError('internal', 'AI Offline: Nepodarilo sa pripojiť k žiadnemu AI modelu. Skúste to neskôr.');
 });
 
@@ -388,7 +435,10 @@ exports.generateContent = onCall({
 exports.deleteUserData = onCall({
   cors: [
     "https://biz-agent-web.vercel.app",
+    "https://produkcia-googlestore-2026.vercel.app",
     "https://bizagent-live-2026.web.app",
+    "https://bizagent-pro-2026.web.app",
+    "https://bizagent-pro-2026.firebaseapp.com",
     "http://localhost:3000",
     "http://localhost:5050",
     "http://localhost:62262"

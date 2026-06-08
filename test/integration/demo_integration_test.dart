@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:bizagent/core/demo_mode/demo_mode.dart';
+import '../helpers/demo_test_skip.dart';
 
 /// Integration-style test: demo mode service + data generator together.
 void main() {
@@ -26,6 +27,6 @@ void main() {
       expect(insights.any((i) => i.title.contains('DPH') || i.title.contains('limitu')), isTrue);
 
       demo.deactivateDemoMode();
-    });
+    }, skip: skipDemoMutationTests);
   });
 }

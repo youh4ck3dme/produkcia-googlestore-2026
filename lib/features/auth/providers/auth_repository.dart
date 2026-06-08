@@ -1,329 +1,128 @@
 import 'dart:async';
-import 'package:cloud_functions/cloud_functions.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/debug/agent_log.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../core/supabase/supabase_config.dart';
 import '../models/user_model.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  return AuthRepository(FirebaseAuth.instance);
+  return AuthRepository(
+    SupabaseConfig.isReady ? SupabaseConfig.client : null,
+  );
 });
 
 final authStateProvider = StreamProvider<UserModel?>((ref) {
   return ref.watch(authRepositoryProvider).authStateChanges;
 });
 
+/// Auth cez Supabase. Email/heslo + Google OAuth (google_sign_in ponechaný).
+/// Anonymné/demo prihlásenie bolo zámerne odstránené (Play release).
 class AuthRepository {
-  final FirebaseAuth _auth;
-  final _authStateController = StreamController<UserModel?>.broadcast();
-  UserModel? _currentUser;
-  late final Stream<UserModel?> authStateChanges;
-  StreamSubscription<User?>? _authSubscription;
-  AuthRepository(this._auth) {
-    _init();
-    _initInitialValue();
+  final SupabaseClient? _client;
 
-    // Initialize stable stream that always yields current state first
-    authStateChanges = _buildAuthStream().asBroadcastStream();
-  }
+  AuthRepository(this._client);
 
-  Stream<UserModel?> _buildAuthStream() async* {
-    yield _currentUser;
-    yield* _authStateController.stream;
-  }
-
-  void _initInitialValue() {
-    final user = _auth.currentUser;
-    if (user != null) {
-      _currentUser = UserModel(
-        id: user.uid,
-        email: user.email ?? '',
-        displayName: user.displayName,
-        isAnonymous: user.isAnonymous,
+  /// Vyhodí čitateľnú chybu ak Supabase nie je nakonfigurovaný.
+  SupabaseClient get _sb {
+    final c = _client;
+    if (c == null) {
+      throw StateError(
+        'Supabase nie je nakonfigurovaný — chýba SUPABASE_URL / SUPABASE_PUBLISHABLE_KEY.',
       );
     }
-    _authStateController.add(_currentUser);
+    return c;
   }
 
-  void _init() {
-    // Explicitly set persistence to LOCAL (long-lived) on WEB only.
-    if (kIsWeb) {
-      try {
-        _auth.setPersistence(Persistence.LOCAL);
-      } catch (e) {
-        debugPrint('Auth persistence not supported: $e');
-      }
-    }
+  UserModel _fromUser(User u) => UserModel(
+        id: u.id,
+        email: u.email ?? '',
+        displayName: (u.userMetadata?['full_name'] ?? u.userMetadata?['name']) as String?,
+        photoUrl: u.userMetadata?['avatar_url'] as String?,
+        isAnonymous: u.isAnonymous,
+      );
 
-    _authSubscription = _auth.authStateChanges().listen((User? user) {
-      if (_currentUser != null && _currentUser!.id == 'fake-id-123') return;
-
-      if (user == null) {
-        _currentUser = null;
-      } else {
-        _currentUser = UserModel(
-          id: user.uid,
-          email: user.email ?? '',
-          displayName: user.displayName,
-          photoUrl: user.photoURL,
-          isAnonymous: user.isAnonymous,
-        );
-      }
-      _authStateController.add(_currentUser);
+  /// Stream stavu prihlásenia. Najprv aktuálny user, potom zmeny.
+  Stream<UserModel?> get authStateChanges {
+    final c = _client;
+    if (c == null) return Stream<UserModel?>.value(null);
+    return c.auth.onAuthStateChange.map((data) {
+      final user = data.session?.user;
+      return user == null ? null : _fromUser(user);
     });
   }
 
-  // Helper to get current user immediately
-  UserModel? get currentUser => _currentUser;
-
-  // Helper to get Firebase ID Token
-  Future<String?> get currentUserToken async {
-    final user = _auth.currentUser;
-    if (user == null) return null;
-    return await user.getIdToken();
+  UserModel? get currentUser {
+    final u = _client?.auth.currentUser;
+    return u == null ? null : _fromUser(u);
   }
 
+  Future<String?> get currentUserToken async =>
+      _client?.auth.currentSession?.accessToken;
+
   Future<UserModel?> signIn(String email, String password) async {
-    try {
-      final result = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      final user = result.user;
-      if (user == null) return null;
-      final userModel = UserModel(
-        id: user.uid,
-        email: user.email ?? '',
-        displayName: user.displayName,
-        photoUrl: user.photoURL,
-        isAnonymous: user.isAnonymous,
-      );
-      _authStateController.add(userModel);
-      return userModel;
-    } catch (e) {
-      rethrow;
-    }
+    final res = await _sb.auth.signInWithPassword(email: email, password: password);
+    final u = res.user;
+    return u == null ? null : _fromUser(u);
   }
 
   Future<UserModel?> signUp(String email, String password) async {
-    try {
-      final result = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      final user = result.user;
-      if (user == null) return null;
-      final userModel = UserModel(
-        id: user.uid,
-        email: user.email ?? '',
-        displayName: user.displayName,
-        photoUrl: user.photoURL,
-        isAnonymous: user.isAnonymous,
-      );
-      _authStateController.add(userModel);
-      return userModel;
-    } catch (e) {
-      rethrow;
-    }
+    final res = await _sb.auth.signUp(email: email, password: password);
+    final u = res.user;
+    return u == null ? null : _fromUser(u);
   }
 
   Future<UserModel?> signInWithGoogle() async {
-    try {
-      // #region agent log
-      unawaited(agentLog(
-        hypothesisId: 'H1',
-        location: 'lib/features/auth/providers/auth_repository.dart:signInWithGoogle:entry',
-        message: 'signInWithGoogle called',
-        data: {
-          'kIsWeb': kIsWeb,
-          'platform': defaultTargetPlatform.toString(),
-        },
-      ));
-      // #endregion agent log
-
-      if (kIsWeb) {
-        // Prefer FirebaseAuth popup on web (more reliable than google_sign_in web setup).
-        final GoogleAuthProvider googleProvider = GoogleAuthProvider()..addScope('email');
-        final result = await _auth.signInWithPopup(googleProvider);
-        final user = result.user;
-        if (user == null) return null;
-
-        final userModel = UserModel(
-          id: user.uid,
-          email: user.email ?? '',
-          displayName: user.displayName,
-          photoUrl: user.photoURL,
-          isAnonymous: user.isAnonymous,
-        );
-        _authStateController.add(userModel);
-        return userModel;
-      }
-
-      final googleSignIn = GoogleSignIn(scopes: const ['email']);
-
-      GoogleSignInAccount? googleUser;
-      try {
-        googleUser = await googleSignIn.signIn();
-      } catch (e) {
-        // #region agent log
-        unawaited(agentLog(
-          hypothesisId: 'H4',
-          location: 'lib/features/auth/providers/auth_repository.dart:signInWithGoogle:googleSignIn.catch',
-          message: 'googleSignIn.signIn threw',
-          data: {
-            'type': e.runtimeType.toString(),
-            'msg': e.toString().substring(0, e.toString().length.clamp(0, 200)),
-          },
-        ));
-        // #endregion agent log
-        debugPrint('Google Sign-In error: $e');
-        return null;
-      }
-
-      // #region agent log
-      unawaited(agentLog(
-        hypothesisId: 'H2',
-        location: 'lib/features/auth/providers/auth_repository.dart:signInWithGoogle:afterGoogleSignIn',
-        message: 'googleSignIn.signIn completed',
-        data: {
-          'googleUserNull': googleUser == null,
-        },
-      ));
-      // #endregion agent log
-
-      if (googleUser == null) return null;
-
-      final googleAuth = await googleUser.authentication;
-
-      // #region agent log
-      unawaited(agentLog(
-        hypothesisId: 'H3',
-        location: 'lib/features/auth/providers/auth_repository.dart:signInWithGoogle:afterAuth',
-        message: 'googleUser.authentication completed',
-        data: {
-          'hasIdToken': googleAuth.idToken != null,
-          'hasAccessToken': googleAuth.accessToken != null,
-        },
-      ));
-      // #endregion agent log
-
-      final AuthCredential credential = GoogleAuthProvider.credential(
-        idToken: googleAuth.idToken,
-        accessToken: googleAuth.accessToken,
+    if (kIsWeb) {
+      // Na webe OAuth redirect — výsledok zachytí onAuthStateChange po reloade.
+      await _sb.auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: Uri.base.origin,
       );
-
-      final result = await _auth.signInWithCredential(credential);
-      final user = result.user;
-
-      // #region agent log
-      unawaited(agentLog(
-        hypothesisId: 'H1',
-        location: 'lib/features/auth/providers/auth_repository.dart:signInWithGoogle:afterCredential',
-        message: 'FirebaseAuth.signInWithCredential completed',
-        data: {
-          'firebaseUserNull': user == null,
-          'isAnonymous': user?.isAnonymous ?? false,
-        },
-      ));
-      // #endregion agent log
-
-      if (user == null) return null;
-
-      final userModel = UserModel(
-        id: user.uid,
-        email: user.email ?? '',
-        displayName: user.displayName,
-        photoUrl: user.photoURL,
-        isAnonymous: user.isAnonymous,
-      );
-
-      _authStateController.add(userModel);
-      return userModel;
-    } catch (e) {
-      // #region agent log
-      unawaited(agentLog(
-        hypothesisId: 'H5',
-        location: 'lib/features/auth/providers/auth_repository.dart:signInWithGoogle:outerCatch',
-        message: 'signInWithGoogle threw (outer catch)',
-        data: {
-          'type': e.runtimeType.toString(),
-          'msg': e.toString().substring(0, e.toString().length.clamp(0, 200)),
-        },
-      ));
-      // #endregion agent log
-      debugPrint('Firebase Auth error: $e');
-      rethrow;
+      return null;
     }
-  }
 
-  Future<UserModel?> signInAnonymously() async {
-    try {
-      final result = await _auth.signInAnonymously();
-      final user = result.user;
-      if (user == null) return null;
-      final userModel = UserModel(
-        id: user.uid,
-        email: '', // Anonymous users don't have email
-        displayName: 'Demo User',
-        photoUrl: null,
-        isAnonymous: true,
-      );
-      _authStateController.add(userModel);
-      return userModel;
-    } catch (e) {
-      rethrow;
+    // Natívne: google_sign_in → ID token → Supabase signInWithIdToken.
+    // serverClientId musí byť Web OAuth client ID z Google Cloud (nakonfiguruj
+    // ho v Supabase Auth → Google providers).
+    const webClientId = String.fromEnvironment('GOOGLE_WEB_CLIENT_ID');
+    final googleSignIn = GoogleSignIn(
+      scopes: const ['email', 'profile'],
+      serverClientId: webClientId.isEmpty ? null : webClientId,
+    );
+
+    final googleUser = await googleSignIn.signIn();
+    if (googleUser == null) return null; // používateľ zrušil
+    final googleAuth = await googleUser.authentication;
+    final idToken = googleAuth.idToken;
+    if (idToken == null) {
+      throw const AuthException('Google neposkytol ID token.');
     }
+
+    final res = await _sb.auth.signInWithIdToken(
+      provider: OAuthProvider.google,
+      idToken: idToken,
+      accessToken: googleAuth.accessToken,
+    );
+    final u = res.user;
+    return u == null ? null : _fromUser(u);
   }
 
   Future<void> signOut() async {
-    _currentUser = null;
     try {
       await GoogleSignIn().signOut();
     } catch (_) {
       // ignore
     }
-    await _auth.signOut();
-    _authStateController.add(null);
+    await _client?.auth.signOut();
   }
 
-  /// Deletes the current user account and ALL associated data.
-  /// Calls the server-side deleteUserData Cloud Function which performs cascade deletion:
-  /// - Firestore documents (invoices, expenses, settings, messages, receipts)
-  /// - Storage files (users/{uid}/*)
-  /// - Firebase Auth user record
-  ///
-  /// Throws [FirebaseAuthException] if re-authentication is required.
+  /// Zmaže účet + všetky dáta cez edge funkciu `delete-account`
+  /// (kaskádové mazanie riadkov + storage na strane servera so service_role).
   Future<void> deleteAccount() async {
-    final user = _auth.currentUser;
-    if (user == null) throw Exception('Žiadny prihlásený používateľ.');
-
-    try {
-      // Call Cloud Function for cascade deletion (Firestore + Storage + Auth)
-      final callable = FirebaseFunctions.instance.httpsCallable('deleteUserData');
-      await callable.call();
-
-      // Server deleted the auth user; sign out locally
-      _currentUser = null;
-      _authStateController.add(null);
-      try { await GoogleSignIn().signOut(); } catch (_) {}
-    } on FirebaseFunctionsException catch (e) {
-      if (e.code == 'unauthenticated') {
-        // Server reports auth issue — likely needs recent login
-        throw FirebaseAuthException(code: 'requires-recent-login', message: e.message ?? '');
-      }
-      rethrow;
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'requires-recent-login') {
-        rethrow;
-      }
-      rethrow;
-    }
+    await _sb.functions.invoke('delete-account');
+    await signOut();
   }
 
-  void dispose() {
-    _authSubscription?.cancel();
-    _authStateController.close();
-  }
+  void dispose() {}
 }

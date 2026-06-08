@@ -26,6 +26,10 @@ dependencies:
   firebase_ui_auth: ^1.16.1
   firebase_ui_oauth_google: ^1.4.1
   firebase_remote_config: ^5.0.0
+
+  # Supabase (migrácia DB/Auth/Storage z Firebase — Firebase ostáva počas prechodu)
+  supabase_flutter: ^2.14.1
+
   in_app_purchase: ^3.2.0
 
   # State Management

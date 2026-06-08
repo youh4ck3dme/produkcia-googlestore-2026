@@ -25,7 +25,6 @@ import '../../../core/ui/biz_theme.dart';
 import '../../../shared/widgets/biz_widgets.dart';
 import '../../../shared/widgets/notification_bell.dart';
 import '../../../shared/widgets/biz_glass_appbar.dart';
-import '../../../core/demo_mode/demo_mode.dart';
 import '../../../core/config/play_release_scope.dart';
 import '../../../core/config/product_copy.dart';
 import '../../billing/subscription_guard.dart';
@@ -108,46 +107,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Flexible(
-              child: GestureDetector(
-                onTap: PlayReleaseScope.showDemoModeGesture
-                    ? () {
-                        final demo = DemoModeService.instance;
-                        demo.recordLogoTap();
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                demo.isDemoMode ? 'Demo mód zapnutý' : 'Demo mód vypnutý',
-                              ),
-                              duration: const Duration(seconds: 2),
-                            ),
-                          );
-                        }
-                      }
-                    : null,
-                child: Text(
-                  context.t(AppStr.spdTitle),
-                  style: Theme.of(context).appBarTheme.titleTextStyle,
-                  overflow: TextOverflow.ellipsis,
-                ),
+              child: Text(
+                context.t(AppStr.spdTitle),
+                style: Theme.of(context).appBarTheme.titleTextStyle,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
             const SizedBox(width: 8),
-            ListenableBuilder(
-              listenable: DemoModeService.instance,
-              builder: (context, _) {
-                if (!DemoModeService.instance.isDemoMode) return const SizedBox.shrink();
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: Chip(
-                    label: const Text('Demo'),
-                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                    padding: EdgeInsets.zero,
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                );
-              },
-            ),
             const ZenLock(),
           ],
         ),

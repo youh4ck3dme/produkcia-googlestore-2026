@@ -23,22 +23,12 @@ import 'package:bizagent/features/expenses/services/categorization_service.dart'
 import 'package:bizagent/features/expenses/services/receipt_storage_service.dart';
 
 import '../../helpers/test_app.dart';
+import '../../helpers/memory_local_persistence.dart';
 
 const _testUser = UserModel(
   id: 'test-user-ocr',
   email: 'ocr@test.example.com',
 );
-
-class FakeLocalPersistenceService extends LocalPersistenceService {
-  @override
-  List<Map<String, dynamic>> getExpenses() => [];
-
-  @override
-  Future<void> saveExpense(String id, Map<String, dynamic> data) async {}
-
-  @override
-  Future<void> deleteExpense(String id) async {}
-}
 
 class MockFirebaseAnalytics extends Fake implements FirebaseAnalytics {
   @override
@@ -134,13 +124,13 @@ class MockGeminiForExpenseParser extends GeminiService {
 void main() {
   group('Create expense OCR flow', () {
     late FakeFirebaseFirestore fakeFirestore;
-    late FakeLocalPersistenceService fakePersistence;
+    late MemoryLocalPersistenceService fakePersistence;
     late String receiptPath;
     late Directory tempDir;
 
     setUp(() async {
       fakeFirestore = FakeFirebaseFirestore();
-      fakePersistence = FakeLocalPersistenceService();
+      fakePersistence = MemoryLocalPersistenceService();
       tempDir = await Directory.systemTemp.createTemp('ocr_flow_test');
       final file = File('${tempDir.path}/receipt.jpg');
       await file.writeAsString('fake receipt image');
@@ -162,7 +152,7 @@ void main() {
           AnalyticsService(MockFirebaseAnalytics()),
         ),
         expensesRepositoryProvider.overrideWithValue(
-          ExpensesRepository(fakeFirestore, fakePersistence),
+          ExpensesRepository(null, fakePersistence),
         ),
         categorizationServiceProvider.overrideWithValue(
           CategorizationService(fakeFirestore),
@@ -209,14 +199,9 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      final snapshot = await fakeFirestore
-          .collection('users')
-          .doc(_testUser.id)
-          .collection('expenses')
-          .get();
-
-      expect(snapshot.docs.length, 1);
-      final data = snapshot.docs.first.data();
+      final saved = fakePersistence.getExpenses();
+      expect(saved.length, 1);
+      final data = saved.first;
       expect(data['vendorName'], '36396567');
       expect(data['amount'], 42.99);
       expect(data['isOcrVerified'], isTrue);

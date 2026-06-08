@@ -4,10 +4,11 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../supabase/supabase_config.dart';
 
 // REMOVED: hardcoded key eliminated for security
-// All platforms now route through Cloud Functions — no client-side API key needed.
+// AI volania idú cez Supabase Edge Function `generate-content` — žiadny kľúč v klientovi.
 
 class GeminiService {
   // Multi-model strategy with automatic fallback
@@ -47,67 +48,64 @@ class GeminiService {
       return cached;
     }
 
-    // All platforms: use Cloud Functions for security
+    // AI cez Supabase Edge Function `generate-content` (Mistral primary + Gemini fallback).
+    if (!SupabaseConfig.isReady) {
+      return 'AI Offline: služba nie je nakonfigurovaná.';
+    }
+
     try {
-      debugPrint('Gemini API: Using Cloud Function');
-      final functions = FirebaseFunctions.instance;
-      final callable = functions.httpsCallable('generateContent');
+      debugPrint('AI: volám Supabase Edge Function generate-content');
+      final res = await SupabaseConfig.client.functions.invoke(
+        'generate-content',
+        body: {'prompt': prompt},
+      );
 
-      final result = await callable.call({
-        'prompt': prompt,
-      });
+      final data = res.data;
+      final responseText = (data is Map ? data['text'] as String? : null) ??
+          'AI nevrátilo žiadny text.';
+      final usedModel =
+          (data is Map ? data['model'] as String? : null) ?? modelName;
 
-      final responseText = result.data['text'] as String? ?? 'AI nevrátilo žiadny text.';
-      final usedModel = result.data['model'] as String? ?? modelName;
-
-      // Cache the successful result
       _addToCache(cacheKey, responseText);
 
-      // Record successful analytics
       _recordAnalytics(
         model: usedModel,
         fromCache: false,
         responseTime: DateTime.now().difference(startTime),
       );
 
-      // Update current model
       if (usedModel != modelName) {
         modelName = usedModel;
         debugPrint('Switched to working model: $usedModel');
       }
 
-      debugPrint('Gemini API success with $usedModel');
-
+      debugPrint('AI success with $usedModel');
       return responseText;
+    } on FunctionException catch (e) {
+      debugPrint('Edge Function error: ${e.status} - ${e.details}');
 
-    } on FirebaseFunctionsException catch (e) {
-      debugPrint('Cloud Function error: ${e.code} - ${e.message}');
-      
       String errorMessage = 'AI Offline: Nepodarilo sa pripojiť k AI službe.';
-      
-      if (e.code == 'permission-denied' || e.code == 'unauthenticated') {
+      if (e.status == 401 || e.status == 403) {
         errorMessage = 'Chyba autentifikácie. Prosím, prihláste sa znova.';
-      } else if (e.code == 'resource-exhausted') {
+      } else if (e.status == 429) {
         errorMessage = 'Dosiahli ste limit bezplatných dopytov. Skúste to neskôr.';
-      } else if (e.code == 'failed-precondition') {
-        errorMessage = 'AI služba nie je správne nakonfigurovaná. Kontaktujte podporu.';
-      } else if (e.message?.contains('quota') == true) {
-        errorMessage = 'Dosiahli ste limit bezplatných dopytov (Quota Exceeded). Skúste to neskôr.';
+      } else if (e.status == 503) {
+        errorMessage = 'AI dočasne nedostupné. Skúste to o chvíľu znova.';
       }
 
       _recordAnalytics(
-        model: 'cloud_function_error',
+        model: 'edge_function_error',
         fromCache: false,
         responseTime: DateTime.now().difference(startTime),
-        error: e.code,
+        error: e.status.toString(),
       );
 
       return errorMessage;
     } catch (e) {
-      debugPrint('Unexpected Cloud Function error: $e');
-      
+      debugPrint('Unexpected Edge Function error: $e');
+
       _recordAnalytics(
-        model: 'cloud_function_unexpected',
+        model: 'edge_function_unexpected',
         fromCache: false,
         responseTime: DateTime.now().difference(startTime),
         error: 'unexpected_error',

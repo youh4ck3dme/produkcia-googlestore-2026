@@ -1,0 +1,87 @@
+name: Integration Tests (Device)
+
+on:
+  push:
+    branches: [main, master, develop, 'checkpoint/**']
+  pull_request:
+    branches: [main, master, develop]
+  workflow_dispatch:
+
+concurrency:
+  group: integration-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: '3.38.7'
+  JAVA_VERSION: '17'
+
+jobs:
+  integration-vm:
+    name: Integration Tests (VM — bez Xcode)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - run: flutter config --no-enable-swift-package-manager
+      - run: flutter pub get
+      - run: flutter test test/integration_mvp/ --dart-define=PLAY_MVP=true --dart-define=CI=true
+
+  integration-android:
+    name: Integration Tests (Android Emulator)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    needs: integration-vm
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - run: flutter config --no-enable-swift-package-manager
+      - run: flutter pub get
+      - run: yes | flutter doctor --android-licenses || true
+
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          script: flutter test integration_test/ --dart-define=PLAY_MVP=true --dart-define=CI=true
+
+  integration-macos:
+    name: Integration Tests (macOS native)
+    runs-on: macos-14
+    timeout-minutes: 45
+    needs: integration-vm
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - run: bash scripts/prepare_macos_integration.sh
+      - run: flutter test integration_test/ -d macos --dart-define=PLAY_MVP=true --dart-define=CI=true

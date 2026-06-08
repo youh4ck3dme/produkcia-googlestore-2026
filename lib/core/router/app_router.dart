@@ -31,7 +31,6 @@ import '../../features/intro/screens/modern_onboarding_screen.dart';
 import '../../features/invoices/models/invoice_model.dart';
 import '../../features/expenses/models/expense_model.dart';
 import '../../features/expenses/screens/create_expense_screen.dart';
-import '../../features/expenses/screens/voice_expense_screen.dart';
 
 
 import '../../features/export/screens/export_screen.dart';
@@ -141,11 +140,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           }
           return const CreateExpenseScreen();
         },
-      ),
-      GoRoute(
-        path: '/voice-expense',
-        parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const VoiceExpenseScreen(),
       ),
 
       GoRoute(
@@ -258,7 +252,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/ai-tools',
-                builder: (context, state) => const AiToolsScreen(),
+                // Play MVP: vetva slúži ako „Asistent" → priamo BizBot.
+                // Dev/full build: plný AI hub.
+                builder: (context, state) => PlayReleaseScope.playMvp
+                    ? const BizBotScreen()
+                    : const AiToolsScreen(),
                 routes: [
 
                   GoRoute(

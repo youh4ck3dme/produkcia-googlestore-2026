@@ -1,5 +1,4 @@
 import * as functions from "firebase-functions";
-import fetch from "node-fetch";
 
 /**
  * Validates reCAPTCHA Enterprise token.

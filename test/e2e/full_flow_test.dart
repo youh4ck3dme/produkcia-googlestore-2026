@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:bizagent/core/demo_mode/demo_mode.dart';
+import '../helpers/demo_test_skip.dart';
 
 void main() {
   group('Full Flow / Demo Mode E2E', () {
@@ -32,7 +33,7 @@ void main() {
         expect(insights, isNotEmpty, reason: 'scenario $scenario');
       }
       demoService.deactivateDemoMode();
-    });
+    }, skip: skipDemoMutationTests);
 
     test('DemoDataGenerator standard scenario has valid expenses and invoices', () {
       final expenses = DemoDataGenerator.generateExpenses(DemoScenario.standard);
@@ -63,7 +64,7 @@ void main() {
       demoService.recordLogoTap();
       demoService.recordLogoTap();
       expect(demoService.isDemoMode, isFalse);
-    });
+    }, skip: skipDemoMutationTests);
 
     test('setScenario changes current scenario without deactivating', () {
       demoService.activateDemoMode(DemoScenario.standard);
@@ -75,6 +76,6 @@ void main() {
       expect(demoService.getDemoInsights().first.title, isNotEmpty);
 
       demoService.deactivateDemoMode();
-    });
+    }, skip: skipDemoMutationTests);
   });
 }

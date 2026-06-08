@@ -9,7 +9,7 @@ import 'package:bizagent/features/auth/providers/auth_repository.dart';
 import 'package:bizagent/features/billing/billing_service.dart';
 import 'package:bizagent/features/entitlements/user_entitlements.dart';
 import 'package:bizagent/features/limits/usage_limiter.dart';
-import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
+import '../../helpers/fake_bizbot_history_repository.dart';
 import 'package:mockito/mockito.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -39,7 +39,6 @@ void main() {
   });
 
   Widget createWidgetUnderTest(MockBizBotService mockService) {
-    final fakeFs = FakeFirebaseFirestore();
     const fakeUser = UserModel(
       id: 'test-uid',
       email: 'test@example.com',
@@ -51,7 +50,7 @@ void main() {
       overrides: [
         bizBotServiceProvider.overrideWithValue(mockService),
         authStateProvider.overrideWith((ref) => Stream.value(fakeUser)),
-        bizBotHistoryRepositoryProvider.overrideWithValue(BizBotHistoryRepository(fakeFs)),
+        bizBotHistoryRepositoryProvider.overrideWithValue(FakeBizBotHistoryRepository()),
         billingProvider.overrideWith(
           (ref) => BillingService.forTest(
             BillingState(entitlements: UserEntitlements(isPro: true)),

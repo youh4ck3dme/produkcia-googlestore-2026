@@ -1,8 +1,8 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show AuthException;
 import '../../../core/ui/biz_theme.dart';
 import '../../../core/debug/agent_log.dart';
 import '../providers/auth_repository.dart';
@@ -44,12 +44,14 @@ class _FirebaseLoginScreenState extends ConsumerState<FirebaseLoginScreen> {
 
     setState(() => _isLoading = true);
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-      );
-    } on FirebaseAuthException catch (e) {
-      _showError(_getFirebaseErrorMessage(e.code));
+      await ref.read(authRepositoryProvider).signIn(
+            _emailController.text.trim(),
+            _passwordController.text,
+          );
+    } on AuthException catch (e) {
+      _showError(_getAuthErrorMessage(e));
+    } catch (e) {
+      _showError('Došlo k chybe. Skúste znovu');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -73,12 +75,14 @@ class _FirebaseLoginScreenState extends ConsumerState<FirebaseLoginScreen> {
 
     setState(() => _isLoading = true);
     try {
-      await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-      );
-    } on FirebaseAuthException catch (e) {
-      _showError(_getFirebaseErrorMessage(e.code));
+      await ref.read(authRepositoryProvider).signUp(
+            _emailController.text.trim(),
+            _passwordController.text,
+          );
+    } on AuthException catch (e) {
+      _showError(_getAuthErrorMessage(e));
+    } catch (e) {
+      _showError('Došlo k chybe. Skúste znovu');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -110,16 +114,16 @@ class _FirebaseLoginScreenState extends ConsumerState<FirebaseLoginScreen> {
         // #endregion agent log
         _showError('Prihlásenie bolo zrušené alebo zlyhalo.');
       }
-    } on FirebaseAuthException catch (e) {
+    } on AuthException catch (e) {
       // #region agent log
       agentLog(
         hypothesisId: 'H3',
-        location: 'lib/features/auth/screens/firebase_login_screen.dart:_signInWithGoogle:FirebaseAuthException',
-        message: 'FirebaseAuthException during Google sign-in',
-        data: {'code': e.code},
+        location: 'lib/features/auth/screens/firebase_login_screen.dart:_signInWithGoogle:AuthException',
+        message: 'AuthException during Google sign-in',
+        data: {'msg': e.message},
       );
       // #endregion agent log
-      _showError(_getFirebaseErrorMessage(e.code));
+      _showError(_getAuthErrorMessage(e));
     } catch (e) {
       // #region agent log
       agentLog(
@@ -147,23 +151,30 @@ class _FirebaseLoginScreenState extends ConsumerState<FirebaseLoginScreen> {
     );
   }
 
-  String _getFirebaseErrorMessage(String code) {
-    switch (code) {
-      case 'user-not-found':
-        return 'Používateľ s týmto emailom neexistuje';
-      case 'wrong-password':
-        return 'Nesprávne heslo';
-      case 'email-already-in-use':
-        return 'Tento email je už registrovaný';
-      case 'weak-password':
-        return 'Heslo je príliš slabé';
-      case 'invalid-email':
-        return 'Neplatný email';
-      case 'too-many-requests':
-        return 'Príliš veľa pokusov. Skúste neskôr';
-      default:
-        return 'Došlo k chybe. Skúste znovu';
+  String _getAuthErrorMessage(AuthException e) {
+    final msg = e.message.toLowerCase();
+    if (msg.contains('invalid login') || msg.contains('invalid credentials')) {
+      return 'Nesprávny email alebo heslo';
     }
+    if (msg.contains('already registered') || msg.contains('already exists')) {
+      return 'Tento email je už registrovaný';
+    }
+    if (msg.contains('password') && msg.contains('weak')) {
+      return 'Heslo je príliš slabé';
+    }
+    if (msg.contains('password') && (msg.contains('least') || msg.contains('6'))) {
+      return 'Heslo musí mať aspoň 6 znakov';
+    }
+    if (msg.contains('email') && msg.contains('valid')) {
+      return 'Neplatný email';
+    }
+    if (msg.contains('confirm') || msg.contains('not confirmed')) {
+      return 'Potvrďte email kliknutím na odkaz v doručenej pošte';
+    }
+    if (msg.contains('rate') || msg.contains('too many')) {
+      return 'Príliš veľa pokusov. Skúste neskôr';
+    }
+    return e.message.isNotEmpty ? e.message : 'Došlo k chybe. Skúste znovu';
   }
 
   @override

@@ -1,4 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show AuthException;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -422,16 +422,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       if (!mounted) return;
       BizSnackbar.showSuccess(context, 'Účet bol úspešne zmazaný.');
       // Router redirect will handle navigation to login
-    } on FirebaseAuthException catch (e) {
+    } on AuthException catch (e) {
       if (!mounted) return;
-      if (e.code == 'requires-recent-login') {
-        BizSnackbar.showError(
-          context,
-          'Pre zmazanie účtu sa musíte znova prihlásiť. Odhláste sa a prihláste znova, potom skúste znova.',
-        );
-      } else {
-        BizSnackbar.showError(context, 'Chyba pri mazaní účtu: ${e.message}');
-      }
+      BizSnackbar.showError(context, 'Chyba pri mazaní účtu: ${e.message}');
     } catch (e) {
       if (!mounted) return;
       BizSnackbar.showError(context, 'Neočakávaná chyba: $e');

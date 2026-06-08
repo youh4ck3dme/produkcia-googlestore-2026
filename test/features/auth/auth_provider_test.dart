@@ -70,21 +70,6 @@ class MockAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<UserModel?> signInAnonymously() async {
-    if (_shouldThrow) {
-      throw Exception(_throwError ?? 'Anonymous sign in failed');
-    }
-    _currentUser = const UserModel(
-      id: 'anonymous123',
-      email: '',
-      displayName: 'Demo User',
-      isAnonymous: true,
-    );
-    _authStateController.add(_currentUser);
-    return _currentUser;
-  }
-
-  @override
   Future<void> signOut() async {
     if (_shouldThrow) {
       throw Exception(_throwError ?? 'Sign out failed');

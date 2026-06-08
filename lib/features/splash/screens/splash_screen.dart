@@ -13,14 +13,36 @@ class SplashScreen extends ConsumerStatefulWidget {
   ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends ConsumerState<SplashScreen> {
+class _SplashScreenState extends ConsumerState<SplashScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _fade;
+  late final Animation<double> _scale;
+
   @override
   void initState() {
     super.initState();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1100),
+    );
+    _fade = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
+    _scale = Tween<double>(begin: 0.92, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
+    );
+    _controller.forward();
+
     // Start initialization when screen mounts
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(initializationServiceProvider.notifier).initializeApp();
     });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   void _checkAuth() {
@@ -54,16 +76,23 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     });
 
     return Scaffold(
+      // Zhodné s natívnym launch screen pozadím → žiadny skok pri štarte.
       backgroundColor: Colors.white,
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // 1. Branding Image (Fullscreen or large)
-          Image.asset(
-            'assets/images/splash_branding.webp',
-            fit: BoxFit.cover,
+          // 1. Branding Image — jemný fade + scale-in (plynulý nástup).
+          FadeTransition(
+            opacity: _fade,
+            child: ScaleTransition(
+              scale: _scale,
+              child: Image.asset(
+                'assets/images/splash_branding.webp',
+                fit: BoxFit.cover,
+              ),
+            ),
           ),
-          
+
           // 2. Overlay Gradient for readability
           Container(
             decoration: BoxDecoration(
@@ -79,46 +108,58 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
             ),
           ),
 
-          // 3. Loading Content at Bottom
+          // 3. Loading Content at Bottom — animovaný progress (plynulé napredovanie).
           Positioned(
             left: 20,
             right: 20,
             bottom: 60,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  initState.message,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: initState.progress,
-                    minHeight: 6,
-                    backgroundColor: Colors.white.withValues(alpha: 0.2),
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      BizTheme.slovakBlue,
+            child: FadeTransition(
+              opacity: _fade,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: Text(
+                      initState.message,
+                      key: ValueKey(initState.message),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Text(
-                    '${(initState.progress * 100).toInt()}%',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.8),
-                      fontSize: 12,
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: TweenAnimationBuilder<double>(
+                      tween: Tween<double>(begin: 0, end: initState.progress),
+                      duration: const Duration(milliseconds: 400),
+                      curve: Curves.easeOut,
+                      builder: (context, value, _) => LinearProgressIndicator(
+                        value: value == 0 ? null : value,
+                        minHeight: 6,
+                        backgroundColor: Colors.white.withValues(alpha: 0.2),
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          BizTheme.slovakBlue,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      '${(initState.progress * 100).toInt()}%',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.8),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],

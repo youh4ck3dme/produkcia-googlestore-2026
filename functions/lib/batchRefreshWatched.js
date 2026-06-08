@@ -32,14 +32,10 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.refreshCompanyNow = exports.batchRefreshWatched = void 0;
 const functions = __importStar(require("firebase-functions/v1"));
 const admin = __importStar(require("firebase-admin"));
-const node_fetch_1 = __importDefault(require("node-fetch"));
 admin.initializeApp();
 const db = admin.firestore();
 const ICOATLAS = "https://icoatlas.sk/api/lookup";
@@ -68,14 +64,14 @@ exports.refreshCompanyNow = functions.https.onRequest(async (req, res) => {
     res.send("OK");
 });
 async function refreshCompany(icoNorm, uid) {
-    const res = await (0, node_fetch_1.default)(`${ICOATLAS}?ico=${icoNorm}`, {
+    const res = await fetch(`${ICOATLAS}?ico=${icoNorm}`, {
         headers: {
             "X-Api-Key": process.env.ICOATLAS_API_KEY,
         },
     });
     if (!res.ok)
         return;
-    const fresh = await res.json();
+    const fresh = (await res.json());
     const ref = db.collection("companies").doc(icoNorm);
     const snap = await ref.get();
     if (!snap.exists) {
@@ -101,7 +97,7 @@ async function refreshCompany(icoNorm, uid) {
             changedAt: admin.firestore.FieldValue.serverTimestamp(),
             diff: diff(old, fresh),
         });
-        await notifyUser(uid, icoNorm, fresh.name);
+        await notifyUser(uid, icoNorm, fresh.name ?? icoNorm);
     }
 }
 function hasMeaningfulChange(old, fresh) {

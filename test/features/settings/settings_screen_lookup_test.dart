@@ -48,7 +48,7 @@ class FakeCompanyLookupService implements CompanyLookupService {
 }
 
 class FakeSettingsRepository extends SettingsRepository {
-  FakeSettingsRepository() : super(FakeFirebaseFirestore());
+  FakeSettingsRepository() : super(null);
 
   @override
   Stream<UserSettingsModel> watchSettings(String userId) {

@@ -48,5 +48,42 @@ void main() {
       
       expect(borderRadius.topLeft.x, BizTheme.radiusMd, reason: 'Buttons should use radiusMd (8.0)');
     });
+
+    test('Input decoration uses visible borders and premium radius', () {
+      final inputTheme = BizTheme.light().inputDecorationTheme;
+
+      final enabled = inputTheme.enabledBorder as OutlineInputBorder?;
+      final focused = inputTheme.focusedBorder as OutlineInputBorder?;
+
+      expect(enabled?.borderSide.color, BizTheme.gray200);
+      expect(enabled?.borderSide.width, 1);
+      expect(focused?.borderSide.color, BizTheme.slovakBlue);
+      expect(focused?.borderSide.width, 2);
+      expect(
+        enabled?.borderRadius,
+        BorderRadius.circular(BizTheme.inputRadius),
+      );
+      expect(inputTheme.fillColor, BizTheme.tatraWhite);
+    });
+
+    test('formSectionDecoration matches premium card styling', () {
+      final light = BizTheme.formSectionDecoration(isDark: false);
+      final dark = BizTheme.formSectionDecoration(isDark: true);
+
+      expect(light.color, BizTheme.tatraWhite);
+      expect(light.border, isNotNull);
+      expect(dark.color, BizTheme.darkSurfaceVariant);
+      expect(light.boxShadow, isNotEmpty);
+    });
+
+    test('Card theme uses bordered sections without elevation', () {
+      final cardTheme = BizTheme.light().cardTheme;
+
+      expect(cardTheme.elevation, 0);
+      expect(cardTheme.margin, EdgeInsets.zero);
+      final shape = cardTheme.shape as RoundedRectangleBorder?;
+      expect(shape?.side.color, BizTheme.gray200);
+      expect(shape?.borderRadius, BorderRadius.circular(BizTheme.radiusLg));
+    });
   });
 }

@@ -94,13 +94,17 @@ class _InsightCard extends StatelessWidget {
                         children: [
                           Row(
                             children: [
-                              Text(
-                                context.t(AppStr.aiInsightTag),
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 1.2,
-                                  color: insight.color,
+                              Flexible(
+                                child: Text(
+                                  context.t(AppStr.aiInsightTag),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 1.2,
+                                    color: insight.color,
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -125,6 +129,8 @@ class _InsightCard extends StatelessWidget {
                           ),
                           Text(
                             insight.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                              fontSize: 12.8, // Reduced by 20% (16 * 0.8)
                               fontWeight: FontWeight.bold,

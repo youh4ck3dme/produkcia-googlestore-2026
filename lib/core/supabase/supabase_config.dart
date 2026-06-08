@@ -24,13 +24,15 @@ class SupabaseConfig {
   /// True po úspešnom [initialize] v tomto procese.
   static bool get isReady => isConfigured && _initialized;
 
-  static Future<void> initialize() async {
+  static Future<void> initialize({
+    AuthFlowType authFlowType = AuthFlowType.pkce,
+  }) async {
     if (!isConfigured || _initialized) return;
     await Supabase.initialize(
       url: url,
       publishableKey: publishableKey,
-      authOptions: const FlutterAuthClientOptions(
-        authFlowType: AuthFlowType.pkce,
+      authOptions: FlutterAuthClientOptions(
+        authFlowType: authFlowType,
       ),
     );
     _initialized = true;

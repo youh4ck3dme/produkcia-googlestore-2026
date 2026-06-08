@@ -9,6 +9,8 @@ import 'package:bizagent/features/dashboard/widgets/smart_insights_widget.dart';
 import 'package:bizagent/core/i18n/l10n.dart';
 import 'package:bizagent/shared/widgets/biz_shimmer.dart';
 
+import '../../helpers/layout_test_helpers.dart';
+
 void main() {
   group('SmartInsightsWidget', () {
     testWidgets('should display loading state', (tester) async {
@@ -168,6 +170,46 @@ void main() {
       final container = tester.widget<SizedBox>(find.byType(SizedBox).first);
       expect(container.width, 0);
       expect(container.height, 0);
+    });
+
+    testWidgets('long titles do not overflow on narrow viewports', (tester) async {
+      addTearDown(() => resetTestView(tester));
+      final mockInsights = [
+        ExpenseInsight(
+          id: '1',
+          title:
+              'Veľmi dlhý názov postrehu pre úzke zobrazenie mobilného dashboardu',
+          description:
+              'Popis insightu, ktorý musí zostať v layoute bez horizontálneho pretečenia aj pri zväčšenom texte.',
+          icon: Icons.insights,
+          color: Colors.blue,
+          priority: InsightPriority.high,
+          createdAt: DateTime.now(),
+          category: 'test',
+        ),
+      ];
+
+      await pumpAtViewport(
+        tester,
+        ProviderScope(
+          overrides: [
+            expenseInsightsProvider.overrideWith((ref) => mockInsights),
+          ],
+          child: const MaterialApp(
+            home: L10n(
+              locale: AppLocale.sk,
+              child: Scaffold(
+                body: SmartInsightsWidget(),
+              ),
+            ),
+          ),
+        ),
+        physicalSize: const Size(320, 480),
+        textScaleFactor: 1.3,
+      );
+
+      expect(find.text('DÔLEŽITÉ'), findsOneWidget);
+      expectNoLayoutOverflow(tester);
     });
 
     testWidgets('should be tappable and navigate on tap', (tester) async {

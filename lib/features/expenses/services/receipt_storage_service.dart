@@ -1,22 +1,21 @@
 import 'package:universal_io/io.dart';
 import 'package:flutter/foundation.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as path;
-import '../../auth/providers/auth_repository.dart';
 
-/// Injectable for tests; production uses [FirebaseStorage.instance].
-final firebaseStorageProvider = Provider<FirebaseStorage>((ref) {
-  return FirebaseStorage.instance;
-});
+import '../../auth/providers/auth_repository.dart';
+import '../../../core/supabase/supabase_storage_client.dart';
 
 final receiptStorageServiceProvider = Provider<ReceiptStorageService>((ref) {
-  return ReceiptStorageService(ref, ref.read(firebaseStorageProvider));
+  return ReceiptStorageService(
+    ref,
+    ref.read(supabaseStorageClientProvider),
+  );
 });
 
 class ReceiptStorageService {
   final Ref _ref;
-  final FirebaseStorage _storage;
+  final SupabaseStorageClient _storage;
 
   ReceiptStorageService(this._ref, this._storage);
 
@@ -32,21 +31,12 @@ class ReceiptStorageService {
 
       final fileName =
           '${DateTime.now().millisecondsSinceEpoch}_${path.basename(filePath)}';
-      final storageRef =
-          _storage.ref().child('users/${user.id}/receipts/$fileName');
 
-      // Upload file
-      // Setup metadata if needed (e.g. content type)
-      final metadata = SettableMetadata(
-        contentType: 'image/jpeg', // Assuming jpeg mostly from camera
-        customMetadata: {
-          'uploadedBy': user.id,
-          'originalName': path.basename(filePath),
-        },
+      final downloadUrl = await _storage.uploadReceipt(
+        userId: user.id,
+        file: file,
+        fileName: fileName,
       );
-
-      final uploadTask = await storageRef.putFile(file, metadata);
-      final downloadUrl = await uploadTask.ref.getDownloadURL();
 
       return downloadUrl;
     } catch (e) {
@@ -57,8 +47,7 @@ class ReceiptStorageService {
 
   Future<void> deleteReceipt(String downloadUrl) async {
     try {
-      final ref = _storage.refFromURL(downloadUrl);
-      await ref.delete();
+      await _storage.deleteReceipt(downloadUrl);
     } catch (e) {
       debugPrint('Error deleting receipt: $e');
       // Don't rethrow, just log. It's not critical if delete fails.

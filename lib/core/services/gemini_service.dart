@@ -5,12 +5,16 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../supabase/supabase_config.dart';
+import '../supabase/supabase_functions_client.dart';
 
 // REMOVED: hardcoded key eliminated for security
 // AI volania idú cez Supabase Edge Function `generate-content` — žiadny kľúč v klientovi.
 
 class GeminiService {
+  GeminiService({SupabaseFunctionsClient? functionsClient})
+      : _functions = functionsClient ?? defaultFunctionsClient();
+
+  final SupabaseFunctionsClient _functions;
   // Multi-model strategy with automatic fallback
   // Updated to use currently supported models (January 2026)
   static const List<String> _modelPriority = [
@@ -24,8 +28,6 @@ class GeminiService {
   // Simple in-memory cache for frequent queries (LRU with max 100 entries)
   static final LinkedHashMap<String, String> _cache = LinkedHashMap<String, String>();
   static const int _maxCacheSize = 100;
-
-  GeminiService();
 
   Future<String> generateContent(String prompt) async {
     final startTime = DateTime.now();
@@ -49,13 +51,13 @@ class GeminiService {
     }
 
     // AI cez Supabase Edge Function `generate-content` (Mistral primary + Gemini fallback).
-    if (!SupabaseConfig.isReady) {
+    if (!_functions.isReady) {
       return 'AI Offline: služba nie je nakonfigurovaná.';
     }
 
     try {
       debugPrint('AI: volám Supabase Edge Function generate-content');
-      final res = await SupabaseConfig.client.functions.invoke(
+      final res = await _functions.invoke(
         'generate-content',
         body: {'prompt': prompt},
       );

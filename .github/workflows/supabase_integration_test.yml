@@ -1,0 +1,70 @@
+name: Supabase Integration Tests
+
+on:
+  push:
+    branches: [main, master, develop, 'checkpoint/**']
+  pull_request:
+    branches: [main, master, develop]
+  workflow_dispatch:
+
+concurrency:
+  group: supabase-integration-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: '3.38.7'
+
+jobs:
+  supabase-live:
+    name: Supabase live integration (test project)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - run: flutter config --no-enable-swift-package-manager
+      - run: flutter pub get
+
+      - name: Generate dart_defines/supabase.ci.json from secrets
+        env:
+          SUPABASE_TEST_URL: ${{ secrets.SUPABASE_TEST_URL }}
+          SUPABASE_TEST_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_TEST_PUBLISHABLE_KEY }}
+        run: |
+          cat > dart_defines/supabase.ci.json <<EOF
+          {
+            "SUPABASE_URL": "${SUPABASE_TEST_URL}",
+            "SUPABASE_PUBLISHABLE_KEY": "${SUPABASE_TEST_PUBLISHABLE_KEY}",
+            "GOOGLE_WEB_CLIENT_ID": ""
+          }
+          EOF
+
+      - name: Run Supabase live smoke tests
+        env:
+          SUPABASE_TEST_URL: ${{ secrets.SUPABASE_TEST_URL }}
+          SUPABASE_TEST_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_TEST_PUBLISHABLE_KEY }}
+          SUPABASE_TEST_USER_EMAIL: ${{ secrets.SUPABASE_TEST_USER_EMAIL }}
+          SUPABASE_TEST_USER_PASSWORD: ${{ secrets.SUPABASE_TEST_USER_PASSWORD }}
+        run: |
+          if [ -z "$SUPABASE_TEST_URL" ] || [ -z "$SUPABASE_TEST_PUBLISHABLE_KEY" ]; then
+            echo "Supabase secrets missing — skipping live smoke."
+            exit 0
+          fi
+          export SUPABASE_DEFINES="$PWD/dart_defines/supabase.ci.json"
+          export SUPABASE_TEST_USER_EMAIL="${SUPABASE_TEST_USER_EMAIL}"
+          export SUPABASE_TEST_USER_PASSWORD="${SUPABASE_TEST_USER_PASSWORD}"
+          bash scripts/verify_supabase_live.sh
+          flutter test test/integration/supabase/ \
+            --dart-define-from-file=dart_defines/supabase.ci.json \
+            --dart-define=SKIP_SUPABASE_LIVE=true \
+            --dart-define=PLAY_MVP=true

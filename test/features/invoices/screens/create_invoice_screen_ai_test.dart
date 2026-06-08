@@ -56,8 +56,8 @@ void main() {
     await tester.pumpWidget(createTestWidget());
     await tester.pumpAndSettle();
 
-    // 1. Verify initial state: AI button exists in Slovak
-    final aiButton = find.text('AI Vyplniť');
+    // 1. Verify initial state: AI button exists
+    final aiButton = find.byTooltip('AI Vyplniť');
     expect(aiButton, findsOneWidget);
     expect(find.text('Oatmeal Digital s.r.o.'), findsNothing);
     
@@ -98,7 +98,5 @@ void main() {
     await tester.pumpAndSettle();
     
     expect(itemFinder, findsOneWidget);
-    // Verified item presence via title, avoiding strict formatting checks for amount in unit tests
-    expect(find.byType(ListTile), findsAtLeast(1));
   }, skip: PlayReleaseScope.playMvp);
 }

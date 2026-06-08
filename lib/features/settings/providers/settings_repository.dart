@@ -1,31 +1,35 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/supabase/supabase_config.dart';
+import '../../../core/supabase/supabase_table_store.dart';
 import '../models/user_settings_model.dart';
 
 final settingsRepositoryProvider = Provider<SettingsRepository>((ref) {
   return SettingsRepository(
-    SupabaseConfig.isReady ? SupabaseConfig.client : null,
+    SupabaseConfig.isReady
+        ? SupabaseTableStore.fromClient(SupabaseConfig.client)
+        : null,
   );
 });
 
 /// Nastavenia používateľa — Supabase (tabuľka `user_settings`, 1 riadok / user).
 class SettingsRepository {
-  final SupabaseClient? _client;
+  final SupabaseTableStore? _store;
 
-  SettingsRepository(this._client);
+  SettingsRepository(this._store);
 
   static const _table = 'user_settings';
 
   Stream<UserSettingsModel> watchSettings(String userId) {
-    final client = _client;
-    if (client == null) {
+    final store = _store;
+    if (store == null || !store.isAvailable) {
       return Stream<UserSettingsModel>.value(UserSettingsModel.empty());
     }
-    return client
-        .from(_table)
-        .stream(primaryKey: ['user_id'])
-        .eq('user_id', userId)
+    return store
+        .stream(
+          _table,
+          primaryKey: ['user_id'],
+          eq: {'user_id': userId},
+        )
         .map((rows) {
       if (rows.isEmpty) return UserSettingsModel.empty();
       final data = rows.first['data'];
@@ -37,14 +41,14 @@ class SettingsRepository {
   }
 
   Future<UserSettingsModel> getSettings(String userId) async {
-    final client = _client;
-    if (client == null) return UserSettingsModel.empty();
+    final store = _store;
+    if (store == null || !store.isAvailable) return UserSettingsModel.empty();
 
-    final row = await client
-        .from(_table)
-        .select('data')
-        .eq('user_id', userId)
-        .maybeSingle();
+    final row = await store.selectMaybeSingle(
+      _table,
+      columns: ['data'],
+      eq: {'user_id': userId},
+    );
 
     final data = row?['data'];
     if (data is Map) {
@@ -54,7 +58,7 @@ class SettingsRepository {
   }
 
   Future<void> updateSettings(String userId, UserSettingsModel settings) async {
-    await _client?.from(_table).upsert({
+    await _store?.upsert(_table, {
       'user_id': userId,
       'data': settings.toMap(),
       'updated_at': DateTime.now().toIso8601String(),

@@ -1,6 +1,6 @@
 // BizAgent — AI generovanie obsahu (BizBot, e-maily, analýzy).
-// Mistral primárny, Gemini fallback. Kľúče v Supabase secrets:
-//   supabase secrets set MISTRAL_API_KEY=... MISTRAL_API_KEY_BACKUP=... GEMINI_API_KEY=... AI_PRIMARY=mistral
+// Mistral primárny. Gemini len ak explicitne nastavíš GEMINI_API_KEY.
+//   supabase secrets set MISTRAL_API_KEY=... AI_PRIMARY=mistral
 //
 // Deploy:  supabase functions deploy generate-content
 //
@@ -112,7 +112,24 @@ serve(async (req: Request) => {
       );
     }
 
-    const order = AI_PRIMARY === "gemini" ? ["gemini", "mistral"] : ["mistral", "gemini"];
+    const hasMistral = [
+      Deno.env.get("MISTRAL_API_KEY") || "",
+      Deno.env.get("MISTRAL_API_KEY_BACKUP") || "",
+    ].some((k) => k.trim().length > 0);
+    const hasGemini = (Deno.env.get("GEMINI_API_KEY") || "").trim().length > 0;
+
+    const preferred = AI_PRIMARY === "gemini" && hasGemini ? "gemini" : "mistral";
+    const order = preferred === "gemini"
+      ? (["gemini", "mistral"] as const).filter((p) => (p === "gemini" ? hasGemini : hasMistral))
+      : (["mistral", "gemini"] as const).filter((p) => (p === "mistral" ? hasMistral : hasGemini));
+
+    if (order.length === 0) {
+      return new Response(
+        JSON.stringify({ error: "AI Offline: chýba MISTRAL_API_KEY." }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     let lastErr: Error | null = null;
     for (const provider of order) {
       try {

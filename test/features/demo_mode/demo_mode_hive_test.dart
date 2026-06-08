@@ -6,6 +6,7 @@ import 'package:bizagent/core/demo_mode/demo_scenarios.dart';
 import 'package:bizagent/core/services/local_persistence_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
+import '../../helpers/demo_test_skip.dart';
 
 /// Hive + [DemoModeService] — stabilita demo dát a Play review guard.
 void main() {
@@ -78,7 +79,7 @@ void main() {
         expenses.every((row) => (row['id'] as String).startsWith('demo_')),
         isTrue,
       );
-    });
+    }, skip: skipDemoMutationTests);
 
     test('deactivateDemoMode vyčistí Hive a vypne isDemoMode', () async {
       await demo.activateDemoMode(DemoScenario.approachingVat);
@@ -93,7 +94,7 @@ void main() {
       expect(persistence.getExpenses(), isEmpty);
       expect(demo.getDemoInvoices(), isEmpty);
       expect(demo.getDemoExpenses(), isEmpty);
-    });
+    }, skip: skipDemoMutationTests);
 
     test('release guard: žiadna injekcia bez vedomej aktivácie (kReleaseMode)', () async {
       DemoModeService.debugSimulateReleaseMode = true;

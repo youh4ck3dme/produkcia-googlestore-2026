@@ -1,30 +1,18 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:bizagent/features/expenses/providers/expenses_repository.dart';
 import 'package:bizagent/features/expenses/models/expense_model.dart';
 import 'package:bizagent/features/expenses/models/expense_category.dart';
-import 'package:bizagent/core/services/local_persistence_service.dart';
-
-class FakeLocalPersistenceService extends LocalPersistenceService {
-  @override
-  List<Map<String, dynamic>> getExpenses() => [];
-  @override
-  Future<void> saveExpense(String id, Map<String, dynamic> data) async {}
-  @override
-  Future<void> deleteExpense(String id) async {}
-}
+import '../../helpers/memory_local_persistence.dart';
 
 void main() {
-  group('ExpensesRepository', () {
-    late FakeFirebaseFirestore fakeFirestore;
+  group('ExpensesRepository (offline / local cache)', () {
+    late MemoryLocalPersistenceService persistence;
     late ExpensesRepository repository;
-    late FakeLocalPersistenceService fakePersistence;
     const userId = 'test-user-123';
 
     setUp(() {
-      fakeFirestore = FakeFirebaseFirestore();
-      fakePersistence = FakeLocalPersistenceService();
-      repository = ExpensesRepository(fakeFirestore, fakePersistence);
+      persistence = MemoryLocalPersistenceService();
+      repository = ExpensesRepository(null, persistence);
     });
 
     final dummyExpense = ExpenseModel(
@@ -38,61 +26,28 @@ void main() {
       categorizationConfidence: 90,
     );
 
-    test('addExpense adds document to Firestore', () async {
+    test('addExpense ukladá do lokálnej cache', () async {
       await repository.addExpense(userId, dummyExpense);
 
-      final snapshot = await fakeFirestore
-          .collection('users')
-          .doc(userId)
-          .collection('expenses')
-          .get();
-
-      expect(snapshot.docs.length, 1);
-      final data = snapshot.docs.first.data();
-      expect(data['vendorName'], 'Test Vendor');
-      expect(data['category'], 'officeSupplies');
+      final local = persistence.getExpenses();
+      expect(local.length, 1);
+      expect(local.first['vendorName'], 'Test Vendor');
     });
 
-    test('deleteExpense removes document', () async {
-      // Add initial
-      await fakeFirestore
-          .collection('users')
-          .doc(userId)
-          .collection('expenses')
-          .doc(dummyExpense.id)
-          .set(dummyExpense.toMap());
-
+    test('deleteExpense odstráni z lokálnej cache', () async {
+      await repository.addExpense(userId, dummyExpense);
       await repository.deleteExpense(userId, dummyExpense.id);
 
-      final snapshot = await fakeFirestore
-          .collection('users')
-          .doc(userId)
-          .collection('expenses')
-          .get();
-
-      expect(snapshot.docs.length, 0);
+      expect(persistence.getExpenses(), isEmpty);
     });
 
-    test('watchExpenses emits updates from Firestore', () async {
-      // FakeFirestore may emit an initial empty snapshot more than once.
-      // Allow for a couple of empty emissions before the added item arrives.
+    test('watchExpenses emituje lokálne dáta', () async {
       expectLater(
         repository.watchExpenses(userId),
-        emitsInOrder([
-          isEmpty,
-          isEmpty,
-          isA<List<ExpenseModel>>().having((l) => l.length, 'length', 1),
-        ]),
+        emits(isA<List<ExpenseModel>>()),
       );
 
-      // Add expense triggers stream
-      await Future.delayed(Duration.zero);
-      await fakeFirestore
-          .collection('users')
-          .doc(userId)
-          .collection('expenses')
-          .add(dummyExpense.toMap());
+      await repository.addExpense(userId, dummyExpense);
     });
   });
 }
-

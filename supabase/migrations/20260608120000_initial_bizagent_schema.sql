@@ -1,21 +1,8 @@
--- ============================================================
--- BizAgent — Supabase schéma (migrácia z Firestore)
--- Kanonická verzia pre produkciu: supabase/migrations/*.sql
--- (GitHub integrácia aplikuje migrácie pri merge do main).
--- Ručný fallback: Supabase SQL editor alebo `supabase db push`.
---
--- Princíp: každá tabuľka má user_id = auth.uid() a RLS politiku,
--- ktorá dovolí prístup IBA vlastníkovi. Doménové dáta sú v `data jsonb`
--- (zachováva InvoiceModel/ExpenseModel.toMap()), navrch indexované stĺpce
--- pre zoradenie a soft-delete.
--- ============================================================
+-- BizAgent initial schema (Firestore → Supabase)
+-- Applied automatically on merge to production branch via GitHub integration.
 
--- Rozšírenia
 create extension if not exists "pgcrypto";
 
--- ----------------------------------------------------------------
--- INVOICES  (users/{uid}/invoices)
--- ----------------------------------------------------------------
 create table if not exists public.invoices (
   id          text primary key,
   user_id     uuid not null references auth.users (id) on delete cascade,
@@ -29,9 +16,6 @@ create table if not exists public.invoices (
 create index if not exists invoices_user_idx on public.invoices (user_id, date_issued desc);
 create index if not exists invoices_user_deleted_idx on public.invoices (user_id, is_deleted);
 
--- ----------------------------------------------------------------
--- EXPENSES  (users/{uid}/expenses)
--- ----------------------------------------------------------------
 create table if not exists public.expenses (
   id          text primary key,
   user_id     uuid not null references auth.users (id) on delete cascade,
@@ -43,19 +27,12 @@ create table if not exists public.expenses (
 );
 create index if not exists expenses_user_idx on public.expenses (user_id, date desc);
 
--- ----------------------------------------------------------------
--- USER SETTINGS  (users/{uid}/settings/{docId})
--- jeden riadok na používateľa
--- ----------------------------------------------------------------
 create table if not exists public.user_settings (
   user_id     uuid primary key references auth.users (id) on delete cascade,
   data        jsonb not null default '{}'::jsonb,
   updated_at  timestamptz not null default now()
 );
 
--- ----------------------------------------------------------------
--- BIZBOT MESSAGES  (users/{uid}/bizbot_threads/main/messages)
--- ----------------------------------------------------------------
 create table if not exists public.bizbot_messages (
   id          uuid primary key default gen_random_uuid(),
   user_id     uuid not null references auth.users (id) on delete cascade,
@@ -67,9 +44,6 @@ create table if not exists public.bizbot_messages (
 create index if not exists bizbot_user_thread_idx
   on public.bizbot_messages (user_id, thread_id, created_at);
 
--- ----------------------------------------------------------------
--- AI REPORTS  (nahlásené odpovede AI) — pôvodne top-level ai_reports
--- ----------------------------------------------------------------
 create table if not exists public.ai_reports (
   id          uuid primary key default gen_random_uuid(),
   user_id     uuid not null references auth.users (id) on delete cascade,
@@ -78,9 +52,6 @@ create table if not exists public.ai_reports (
   created_at  timestamptz not null default now()
 );
 
--- ----------------------------------------------------------------
--- NOTIFICATIONS  (users/{uid}/notifications)
--- ----------------------------------------------------------------
 create table if not exists public.notifications (
   id          text primary key,
   user_id     uuid not null references auth.users (id) on delete cascade,
@@ -91,9 +62,6 @@ create table if not exists public.notifications (
 create index if not exists notifications_user_idx
   on public.notifications (user_id, created_at desc);
 
--- ----------------------------------------------------------------
--- WATCHED COMPANIES  (users/{uid}/watched_companies)
--- ----------------------------------------------------------------
 create table if not exists public.watched_companies (
   ico         text not null,
   user_id     uuid not null references auth.users (id) on delete cascade,
@@ -102,9 +70,6 @@ create table if not exists public.watched_companies (
   primary key (user_id, ico)
 );
 
--- ----------------------------------------------------------------
--- TRASH / SOFT DELETE  (generický kôš: {collection}/{uid}/items/{itemId})
--- ----------------------------------------------------------------
 create table if not exists public.trash_items (
   id          text not null,
   user_id     uuid not null references auth.users (id) on delete cascade,
@@ -114,10 +79,6 @@ create table if not exists public.trash_items (
   primary key (user_id, collection, id)
 );
 
--- ----------------------------------------------------------------
--- PUBLIC CACHE: companies / company_snapshots (verejný lookup cache)
--- Čítanie verejné, zápis len service_role (edge function / server).
--- ----------------------------------------------------------------
 create table if not exists public.companies (
   ico         text primary key,
   data        jsonb not null default '{}'::jsonb,
@@ -129,9 +90,6 @@ create table if not exists public.company_snapshots (
   updated_at  timestamptz not null default now()
 );
 
--- ============================================================
--- ROW LEVEL SECURITY
--- ============================================================
 alter table public.invoices          enable row level security;
 alter table public.expenses          enable row level security;
 alter table public.user_settings     enable row level security;
@@ -143,7 +101,6 @@ alter table public.trash_items       enable row level security;
 alter table public.companies         enable row level security;
 alter table public.company_snapshots enable row level security;
 
--- Vlastník (auth.uid()) má plný prístup k svojim riadkom.
 do $$
 declare t text;
 begin
@@ -162,7 +119,6 @@ begin
   end loop;
 end $$;
 
--- Verejný cache: čítanie pre prihlásených, zápis len service_role.
 drop policy if exists companies_read on public.companies;
 create policy companies_read on public.companies
   for select using (auth.role() = 'authenticated');
@@ -171,11 +127,6 @@ drop policy if exists company_snapshots_read on public.company_snapshots;
 create policy company_snapshots_read on public.company_snapshots
   for select using (auth.role() = 'authenticated');
 
--- ============================================================
--- STORAGE bucket pre bločky (receipts) — vytvor v dashboarde alebo:
---   insert into storage.buckets (id, name, public) values ('receipts','receipts', false);
--- RLS na storage.objects: cesta začína "<auth.uid()>/".
--- ============================================================
 insert into storage.buckets (id, name, public)
 values ('receipts', 'receipts', false)
 on conflict (id) do nothing;

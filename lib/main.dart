@@ -76,7 +76,7 @@ void main() async {
 
   await _initFirebaseAppCheck();
 
-  // Supabase (DB/Auth/Storage). No-op ak nie sú dodané SUPABASE_URL/ANON_KEY.
+  // Supabase (DB/Auth/Storage). Vyžaduje dart_defines/supabase.json alebo --dart-define.
   await SupabaseConfig.initialize();
   
   runApp(

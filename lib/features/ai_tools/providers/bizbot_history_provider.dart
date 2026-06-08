@@ -52,7 +52,7 @@ class BizBotHistoryRepository {
 
 final bizBotHistoryRepositoryProvider = Provider<BizBotHistoryRepository>((ref) {
   return BizBotHistoryRepository(
-    SupabaseConfig.isConfigured ? SupabaseConfig.client : null,
+    SupabaseConfig.isReady ? SupabaseConfig.client : null,
   );
 });
 

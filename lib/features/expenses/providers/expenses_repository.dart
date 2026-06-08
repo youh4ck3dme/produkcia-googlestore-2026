@@ -7,7 +7,7 @@ import '../models/expense_model.dart';
 final expensesRepositoryProvider = Provider<ExpensesRepository>((ref) {
   final persistence = ref.watch(localPersistenceServiceProvider);
   return ExpensesRepository(
-    SupabaseConfig.isConfigured ? SupabaseConfig.client : null,
+    SupabaseConfig.isReady ? SupabaseConfig.client : null,
     persistence,
   );
 });

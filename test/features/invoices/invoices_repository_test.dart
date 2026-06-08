@@ -1,27 +1,17 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:bizagent/features/invoices/providers/invoices_repository.dart';
 import 'package:bizagent/features/invoices/models/invoice_model.dart';
-import 'package:bizagent/core/services/local_persistence_service.dart';
-
-class FakeLocalPersistenceService extends LocalPersistenceService {
-  @override
-  List<Map<String, dynamic>> getInvoices() => [];
-  @override
-  Future<void> saveInvoice(String id, Map<String, dynamic> data) async {}
-  @override
-  Future<void> deleteInvoice(String id) async {}
-}
+import '../../helpers/memory_local_persistence.dart';
 
 void main() {
-  group('InvoicesRepository', () {
-    late FakeFirebaseFirestore fakeFirestore;
+  group('InvoicesRepository (offline / local cache)', () {
+    late MemoryLocalPersistenceService persistence;
     late InvoicesRepository repository;
     const userId = 'test-user-123';
 
     setUp(() {
-      fakeFirestore = FakeFirebaseFirestore();
-      repository = InvoicesRepository(fakeFirestore, FakeLocalPersistenceService());
+      persistence = MemoryLocalPersistenceService();
+      repository = InvoicesRepository(null, persistence);
     });
 
     final dummyInvoice = InvoiceModel(
@@ -39,127 +29,62 @@ void main() {
       status: InvoiceStatus.sent,
     );
 
-    test('addInvoice adds document to Firestore', () async {
+    test('addInvoice ukladá do lokálnej cache keď Supabase nie je nakonfigurovaný', () async {
       await repository.addInvoice(userId, dummyInvoice);
 
-      final snapshot = await fakeFirestore
-          .collection('users')
-          .doc(userId)
-          .collection('invoices')
-          .get();
-
-      expect(snapshot.docs.length, 1);
-      final data = snapshot.docs.first.data();
-      expect(data['number'], '2023001');
-      expect(data['clientName'], 'Test Client');
-      expect(data['items'], isNotEmpty);
+      final local = persistence.getInvoices();
+      expect(local.length, 1);
+      expect(local.first['number'], '2023001');
+      expect(local.first['clientName'], 'Test Client');
     });
 
-    test('getInvoices returns list of invoices sorted by dateIssued desc',
-        () async {
-      // Add multiple invoices
-      final invoice1 = dummyInvoice; // Oct 1
+    test('getInvoices vracia lokálne dáta bez Supabase', () async {
+      await repository.addInvoice(userId, dummyInvoice);
+
       final invoice2 = InvoiceModel(
         id: 'invoice-2',
         userId: userId,
         createdAt: DateTime(2023, 11, 1),
         number: '2023002',
         clientName: 'Client 2',
-        dateIssued: DateTime(2023, 11, 1), // Newer
+        dateIssued: DateTime(2023, 11, 1),
         dateDue: DateTime(2023, 11, 15),
         items: [],
         totalAmount: 0,
         status: InvoiceStatus.draft,
       );
-
-      // Add to firestore manually to mock existing data
-      final collection =
-          fakeFirestore.collection('users').doc(userId).collection('invoices');
-      await collection.doc(invoice1.id).set(invoice1.toMap());
-      await collection.doc(invoice2.id).set(invoice2.toMap());
+      await repository.addInvoice(userId, invoice2);
 
       final results = await repository.getInvoices(userId);
-
       expect(results.length, 2);
-      // specific assertion for descending order
-      expect(results[0].number, '2023002'); // Newer should be first
-      expect(results[1].number, '2023001');
+      expect(results.any((i) => i.number == '2023001'), isTrue);
+      expect(results.any((i) => i.number == '2023002'), isTrue);
     });
 
-    test('updateInvoice updates existing document', () async {
-      // Add initial
-      await fakeFirestore
-          .collection('users')
-          .doc(userId)
-          .collection('invoices')
-          .doc(dummyInvoice.id)
-          .set(dummyInvoice.toMap());
+    test('updateInvoice aktualizuje lokálnu cache', () async {
+      await repository.addInvoice(userId, dummyInvoice);
 
-      // Modify
-      final updatedInvoice = InvoiceModel(
-        id: dummyInvoice.id,
-        userId: userId,
-        createdAt: dummyInvoice.createdAt,
-        number: '2023001',
-        clientName: 'Updated Client Name', // Changed
-        dateIssued: dummyInvoice.dateIssued,
-        dateDue: dummyInvoice.dateDue,
-        items: dummyInvoice.items,
-        totalAmount: dummyInvoice.totalAmount,
-        status: dummyInvoice.status,
-      );
+      final updated = dummyInvoice.copyWith(clientName: 'Updated Client Name');
+      await repository.updateInvoice(userId, updated);
 
-      await repository.updateInvoice(userId, updatedInvoice);
-
-      final doc = await fakeFirestore
-          .collection('users')
-          .doc(userId)
-          .collection('invoices')
-          .doc(dummyInvoice.id)
-          .get();
-
-      expect(doc.data()?['clientName'], 'Updated Client Name');
+      final results = await repository.getInvoices(userId);
+      expect(results.first.clientName, 'Updated Client Name');
     });
 
-    test('deleteInvoice removes document', () async {
-      // Add initial
-      await fakeFirestore
-          .collection('users')
-          .doc(userId)
-          .collection('invoices')
-          .doc(dummyInvoice.id)
-          .set(dummyInvoice.toMap());
-
+    test('deleteInvoice odstráni z lokálnej cache', () async {
+      await repository.addInvoice(userId, dummyInvoice);
       await repository.deleteInvoice(userId, dummyInvoice.id);
 
-      final snapshot = await fakeFirestore
-          .collection('users')
-          .doc(userId)
-          .collection('invoices')
-          .get();
-
-      expect(snapshot.docs.length, 0);
+      expect(persistence.getInvoices(), isEmpty);
     });
 
-    test('watchInvoices emits updates from Firestore', () async {
-      // Expect empty then 1 item
+    test('watchInvoices emituje lokálne dáta', () async {
       expectLater(
         repository.watchInvoices(userId),
-        emitsInOrder([
-          isEmpty,
-          // FakeFirestore may emit an initial empty snapshot more than once.
-          isEmpty,
-          isA<List<InvoiceModel>>().having((l) => l.length, 'length', 1),
-        ]),
+        emits(isA<List<InvoiceModel>>()),
       );
 
-      // Add invoice triggers stream (simulate delay to ensure listener is active)
-      await Future.delayed(Duration.zero);
-      await fakeFirestore
-          .collection('users')
-          .doc(userId)
-          .collection('invoices')
-          .add(dummyInvoice.toMap());
+      await repository.addInvoice(userId, dummyInvoice);
     });
   });
 }

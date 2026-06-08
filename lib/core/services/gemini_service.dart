@@ -49,7 +49,7 @@ class GeminiService {
     }
 
     // AI cez Supabase Edge Function `generate-content` (Mistral primary + Gemini fallback).
-    if (!SupabaseConfig.isConfigured) {
+    if (!SupabaseConfig.isReady) {
       return 'AI Offline: služba nie je nakonfigurovaná.';
     }
 

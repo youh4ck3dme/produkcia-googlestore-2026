@@ -5,7 +5,7 @@ import '../models/user_settings_model.dart';
 
 final settingsRepositoryProvider = Provider<SettingsRepository>((ref) {
   return SettingsRepository(
-    SupabaseConfig.isConfigured ? SupabaseConfig.client : null,
+    SupabaseConfig.isReady ? SupabaseConfig.client : null,
   );
 });
 

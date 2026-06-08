@@ -2,7 +2,7 @@ name: BizAgent AI Tests
 
 on:
   push:
-    branches: [main, master, develop]
+    branches: [main, master, develop, 'checkpoint/**']
   pull_request:
     branches: [main, master, develop]
 

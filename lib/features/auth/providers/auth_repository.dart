@@ -8,7 +8,7 @@ import '../models/user_model.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepository(
-    SupabaseConfig.isConfigured ? SupabaseConfig.client : null,
+    SupabaseConfig.isReady ? SupabaseConfig.client : null,
   );
 });
 
@@ -28,7 +28,7 @@ class AuthRepository {
     final c = _client;
     if (c == null) {
       throw StateError(
-        'Supabase nie je nakonfigurovaný — chýba SUPABASE_URL / SUPABASE_ANON_KEY.',
+        'Supabase nie je nakonfigurovaný — chýba SUPABASE_URL / SUPABASE_PUBLISHABLE_KEY.',
       );
     }
     return c;

@@ -7,7 +7,7 @@ import '../models/invoice_model.dart';
 final invoicesRepositoryProvider = Provider<InvoicesRepository>((ref) {
   final persistence = ref.watch(localPersistenceServiceProvider);
   return InvoicesRepository(
-    SupabaseConfig.isConfigured ? SupabaseConfig.client : null,
+    SupabaseConfig.isReady ? SupabaseConfig.client : null,
     persistence,
   );
 });

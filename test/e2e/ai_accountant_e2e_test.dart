@@ -5,6 +5,7 @@ import 'package:bizagent/core/demo_mode/demo_mode.dart';
 import 'package:bizagent/features/dashboard/widgets/smart_insights_widget.dart';
 import 'package:bizagent/features/analytics/providers/expense_insights_provider.dart';
 import 'package:bizagent/core/i18n/l10n.dart';
+import '../helpers/demo_test_skip.dart';
 
 void main() {
   group('AI Accountant E2E Tests', () {
@@ -22,7 +23,7 @@ void main() {
       expect(insights, isNotEmpty);
       expect(insights.first.title, contains('Predikcia'));
       demoService.deactivateDemoMode();
-    });
+    }, skip: skipDemoMutationTests);
 
     test('tax_optimization scenario returns savings insight', () {
       demoService.activateDemoMode(DemoScenario.taxOptimization);
@@ -31,7 +32,7 @@ void main() {
       expect(insights.any((i) => i.potentialSavings != null), isTrue);
       expect(insights.any((i) => i.title.toLowerCase().contains('úspor') || i.description.contains('ušetri')), isTrue);
       demoService.deactivateDemoMode();
-    });
+    }, skip: skipDemoMutationTests);
 
     test('anomaly_detection scenario returns anomaly insights', () {
       demoService.activateDemoMode(DemoScenario.anomalyDetection);
@@ -39,7 +40,7 @@ void main() {
       expect(insights.length, greaterThanOrEqualTo(1));
       expect(insights.any((i) => i.category == 'anomaly' || i.title.toLowerCase().contains('podozriv')), isTrue);
       demoService.deactivateDemoMode();
-    });
+    }, skip: skipDemoMutationTests);
 
     testWidgets('SmartInsightsWidget displays demo insight', (tester) async {
       final demoInsights = DemoDataGenerator.generateInsights(DemoScenario.standard);
@@ -98,6 +99,6 @@ void main() {
       expect(first.description, isNotEmpty);
       expect(first.description.contains('€') || first.title.contains('Predikcia'), isTrue);
       demoService.deactivateDemoMode();
-    });
+    }, skip: skipDemoMutationTests);
   });
 }

@@ -1,3 +1,5 @@
+import 'package:bizagent/core/config/play_release_scope.dart';
+import 'package:bizagent/core/config/product_copy.dart';
 import 'package:bizagent/features/dashboard/widgets/smart_dashboard_empty_state.dart';
 import 'package:bizagent/features/settings/providers/settings_provider.dart';
 import 'package:bizagent/features/settings/models/user_settings_model.dart';
@@ -26,9 +28,16 @@ void main() {
       ),
     );
 
-    // Verify main text
-    expect(find.text('Vitajte v BizAgent!'), findsOneWidget);
-    expect(find.text('Pripravte svoju firmu na úspech'), findsOneWidget);
+    // Verify main text (Play MVP používa ProductCopy)
+    final title = PlayReleaseScope.playMvp
+        ? ProductCopy.emptyStateTitle
+        : 'Vitajte v BizAgent!';
+    final subtitle = PlayReleaseScope.playMvp
+        ? ProductCopy.emptyStateSubtitle
+        : 'Pripravte svoju firmu na úspech';
+
+    expect(find.text(title), findsOneWidget);
+    expect(find.text(subtitle), findsOneWidget);
 
     // Verify checklist items
     expect(find.text('Nastaviť firemné údaje'), findsOneWidget);

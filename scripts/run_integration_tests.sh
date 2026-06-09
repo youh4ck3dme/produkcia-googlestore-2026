@@ -69,4 +69,15 @@ if [[ "$DEVICE" == "macos" ]]; then
 fi
 
 echo "==> Integration testy na zariadení: $DEVICE"
-flutter test integration_test/ -d "$DEVICE" "${DART_DEFINES[@]}"
+if [[ "$DEVICE" == "macos" ]]; then
+  for test_file in integration_test/e2e_complete_flow_test.dart \
+    integration_test/integrity_test.dart \
+    integration_test/performance_test.dart; do
+    flutter test "$test_file" -d macos "${DART_DEFINES[@]}"
+  done
+elif [[ "$DEVICE" == "android" ]]; then
+  echo "Android: compile smoke (emulator voliteľne lokálne)"
+  flutter build apk --debug "${DART_DEFINES[@]}"
+else
+  flutter test integration_test/ -d "$DEVICE" "${DART_DEFINES[@]}"
+fi

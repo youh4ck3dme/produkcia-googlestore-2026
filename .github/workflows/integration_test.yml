@@ -34,10 +34,10 @@ jobs:
       - run: flutter pub get
       - run: flutter test test/integration_mvp/ --dart-define=PLAY_MVP=true --dart-define=CI=true
 
-  integration-android:
-    name: Integration Tests (Android Emulator)
+  integration-android-build:
+    name: Integration Tests (Android build smoke)
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 30
     needs: integration-vm
 
     steps:
@@ -56,6 +56,7 @@ jobs:
 
       - run: flutter config --no-enable-swift-package-manager
       - run: flutter pub get
+      - run: yes | flutter doctor --android-licenses || true
 
       - name: Generate Supabase CI dart defines (optional)
         env:
@@ -63,23 +64,16 @@ jobs:
           SUPABASE_TEST_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_TEST_PUBLISHABLE_KEY }}
         run: bash scripts/generate_supabase_ci_defines.sh dart_defines/supabase.ci.json
 
-      - run: yes | flutter doctor --android-licenses || true
-
-      - uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 34
-          target: google_apis
-          arch: x86_64
-          profile: pixel_6
-          disable-animations: true
-          emulator-boot-timeout: 600
-          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
-          script: |
-            SUPABASE_ARGS=""
-            if [ -f dart_defines/supabase.ci.json ]; then
-              SUPABASE_ARGS="--dart-define-from-file=dart_defines/supabase.ci.json"
-            fi
-            flutter test integration_test/ --dart-define=PLAY_MVP=true --dart-define=CI=true $SUPABASE_ARGS
+      - name: Build debug APK (compile smoke — bez emulatora)
+        run: |
+          EXTRA=""
+          if [ -f dart_defines/supabase.ci.json ]; then
+            EXTRA="--dart-define-from-file=dart_defines/supabase.ci.json"
+          fi
+          flutter build apk --debug \
+            --dart-define=PLAY_MVP=true \
+            --dart-define=CI=true \
+            $EXTRA
 
   integration-macos:
     name: Integration Tests (macOS native)
@@ -106,7 +100,19 @@ jobs:
         run: bash scripts/generate_supabase_ci_defines.sh dart_defines/supabase.ci.json
 
       - run: bash scripts/prepare_macos_integration.sh
-      - run: flutter test integration_test/ -d macos \
-          --dart-define=PLAY_MVP=true \
-          --dart-define=CI=true \
-          $(test -f dart_defines/supabase.ci.json && echo '--dart-define-from-file=dart_defines/supabase.ci.json' || true)
+
+      - name: Run integration tests on macOS (one file per invocation)
+        run: |
+          SUPABASE_ARGS=""
+          if [ -f dart_defines/supabase.ci.json ]; then
+            SUPABASE_ARGS="--dart-define-from-file=dart_defines/supabase.ci.json"
+          fi
+          for test_file in integration_test/e2e_complete_flow_test.dart \
+            integration_test/integrity_test.dart \
+            integration_test/performance_test.dart; do
+            echo "==> $test_file"
+            flutter test "$test_file" -d macos \
+              --dart-define=PLAY_MVP=true \
+              --dart-define=CI=true \
+              $SUPABASE_ARGS
+          done

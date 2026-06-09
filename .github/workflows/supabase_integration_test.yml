@@ -40,19 +40,13 @@ jobs:
         env:
           SUPABASE_TEST_URL: ${{ secrets.SUPABASE_TEST_URL }}
           SUPABASE_TEST_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_TEST_PUBLISHABLE_KEY }}
-        run: |
-          cat > dart_defines/supabase.ci.json <<EOF
-          {
-            "SUPABASE_URL": "${SUPABASE_TEST_URL}",
-            "SUPABASE_PUBLISHABLE_KEY": "${SUPABASE_TEST_PUBLISHABLE_KEY}",
-            "GOOGLE_WEB_CLIENT_ID": ""
-          }
-          EOF
+        run: bash scripts/generate_supabase_ci_defines.sh dart_defines/supabase.ci.json
 
       - name: Run Supabase live smoke tests
         env:
           SUPABASE_TEST_URL: ${{ secrets.SUPABASE_TEST_URL }}
           SUPABASE_TEST_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_TEST_PUBLISHABLE_KEY }}
+          SUPABASE_TEST_SERVICE_KEY: ${{ secrets.SUPABASE_TEST_SERVICE_KEY }}
           SUPABASE_TEST_USER_EMAIL: ${{ secrets.SUPABASE_TEST_USER_EMAIL }}
           SUPABASE_TEST_USER_PASSWORD: ${{ secrets.SUPABASE_TEST_USER_PASSWORD }}
         run: |

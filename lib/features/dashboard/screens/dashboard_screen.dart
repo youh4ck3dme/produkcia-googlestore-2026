@@ -103,35 +103,26 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: BizGlassAppBar(
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Flexible(
-              child: Text(
-                context.t(AppStr.spdTitle),
-                style: Theme.of(context).appBarTheme.titleTextStyle,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const SizedBox(width: 8),
-            const ZenLock(),
-          ],
+        title: Text(
+          context.t(AppStr.spdTitle),
+          overflow: TextOverflow.ellipsis,
         ),
         actions: [
           if (PlayReleaseScope.showNotificationBell) const NotificationBell(),
-          BizTutorialButton(
-            onPressed: () {
-              TutorialService.showDashboardTutorial(
-                context: context,
-                dashboardKey: _dashboardKey,
-                scanKey: _scanKey,
-                invoiceKey: _invoiceKey,
-                botKey: _botKey,
-                onFinish: () {},
-              );
-            },
-            tooltip: 'Zobraziť tutoriál',
-          ),
+          if (PlayReleaseScope.showCoachMarkTutorials)
+            BizTutorialButton(
+              onPressed: () {
+                TutorialService.showDashboardTutorial(
+                  context: context,
+                  dashboardKey: _dashboardKey,
+                  scanKey: _scanKey,
+                  invoiceKey: _invoiceKey,
+                  botKey: _botKey,
+                  onFinish: () {},
+                );
+              },
+              tooltip: 'Zobraziť tutoriál',
+            ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {

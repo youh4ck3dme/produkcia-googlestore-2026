@@ -1,35 +1,53 @@
 import 'dart:io';
 
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:bizagent/core/supabase/supabase_storage_client.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bizagent/features/auth/providers/auth_repository.dart';
 import 'package:bizagent/features/auth/models/user_model.dart';
 import 'package:bizagent/features/expenses/services/receipt_storage_service.dart';
 
-/// Fake storage so tests run without Firebase; throws on any storage call.
-class FakeFirebaseStorage extends Fake implements FirebaseStorage {
+class FakeSupabaseStorageClient implements SupabaseStorageClient {
+  FakeSupabaseStorageClient({this.shouldFailUpload = false});
+
+  bool shouldFailUpload;
+  final List<String> uploadedPaths = [];
+  final List<String> deletedReferences = [];
+
   @override
-  Reference ref([String? path]) => throw Exception('Fake storage');
+  Future<void> deleteReceipt(String urlOrPath) async {
+    if (urlOrPath.contains('fail-delete')) {
+      throw Exception('Simulated delete failure');
+    }
+    deletedReferences.add(urlOrPath);
+  }
+
   @override
-  Reference refFromURL(String url) => throw Exception('Fake storage');
+  Future<String> uploadReceipt({
+    required String userId,
+    required File file,
+    required String fileName,
+  }) async {
+    if (shouldFailUpload) throw Exception('Simulated upload failure');
+    final objectPath = '$userId/$fileName';
+    uploadedPaths.add(objectPath);
+    return 'https://example.supabase.co/storage/v1/object/sign/receipts/$objectPath?token=fake';
+  }
 }
 
-/// ReceiptStorageService unit tests (auth + file validation + delete grace).
-/// Full upload flow: run with Firebase Emulator (firebase emulators:start --only storage).
 void main() {
-  late FakeFirebaseStorage fakeStorage;
-
-  setUp(() {
-    fakeStorage = FakeFirebaseStorage();
-  });
-
   group('ReceiptStorageService', () {
+    late FakeSupabaseStorageClient fakeStorage;
+
+    setUp(() {
+      fakeStorage = FakeSupabaseStorageClient();
+    });
+
     group('uploadReceipt - Authentication & Validation', () {
       test('throws when user is not logged in', () async {
         final container = ProviderContainer(
           overrides: [
-            firebaseStorageProvider.overrideWithValue(fakeStorage),
+            supabaseStorageClientProvider.overrideWithValue(fakeStorage),
             authStateProvider.overrideWith((ref) => Stream.value(null)),
           ],
         );
@@ -51,7 +69,7 @@ void main() {
         const user = UserModel(id: 'user123', email: 'test@example.com');
         final container = ProviderContainer(
           overrides: [
-            firebaseStorageProvider.overrideWithValue(fakeStorage),
+            supabaseStorageClientProvider.overrideWithValue(fakeStorage),
             authStateProvider.overrideWith((ref) => Stream.value(user)),
           ],
         );
@@ -74,7 +92,7 @@ void main() {
         const user = UserModel(id: 'user123', email: 'test@example.com');
         final container = ProviderContainer(
           overrides: [
-            firebaseStorageProvider.overrideWithValue(fakeStorage),
+            supabaseStorageClientProvider.overrideWithValue(fakeStorage),
             authStateProvider.overrideWith((ref) => Stream.value(user)),
           ],
         );
@@ -95,11 +113,35 @@ void main() {
     });
 
     group('uploadReceipt - with existing file', () {
-      test('rethrows on storage failure (e.g. Firebase not initialized)', () async {
+      test('uploads to user-scoped Supabase path', () async {
         const user = UserModel(id: 'user123', email: 'test@example.com');
         final container = ProviderContainer(
           overrides: [
-            firebaseStorageProvider.overrideWithValue(fakeStorage),
+            supabaseStorageClientProvider.overrideWithValue(fakeStorage),
+            authStateProvider.overrideWith((ref) => Stream.value(user)),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(authStateProvider.future);
+        final tempDir = await Directory.systemTemp.createTemp('receipt_test');
+        addTearDown(() => tempDir.deleteSync(recursive: true));
+        final file = File('${tempDir.path}/receipt.jpg');
+        await file.writeAsString('fake image content');
+
+        final service = container.read(receiptStorageServiceProvider);
+        final url = await service.uploadReceipt(file.path);
+
+        expect(url, contains('receipts/user123/'));
+        expect(fakeStorage.uploadedPaths.single, startsWith('user123/'));
+      });
+
+      test('rethrows on storage failure', () async {
+        fakeStorage.shouldFailUpload = true;
+        const user = UserModel(id: 'user123', email: 'test@example.com');
+        final container = ProviderContainer(
+          overrides: [
+            supabaseStorageClientProvider.overrideWithValue(fakeStorage),
             authStateProvider.overrideWith((ref) => Stream.value(user)),
           ],
         );
@@ -113,7 +155,6 @@ void main() {
 
         final service = container.read(receiptStorageServiceProvider);
 
-        // Without Firebase Emulator, storage will fail; implementation rethrows
         await expectLater(
           service.uploadReceipt(file.path),
           throwsA(anything),
@@ -125,7 +166,7 @@ void main() {
       test('does not throw on invalid URL (handles errors gracefully)', () async {
         final container = ProviderContainer(
           overrides: [
-            firebaseStorageProvider.overrideWithValue(fakeStorage),
+            supabaseStorageClientProvider.overrideWithValue(fakeStorage),
           ],
         );
         addTearDown(container.dispose);
@@ -141,7 +182,7 @@ void main() {
       test('does not throw on empty URL', () async {
         final container = ProviderContainer(
           overrides: [
-            firebaseStorageProvider.overrideWithValue(fakeStorage),
+            supabaseStorageClientProvider.overrideWithValue(fakeStorage),
           ],
         );
         addTearDown(container.dispose);
@@ -153,18 +194,21 @@ void main() {
           completes,
         );
       });
-    });
 
-    group('Path and metadata behavior (documented)', () {
-      test('storage path format: users/{userId}/receipts/{timestamp}_{filename}', () {
-        // Documented in implementation: storageRef.child('users/${user.id}/receipts/$fileName')
-        // fileName = '${DateTime.now().millisecondsSinceEpoch}_${path.basename(filePath)}'
-        expect(true, isTrue);
-      });
+      test('does not throw when backend delete fails', () async {
+        final container = ProviderContainer(
+          overrides: [
+            supabaseStorageClientProvider.overrideWithValue(fakeStorage),
+          ],
+        );
+        addTearDown(container.dispose);
 
-      test('metadata includes contentType and customMetadata', () {
-        // Documented: SettableMetadata(contentType: 'image/jpeg', customMetadata: {...})
-        expect(true, isTrue);
+        final service = container.read(receiptStorageServiceProvider);
+
+        await expectLater(
+          service.deleteReceipt('fail-delete'),
+          completes,
+        );
       });
     });
   });

@@ -56,6 +56,18 @@ jobs:
 
       - run: flutter config --no-enable-swift-package-manager
       - run: flutter pub get
+
+      - name: Generate Supabase CI dart defines (optional)
+        if: ${{ secrets.SUPABASE_TEST_URL != '' && secrets.SUPABASE_TEST_PUBLISHABLE_KEY != '' }}
+        run: |
+          cat > dart_defines/supabase.ci.json <<EOF
+          {
+            "SUPABASE_URL": "${{ secrets.SUPABASE_TEST_URL }}",
+            "SUPABASE_PUBLISHABLE_KEY": "${{ secrets.SUPABASE_TEST_PUBLISHABLE_KEY }}",
+            "GOOGLE_WEB_CLIENT_ID": ""
+          }
+          EOF
+
       - run: yes | flutter doctor --android-licenses || true
 
       - uses: reactivecircus/android-emulator-runner@v2
@@ -66,7 +78,12 @@ jobs:
           profile: pixel_6
           disable-animations: true
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
-          script: flutter test integration_test/ --dart-define=PLAY_MVP=true --dart-define=CI=true
+          script: |
+            SUPABASE_ARGS=""
+            if [ -f dart_defines/supabase.ci.json ]; then
+              SUPABASE_ARGS="--dart-define-from-file=dart_defines/supabase.ci.json"
+            fi
+            flutter test integration_test/ --dart-define=PLAY_MVP=true --dart-define=CI=true $SUPABASE_ARGS
 
   integration-macos:
     name: Integration Tests (macOS native)
@@ -83,5 +100,22 @@ jobs:
           channel: stable
           cache: true
 
+      - run: flutter config --no-enable-swift-package-manager
+      - run: flutter pub get
+
+      - name: Generate Supabase CI dart defines (optional)
+        if: ${{ secrets.SUPABASE_TEST_URL != '' && secrets.SUPABASE_TEST_PUBLISHABLE_KEY != '' }}
+        run: |
+          cat > dart_defines/supabase.ci.json <<EOF
+          {
+            "SUPABASE_URL": "${{ secrets.SUPABASE_TEST_URL }}",
+            "SUPABASE_PUBLISHABLE_KEY": "${{ secrets.SUPABASE_TEST_PUBLISHABLE_KEY }}",
+            "GOOGLE_WEB_CLIENT_ID": ""
+          }
+          EOF
+
       - run: bash scripts/prepare_macos_integration.sh
-      - run: flutter test integration_test/ -d macos --dart-define=PLAY_MVP=true --dart-define=CI=true
+      - run: flutter test integration_test/ -d macos \
+          --dart-define=PLAY_MVP=true \
+          --dart-define=CI=true \
+          $(test -f dart_defines/supabase.ci.json && echo '--dart-define-from-file=dart_defines/supabase.ci.json' || true)

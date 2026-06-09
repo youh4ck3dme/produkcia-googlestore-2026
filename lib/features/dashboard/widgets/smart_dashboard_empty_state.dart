@@ -90,6 +90,8 @@ class SmartDashboardEmptyState extends ConsumerWidget {
                             PlayReleaseScope.playMvp
                                 ? ProductCopy.emptyStateTitle
                                 : 'Vitajte v BizAgent!',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 20,
@@ -100,6 +102,8 @@ class SmartDashboardEmptyState extends ConsumerWidget {
                             PlayReleaseScope.playMvp
                                 ? ProductCopy.emptyStateSubtitle
                                 : 'Pripravte svoju firmu na úspech',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.9),
                               fontSize: 11.2, // Reduced by 20% (14 * 0.8)
@@ -178,11 +182,12 @@ class SmartDashboardEmptyState extends ConsumerWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
                   color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
@@ -190,16 +195,18 @@ class SmartDashboardEmptyState extends ConsumerWidget {
                 child: Icon(
                   icon,
                   color: Theme.of(context).primaryColor,
-                  size: 20,
+                  size: 18,
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 15,
@@ -208,6 +215,8 @@ class SmartDashboardEmptyState extends ConsumerWidget {
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: Colors.grey[600],
                         fontSize: 9.6, // Reduced by 20% (12 * 0.8)
@@ -216,6 +225,7 @@ class SmartDashboardEmptyState extends ConsumerWidget {
                   ],
                 ),
               ),
+              const SizedBox(width: 8),
               Container(
                 width: 24,
                 height: 24,

@@ -19,6 +19,7 @@ class BizTheme {
   static const double radiusLg = 12;
   static const double radiusXl = 16;
   static const double radius2xl = 28;
+  static const double inputRadius = 10;
   
   // Elevation
   static const double elevation = 1;
@@ -176,13 +177,14 @@ class BizTheme {
         // Shape sa nastaví cez flexibleSpace v custom AppBar
       ),
 
-      // Card Decoration
+      // Card Decoration — premium form sections
       cardTheme: CardThemeData(
-        color: isDark ? darkSurfaceVariant : Colors.white,
+        color: isDark ? darkSurfaceVariant : tatraWhite,
         elevation: 0,
+        margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(radiusXl),
-          side: BorderSide(color: isDark ? darkOutline : gray100, width: 1),
+          borderRadius: BorderRadius.circular(radiusLg),
+          side: BorderSide(color: isDark ? darkOutline : gray200, width: 1),
         ),
         clipBehavior: Clip.antiAlias,
       ),
@@ -238,28 +240,40 @@ class BizTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radiusXl)),
       ),
 
-      // Inputs - SumUp Style (compact, smaller padding)
+      // Inputs — premium kancelársky (viditeľný border, biele pozadie)
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: isDark ? darkSurfaceContainerLow : gray50,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        labelStyle: textTheme.bodyMedium?.copyWith(color: secondaryTextColor, fontWeight: FontWeight.w500),
+        fillColor: isDark ? darkSurfaceVariant : tatraWhite,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+        labelStyle: textTheme.bodySmall?.copyWith(
+          color: secondaryTextColor,
+          fontWeight: FontWeight.w500,
+          fontSize: 12,
+        ),
         hintStyle: textTheme.bodyMedium?.copyWith(color: isDark ? darkDisabled : gray400),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(radiusLg),
-          borderSide: BorderSide.none,
+          borderRadius: BorderRadius.circular(inputRadius),
+          borderSide: BorderSide(color: isDark ? darkOutline : gray200, width: 1),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(radiusLg),
-          borderSide: BorderSide.none,
+          borderRadius: BorderRadius.circular(inputRadius),
+          borderSide: BorderSide(color: isDark ? darkOutline : gray200, width: 1),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(radiusLg),
+          borderRadius: BorderRadius.circular(inputRadius),
           borderSide: BorderSide(color: isDark ? darkPrimaryBlue : slovakBlue, width: 2),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(radiusLg),
+          borderRadius: BorderRadius.circular(inputRadius),
           borderSide: BorderSide(color: isDark ? const Color(0xFFFFB4AB) : errorRed, width: 1.5),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(inputRadius),
+          borderSide: BorderSide(color: isDark ? const Color(0xFFFFB4AB) : errorRed, width: 2),
+        ),
+        disabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(inputRadius),
+          borderSide: BorderSide(color: isDark ? darkOutlineVariant : gray300, width: 1),
         ),
       ),
 
@@ -284,6 +298,22 @@ class BizTheme {
         color: isDark ? darkOnSurface : slovakBlue,
         size: 24,
       )
+    );
+  }
+
+  /// Jemný tieň pre formulárové sekcie (faktúry, výdavky).
+  static BoxDecoration formSectionDecoration({required bool isDark}) {
+    return BoxDecoration(
+      color: isDark ? darkSurfaceVariant : tatraWhite,
+      borderRadius: BorderRadius.circular(radiusLg),
+      border: Border.all(color: isDark ? darkOutline : gray200),
+      boxShadow: [
+        BoxShadow(
+          color: slovakBlue.withValues(alpha: isDark ? 0.08 : 0.04),
+          blurRadius: 3,
+          offset: const Offset(0, 1),
+        ),
+      ],
     );
   }
 }

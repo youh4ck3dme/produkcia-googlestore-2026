@@ -22,5 +22,19 @@ enabled = true
 enabled = true
 port = 54323
 
+[auth]
+site_url = "http://localhost:57300"
+additional_redirect_urls = [
+  "http://localhost:57300/**",
+  "http://localhost:**/**",
+  "http://127.0.0.1:**/**",
+]
+enable_signup = true
+
+[auth.external.google]
+enabled = true
+client_id = "env(GOOGLE_CLIENT_ID)"
+secret = "env(GOOGLE_CLIENT_SECRET)"
+
 [functions.generate-content]
 verify_jwt = true

@@ -1,58 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import 'package:bizagent/features/dashboard/screens/dashboard_screen.dart';
-import 'package:bizagent/features/invoices/providers/invoices_provider.dart';
-import 'package:bizagent/features/expenses/providers/expenses_provider.dart';
-import 'package:bizagent/features/auth/providers/auth_repository.dart';
-import 'package:bizagent/core/i18n/l10n.dart';
-
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:bizagent/core/config/play_release_scope.dart';
+import 'package:bizagent/core/config/product_copy.dart';
+import 'package:bizagent/features/dashboard/screens/dashboard_screen.dart';
+
+import '../../helpers/integration_harness.dart';
+import '../../helpers/layout_test_helpers.dart';
+
 void main() {
+  setUpAll(() async {
+    await setUpIntegrationHarness();
+  });
+
   testWidgets(
       'Dashboard shows first-run banner when invoices & expenses are empty',
       (tester) async {
-    SharedPreferences.setMockInitialValues(
-        {}); // Mock SP for TutorialService check
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          // Avoid real Firebase/Auth calls in tests
-          authStateProvider.overrideWith((ref) => Stream.value(null)),
+    addTearDown(() => resetTestView(tester));
+    SharedPreferences.setMockInitialValues({});
 
-          // Ensure first-run empty state
-          invoicesProvider.overrideWith((ref) => Stream.value([])),
-          expensesProvider.overrideWith((ref) => Stream.value([])),
-        ],
-        child: const L10n(
-          locale: AppLocale.sk,
-          child: MaterialApp(
-            home: DashboardScreen(),
-          ),
-        ),
-      ),
+    final title = PlayReleaseScope.playMvp
+        ? ProductCopy.emptyStateTitle
+        : 'Vitajte v BizAgent!';
+    final subtitle = PlayReleaseScope.playMvp
+        ? ProductCopy.emptyStateSubtitle
+        : 'Pripravte svoju firmu na úspech';
+
+    await pumpAtViewport(
+      tester,
+      integrationApp(child: const DashboardScreen()),
+      physicalSize: const Size(390, 844),
     );
 
-    // Avoid pumpAndSettle due to infinite animations on the dashboard.
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 2));
+    await tester.pump(const Duration(seconds: 1));
 
-    // Verify Smart Dashboard Empty State is present
-    expect(find.text('Vitajte v BizAgent!'), findsOneWidget);
-    expect(find.text('Pripravte svoju firmu na úspech'), findsOneWidget);
-
-    // Verify Checklist Items
+    expect(find.text(title), findsOneWidget);
+    expect(find.text(subtitle), findsOneWidget);
     expect(find.text('Nastaviť firemné údaje'), findsOneWidget);
     expect(find.text('Vytvoriť prvú faktúru'), findsOneWidget);
     expect(find.text('Pridať prvý výdavok'), findsOneWidget);
-
-    // Verify Icons exist
     expect(find.byIcon(Icons.rocket_launch_rounded), findsOneWidget);
     expect(find.byIcon(Icons.business), findsOneWidget);
-
-    // Let any delayed flutter_animate timers fire to avoid timersPending at teardown.
-    await tester.pump(const Duration(seconds: 3));
-  }, skip: true); // AppBar/layout overflow in test viewport
+  });
 }

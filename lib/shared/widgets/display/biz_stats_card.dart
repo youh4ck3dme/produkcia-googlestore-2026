@@ -44,6 +44,7 @@ class BizStatsCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -57,23 +58,35 @@ class BizStatsCard extends StatelessWidget {
                     child: Icon(icon, color: primaryColor, size: 20),
                   ),
                   if (trend != null)
-                    _TrendBadge(trend: trend!, isPositive: isPositive),
+                    Flexible(
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: _TrendBadge(trend: trend!, isPositive: isPositive),
+                      ),
+                    ),
                 ],
               ),
-              const SizedBox(height: BizTheme.spacingMd),
+              const SizedBox(height: BizTheme.spacingSm),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    metric,
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                  ).animate().fadeIn(duration: 400.ms).slideX(begin: -0.1),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      metric,
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ).animate().fadeIn(duration: 400.ms).slideX(begin: -0.1),
+                  ),
                   const SizedBox(height: 2),
                   Text(
                     title.toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                       letterSpacing: 1.2,
@@ -116,6 +129,8 @@ class _TrendBadge extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             trend,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: color,
               fontSize: 9.6, // Reduced by 20% (12 * 0.8)

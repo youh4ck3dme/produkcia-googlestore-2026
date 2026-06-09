@@ -1,23 +1,25 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/supabase/supabase_config.dart';
+import '../../../core/supabase/supabase_table_store.dart';
 import '../../../core/services/local_persistence_service.dart';
 import '../models/invoice_model.dart';
 
 final invoicesRepositoryProvider = Provider<InvoicesRepository>((ref) {
   final persistence = ref.watch(localPersistenceServiceProvider);
   return InvoicesRepository(
-    SupabaseConfig.isReady ? SupabaseConfig.client : null,
+    SupabaseConfig.isReady
+        ? SupabaseTableStore.fromClient(SupabaseConfig.client)
+        : null,
     persistence,
   );
 });
 
 /// Faktúry — Supabase Postgres (tabuľka `invoices`) + lokálna Hive cache.
 class InvoicesRepository {
-  final SupabaseClient? _client;
+  final SupabaseTableStore? _store;
   final LocalPersistenceService _persistence;
 
-  InvoicesRepository(this._client, this._persistence);
+  InvoicesRepository(this._store, this._persistence);
 
   static const _table = 'invoices';
 
@@ -52,19 +54,18 @@ class InvoicesRepository {
 
   Future<List<InvoiceModel>> getInvoices(String userId) async {
     final local = _localInvoices(userId);
-    final client = _client;
-    if (client == null) return local;
+    final store = _store;
+    if (store == null || !store.isAvailable) return local;
 
     try {
-      final rows = await client
-          .from(_table)
-          .select()
-          .eq('user_id', userId)
-          .eq('is_deleted', false)
-          .order('date_issued', ascending: false);
+      final rows = await store.select(
+        _table,
+        eq: {'user_id': userId, 'is_deleted': false},
+        orderColumn: 'date_issued',
+        ascending: false,
+      );
 
-      final remote = (rows as List).map((r) {
-        final row = Map<String, dynamic>.from(r as Map);
+      final remote = rows.map((row) {
         final invoice = _rowToInvoice(row);
         final cache = Map<String, dynamic>.from(row['data'] as Map);
         cache['id'] = invoice.id;
@@ -81,18 +82,19 @@ class InvoicesRepository {
   Stream<List<InvoiceModel>> watchInvoices(String userId) async* {
     yield _localInvoices(userId);
 
-    final client = _client;
-    if (client == null) return;
+    final store = _store;
+    if (store == null || !store.isAvailable) return;
 
-    final stream = client
-        .from(_table)
-        .stream(primaryKey: ['id'])
-        .eq('user_id', userId)
-        .order('date_issued', ascending: false);
+    final stream = store.stream(
+      _table,
+      primaryKey: ['id'],
+      eq: {'user_id': userId},
+      orderColumn: 'date_issued',
+      ascending: false,
+    );
 
     await for (final rows in stream) {
       final invoices = rows
-          .map((r) => Map<String, dynamic>.from(r))
           .where((row) => row['is_deleted'] != true)
           .map((row) {
         final invoice = _rowToInvoice(row);
@@ -114,7 +116,7 @@ class InvoicesRepository {
     data['id'] = id;
     await _persistence.saveInvoice(id, data);
 
-    await _client?.from(_table).upsert(_invoiceToRow(userId, invoice, id));
+    await _store?.upsert(_table, _invoiceToRow(userId, invoice, id));
   }
 
   Future<void> updateInvoice(String userId, InvoiceModel invoice) async {
@@ -122,7 +124,7 @@ class InvoicesRepository {
     data['id'] = invoice.id;
     await _persistence.saveInvoice(invoice.id, data);
 
-    await _client?.from(_table).upsert(_invoiceToRow(userId, invoice, invoice.id));
+    await _store?.upsert(_table, _invoiceToRow(userId, invoice, invoice.id));
   }
 
   Future<void> updateInvoiceStatus(
@@ -136,22 +138,25 @@ class InvoicesRepository {
       await _persistence.saveInvoice(invoiceId, updated);
     }
 
-    final client = _client;
-    if (client == null) return;
+    final store = _store;
+    if (store == null || !store.isAvailable) return;
 
-    await client.from(_table).update({
-      'status': status.name,
-      if (updated != null) 'data': updated,
-      'updated_at': DateTime.now().toIso8601String(),
-    }).eq('id', invoiceId).eq('user_id', userId);
+    await store.update(
+      _table,
+      {
+        'status': status.name,
+        if (updated != null) 'data': updated,
+        'updated_at': DateTime.now().toIso8601String(),
+      },
+      eq: {'id': invoiceId, 'user_id': userId},
+    );
   }
 
   Future<void> deleteInvoice(String userId, String invoiceId) async {
     await _persistence.deleteInvoice(invoiceId);
-    await _client
-        ?.from(_table)
-        .delete()
-        .eq('id', invoiceId)
-        .eq('user_id', userId);
+    await _store?.delete(
+      _table,
+      eq: {'id': invoiceId, 'user_id': userId},
+    );
   }
 }

@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -20,6 +19,10 @@ import 'package:bizagent/features/auth/providers/auth_repository.dart';
 import 'package:bizagent/features/expenses/providers/expenses_repository.dart';
 import 'package:bizagent/features/expenses/screens/create_expense_screen.dart';
 import 'package:bizagent/features/expenses/services/categorization_service.dart';
+import 'package:mocktail/mocktail.dart';
+
+import 'package:bizagent/core/supabase/supabase_storage_client.dart';
+
 import 'package:bizagent/features/expenses/services/receipt_storage_service.dart';
 
 import '../../helpers/test_app.dart';
@@ -68,8 +71,6 @@ class MockOcrService extends OcrService {
   }
 }
 
-class FakeFirebaseStorage extends Fake implements FirebaseStorage {}
-
 class FakeReceiptStorageService extends ReceiptStorageService {
   FakeReceiptStorageService(super.ref, super.storage);
 
@@ -78,6 +79,8 @@ class FakeReceiptStorageService extends ReceiptStorageService {
     return 'https://example.com/receipt.jpg';
   }
 }
+
+class _FakeStorageForOcr extends Fake implements SupabaseStorageClient {}
 
 /// AI refinement returns stable parsed receipt fields.
 class MockAiOcrService extends AiOcrService {
@@ -157,9 +160,12 @@ void main() {
         categorizationServiceProvider.overrideWithValue(
           CategorizationService(fakeFirestore),
         ),
-        firebaseStorageProvider.overrideWithValue(FakeFirebaseStorage()),
+        supabaseStorageClientProvider.overrideWithValue(_FakeStorageForOcr()),
         receiptStorageServiceProvider.overrideWith(
-          (ref) => FakeReceiptStorageService(ref, ref.read(firebaseStorageProvider)),
+          (ref) => FakeReceiptStorageService(
+            ref,
+            ref.read(supabaseStorageClientProvider),
+          ),
         ),
       ];
     }

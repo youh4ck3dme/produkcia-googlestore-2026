@@ -58,15 +58,19 @@ jobs:
       - run: flutter pub get
 
       - name: Generate Supabase CI dart defines (optional)
-        if: ${{ secrets.SUPABASE_TEST_URL != '' && secrets.SUPABASE_TEST_PUBLISHABLE_KEY != '' }}
+        env:
+          SUPABASE_TEST_URL: ${{ secrets.SUPABASE_TEST_URL }}
+          SUPABASE_TEST_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_TEST_PUBLISHABLE_KEY }}
         run: |
-          cat > dart_defines/supabase.ci.json <<EOF
-          {
-            "SUPABASE_URL": "${{ secrets.SUPABASE_TEST_URL }}",
-            "SUPABASE_PUBLISHABLE_KEY": "${{ secrets.SUPABASE_TEST_PUBLISHABLE_KEY }}",
-            "GOOGLE_WEB_CLIENT_ID": ""
-          }
-          EOF
+          if [ -n "$SUPABASE_TEST_URL" ] && [ -n "$SUPABASE_TEST_PUBLISHABLE_KEY" ]; then
+            cat > dart_defines/supabase.ci.json <<EOF
+            {
+              "SUPABASE_URL": "${SUPABASE_TEST_URL}",
+              "SUPABASE_PUBLISHABLE_KEY": "${SUPABASE_TEST_PUBLISHABLE_KEY}",
+              "GOOGLE_WEB_CLIENT_ID": ""
+            }
+            EOF
+          fi
 
       - run: yes | flutter doctor --android-licenses || true
 
@@ -77,6 +81,7 @@ jobs:
           arch: x86_64
           profile: pixel_6
           disable-animations: true
+          emulator-boot-timeout: 600
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
           script: |
             SUPABASE_ARGS=""
@@ -104,15 +109,19 @@ jobs:
       - run: flutter pub get
 
       - name: Generate Supabase CI dart defines (optional)
-        if: ${{ secrets.SUPABASE_TEST_URL != '' && secrets.SUPABASE_TEST_PUBLISHABLE_KEY != '' }}
+        env:
+          SUPABASE_TEST_URL: ${{ secrets.SUPABASE_TEST_URL }}
+          SUPABASE_TEST_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_TEST_PUBLISHABLE_KEY }}
         run: |
-          cat > dart_defines/supabase.ci.json <<EOF
-          {
-            "SUPABASE_URL": "${{ secrets.SUPABASE_TEST_URL }}",
-            "SUPABASE_PUBLISHABLE_KEY": "${{ secrets.SUPABASE_TEST_PUBLISHABLE_KEY }}",
-            "GOOGLE_WEB_CLIENT_ID": ""
-          }
-          EOF
+          if [ -n "$SUPABASE_TEST_URL" ] && [ -n "$SUPABASE_TEST_PUBLISHABLE_KEY" ]; then
+            cat > dart_defines/supabase.ci.json <<EOF
+            {
+              "SUPABASE_URL": "${SUPABASE_TEST_URL}",
+              "SUPABASE_PUBLISHABLE_KEY": "${SUPABASE_TEST_PUBLISHABLE_KEY}",
+              "GOOGLE_WEB_CLIENT_ID": ""
+            }
+            EOF
+          fi
 
       - run: bash scripts/prepare_macos_integration.sh
       - run: flutter test integration_test/ -d macos \

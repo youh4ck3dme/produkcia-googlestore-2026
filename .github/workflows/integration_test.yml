@@ -75,10 +75,10 @@ jobs:
             --dart-define=CI=true \
             $EXTRA
 
-  integration-macos:
-    name: Integration Tests (macOS native)
+  integration-macos-build:
+    name: Integration Tests (macOS build smoke)
     runs-on: macos-15
-    timeout-minutes: 45
+    timeout-minutes: 30
     needs: integration-vm
 
     steps:
@@ -101,18 +101,13 @@ jobs:
 
       - run: bash scripts/prepare_macos_integration.sh
 
-      - name: Run integration tests on macOS (one file per invocation)
+      - name: Build debug macOS app (compile smoke — logika v integration-vm)
         run: |
-          SUPABASE_ARGS=""
+          EXTRA=""
           if [ -f dart_defines/supabase.ci.json ]; then
-            SUPABASE_ARGS="--dart-define-from-file=dart_defines/supabase.ci.json"
+            EXTRA="--dart-define-from-file=dart_defines/supabase.ci.json"
           fi
-          for test_file in integration_test/e2e_complete_flow_test.dart \
-            integration_test/integrity_test.dart \
-            integration_test/performance_test.dart; do
-            echo "==> $test_file"
-            flutter test "$test_file" -d macos \
-              --dart-define=PLAY_MVP=true \
-              --dart-define=CI=true \
-              $SUPABASE_ARGS
-          done
+          flutter build macos --debug \
+            --dart-define=PLAY_MVP=true \
+            --dart-define=CI=true \
+            $EXTRA

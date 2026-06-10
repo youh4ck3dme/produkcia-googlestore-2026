@@ -48,3 +48,10 @@ key.properties
 # Release bundles / generated artifacts
 *.zip
 flutter_*.log
+
+# Node (root package.json is Vercel wrapper only; functions/ uses npm)
+pnpm-lock.yaml
+
+# macOS Finder duplicate copies
+**/* 2.*
+**/* 3.*

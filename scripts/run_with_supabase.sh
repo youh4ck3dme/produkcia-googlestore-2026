@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Spustí BizAgent s Supabase credentials z dart_defines/supabase.json
+# Predvolene: Android emulátor (Pixel_10). macOS vyžaduje Xcode signing.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -13,4 +14,46 @@ if [[ ! -f "$DEFINES" ]]; then
   exit 1
 fi
 
-flutter run --dart-define-from-file="$DEFINES" "$@"
+export ANDROID_HOME="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
+export PATH="$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools:$PATH"
+
+DEVICE_ARGS=()
+if [[ $# -gt 0 ]]; then
+  DEVICE_ARGS=("$@")
+else
+  # Nájdi bežiaci Android emulátor / zariadenie
+  ANDROID_ID=$(flutter devices --machine 2>/dev/null | python3 -c "
+import json, sys
+for d in json.load(sys.stdin):
+    if d.get('platformType') == 'android' and d.get('emulator'):
+        print(d['id']); break
+    if d.get('platformType') == 'android':
+        print(d['id']); break
+" 2>/dev/null || true)
+
+  if [[ -z "${ANDROID_ID:-}" ]]; then
+    echo "→ Žiadny Android emulátor — spúšťam Pixel_10…"
+    flutter emulators --launch Pixel_10 >/dev/null 2>&1 || true
+    echo "→ Čakám na boot emulátora (max 90 s)…"
+    for _ in $(seq 1 30); do
+      adb start-server >/dev/null 2>&1 || true
+      ANDROID_ID=$(adb devices 2>/dev/null | awk '/emulator-.*device$/ {print $1; exit}')
+      if [[ -n "${ANDROID_ID:-}" ]]; then
+        break
+      fi
+      sleep 3
+    done
+  fi
+
+  if [[ -n "${ANDROID_ID:-}" ]]; then
+    echo "→ Cieľové zariadenie: $ANDROID_ID"
+    DEVICE_ARGS=(-d "$ANDROID_ID")
+  else
+    echo "⚠️  Android emulátor sa nenašiel. Spusti manuálne:"
+    echo "   flutter emulators --launch Pixel_10"
+    echo "   bash scripts/run_with_supabase.sh -d emulator-5554"
+    exit 1
+  fi
+fi
+
+exec flutter run --dart-define-from-file="$DEFINES" "${DEVICE_ARGS[@]}"

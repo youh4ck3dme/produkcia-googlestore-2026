@@ -67,7 +67,7 @@ class WatchedCompaniesService {
           primaryKey: ['ico'],
           eq: {'user_id': uid, 'ico': icoNorm},
         )
-        .map((rows) => rows.isNotEmpty);
+        .map<bool>((rows) => rows.isNotEmpty);
   }
 
   Future<int> getWatchedCount() async {
@@ -94,7 +94,7 @@ class WatchedCompaniesService {
           orderColumn: 'created_at',
           ascending: false,
         )
-        .map((rows) => rows.map((row) {
+        .map<List<Map<String, dynamic>>>((rows) => rows.map((row) {
               final data = Map<String, dynamic>.from(row['data'] as Map);
               data['ico'] = row['ico'];
               return data;

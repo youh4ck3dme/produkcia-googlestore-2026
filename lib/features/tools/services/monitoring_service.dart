@@ -126,7 +126,7 @@ class MonitoringService {
           orderColumn: 'created_at',
           ascending: false,
         )
-        .map(
+        .map<List<Map<String, dynamic>>>(
           (rows) => rows.take(20).map(_rowToViewModel).toList(),
         );
   }

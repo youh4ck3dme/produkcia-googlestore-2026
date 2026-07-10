@@ -143,7 +143,7 @@ class SoftDeleteService {
           orderColumn: 'deleted_at',
           ascending: false,
         )
-        .map((rows) => rows
+        .map<List<Map<String, dynamic>>>((rows) => rows
             .where((row) => _withinRetention(row['deleted_at']))
             .map((row) => {
                   'id': row['id'],

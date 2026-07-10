@@ -30,7 +30,7 @@ class SettingsRepository {
           primaryKey: ['user_id'],
           eq: {'user_id': userId},
         )
-        .map((rows) {
+        .map<UserSettingsModel>((rows) {
       if (rows.isEmpty) return UserSettingsModel.empty();
       final data = rows.first['data'];
       if (data is Map) {

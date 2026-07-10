@@ -76,7 +76,7 @@ class _UnavailableSupabaseTableStore implements SupabaseTableStore {
     String? orderColumn,
     bool ascending = false,
   }) =>
-      const Stream.empty();
+      Stream<List<Map<String, dynamic>>>.empty();
 
   @override
   Future<void> update(
@@ -159,8 +159,14 @@ class _SupabaseClientTableStore implements SupabaseTableStore {
     if (orderColumn != null) {
       query = query.order(orderColumn, ascending: ascending);
     }
-    return query.map(
-      (rows) => rows.map((row) => Map<String, dynamic>.from(row)).toList(),
+    // Explicitný generik — inak Dart vráti _MapStream<..., dynamic> a Riverpod spadne.
+    return query.map<List<Map<String, dynamic>>>(
+      (rows) {
+        final list = rows as List;
+        return list
+            .map((row) => Map<String, dynamic>.from(row as Map))
+            .toList();
+      },
     );
   }
 

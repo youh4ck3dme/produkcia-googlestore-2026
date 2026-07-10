@@ -23,8 +23,8 @@ class BizBotHistoryRepository {
         .eq('user_id', uid)
         .order('created_at')
         .limit(limit)
-        .map((rows) => rows
-            .map((r) => BizBotMessage.fromRow(Map<String, dynamic>.from(r)))
+        .map<List<BizBotMessage>>((rows) => rows
+            .map((r) => BizBotMessage.fromRow(Map<String, dynamic>.from(r as Map)))
             .toList());
   }
 

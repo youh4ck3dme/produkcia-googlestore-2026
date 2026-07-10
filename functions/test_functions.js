@@ -1,102 +1,55 @@
 #!/usr/bin/env node
 /**
- * Testovací skript pre Cloud Functions
- * Spustenie: node functions/test_functions.js
+ * Firebase Functions smoke test — bez live volaní (nevyžaduje credentials).
+ * Canonical account deletion: Supabase edge function `delete-account`.
  */
 
-const admin = require('firebase-admin');
-const { getFunctions } = require('firebase-admin/functions');
+const fs = require('fs');
+const path = require('path');
 
-// Initialize Firebase Admin (for testing)
-if (!admin.apps.length) {
-  try {
-    admin.initializeApp({
-      projectId: 'bizagent-live-2026',
-    });
-  } catch (e) {
-    console.error('❌ Failed to initialize Firebase Admin:', e.message);
-    console.log('💡 Tip: This script should be run from Firebase emulator or with service account');
-    process.exit(1);
-  }
+const INDEX = path.join(__dirname, 'index.js');
+const LEGACY_EXPORTS = [
+  'generateEmail',
+  'analyzeReceipt',
+  'lookupCompany',
+  'generateContent',
+  'deleteUserData',
+];
+
+function fail(msg) {
+  console.error(`❌ ${msg}`);
+  process.exit(1);
 }
 
-const functions = getFunctions();
-const httpsCallable = functions.httpsCallable;
-
-async function testLookupCompany() {
-  console.log('\n📋 Test: lookupCompany');
-  
-  try {
-    // Test with mock ICO (Google Slovakia)
-    const lookupCompany = httpsCallable(functions, 'lookupCompany');
-    const result = await lookupCompany({ ico: '36396567' });
-    
-    if (result.data && result.data.name) {
-      console.log('✅ PASS: lookupCompany returned data');
-      console.log(`   Company: ${result.data.name}`);
-      console.log(`   IČO: ${result.data.ico}`);
-      return true;
-    } else {
-      console.log('❌ FAIL: lookupCompany returned invalid data');
-      return false;
-    }
-  } catch (error) {
-    console.log(`❌ FAIL: lookupCompany error - ${error.message}`);
-    return false;
-  }
+function pass(msg) {
+  console.log(`✅ ${msg}`);
 }
 
-async function testGenerateEmail() {
-  console.log('\n📋 Test: generateEmail');
-  
-  try {
-    // This requires authentication, so we'll just check if function exists
-    console.log('⚠️  WARN: generateEmail requires authentication');
-    console.log('   Manual test required: Call from authenticated Flutter app');
-    return true; // Skip for now
-  } catch (error) {
-    console.log(`❌ FAIL: generateEmail error - ${error.message}`);
-    return false;
-  }
+console.log('🧪 Firebase Functions smoke test');
+console.log('='.repeat(60));
+
+if (!fs.existsSync(INDEX)) {
+  fail(`Missing ${INDEX}`);
 }
 
-async function testAnalyzeReceipt() {
-  console.log('\n📋 Test: analyzeReceipt');
-  
-  try {
-    // This requires authentication, so we'll just check if function exists
-    console.log('⚠️  WARN: analyzeReceipt requires authentication');
-    console.log('   Manual test required: Call from authenticated Flutter app');
-    return true; // Skip for now
-  } catch (error) {
-    console.log(`❌ FAIL: analyzeReceipt error - ${error.message}`);
-    return false;
+const src = fs.readFileSync(INDEX, 'utf8');
+
+for (const name of LEGACY_EXPORTS) {
+  const pattern = new RegExp(`exports\\.${name}\\s*=`);
+  if (!pattern.test(src)) {
+    fail(`Missing export: ${name}`);
   }
+  pass(`export present: ${name}`);
 }
 
-async function main() {
-  console.log('🧪 Cloud Functions Test Suite');
-  console.log('='.repeat(60));
-  
-  const results = [];
-  
-  results.push(await testLookupCompany());
-  results.push(await testGenerateEmail());
-  results.push(await testAnalyzeReceipt());
-  
-  console.log('\n' + '='.repeat(60));
-  console.log('📊 SUMMARY');
-  console.log('='.repeat(60));
-  
-  const passed = results.filter(r => r).length;
-  const failed = results.length - passed;
-  
-  console.log(`Total: ${results.length} | Passed: ${passed} | Failed: ${failed}`);
-  
-  if (failed > 0) {
-    process.exit(1);
-  }
+if (!src.includes('deleteUserData')) {
+  fail('Legacy deleteUserData not found — document migration to Supabase delete-account');
 }
 
-// Run tests
-main().catch(console.error);
+console.log('');
+console.log('ℹ️  Legacy Firebase deleteUserData — use Supabase functions/delete-account for Play/GDPR.');
+console.log('ℹ️  Live callable tests: firebase emulators:exec or manual from authenticated app.');
+console.log('');
+console.log('='.repeat(60));
+console.log('📊 SUMMARY: all smoke checks passed');
+process.exit(0);

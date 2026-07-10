@@ -49,6 +49,12 @@ jobs:
       - name: Golden tests (check)
         run: flutter test --dart-define=PLAY_MVP=false test/golden/
 
+      - name: Firebase Functions smoke test
+        run: |
+          cd functions
+          npm ci
+          npm test
+
   golden-update:
     name: Update golden files
     runs-on: ubuntu-latest

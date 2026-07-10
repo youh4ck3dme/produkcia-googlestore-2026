@@ -38,3 +38,6 @@ secret = "env(GOOGLE_CLIENT_SECRET)"
 
 [functions.generate-content]
 verify_jwt = true
+
+[functions.delete-account]
+verify_jwt = true

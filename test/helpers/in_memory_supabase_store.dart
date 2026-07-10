@@ -146,16 +146,33 @@ class InMemorySupabaseStore implements SupabaseTableStore {
     _emit(table);
   }
 
+  bool _matchesPrimaryKey(
+    String table,
+    Map<String, dynamic> existing,
+    Map<String, dynamic> row,
+  ) {
+    switch (table) {
+      case 'watched_companies':
+        return existing['user_id'] == row['user_id'] &&
+            existing['ico'] == row['ico'];
+      case 'trash_items':
+        return existing['user_id'] == row['user_id'] &&
+            existing['collection'] == row['collection'] &&
+            existing['id'] == row['id'];
+      default:
+        if (row.containsKey('id')) {
+          return existing['id'] == row['id'];
+        }
+        return existing['user_id'] == row['user_id'];
+    }
+  }
+
   @override
   Future<void> upsert(String table, Map<String, dynamic> row) async {
     final rows = _rows(table);
-    final idKeys = row.containsKey('id') ? ['id'] : ['user_id'];
-    final index = rows.indexWhere((existing) {
-      for (final key in idKeys) {
-        if (existing[key] != row[key]) return false;
-      }
-      return true;
-    });
+    final index = rows.indexWhere(
+      (existing) => _matchesPrimaryKey(table, existing, row),
+    );
     final copy = Map<String, dynamic>.from(row);
     if (index >= 0) {
       rows[index] = copy;

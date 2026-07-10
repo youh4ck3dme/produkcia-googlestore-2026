@@ -3,7 +3,7 @@
 # Spusti: bash scripts/setup_google_oauth_redirect.sh [email]
 set -euo pipefail
 
-REDIRECT_URI="https://xitittqtaeyazcpaylsz.supabase.co/auth/v1/callback"
+REDIRECT_URI="https://kpsnwpuydqqojwmrnkdy.supabase.co/auth/v1/callback"
 PROJECT="gifted-mountain-476207-u4"
 CLIENT_ID="90348815049-s8ecj4dq2dd5pmo172h4g9khhbt3m7lg.apps.googleusercontent.com"
 TEST_EMAIL="${1:-u0352652320@gmail.com}"

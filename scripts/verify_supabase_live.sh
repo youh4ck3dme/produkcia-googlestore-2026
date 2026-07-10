@@ -4,7 +4,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DEFINES="${SUPABASE_DEFINES:-$ROOT/dart_defines/supabase.json}"
-PROJECT_REF="${SUPABASE_PROJECT_REF:-xitittqtaeyazcpaylsz}"
+PROJECT_REF="${SUPABASE_PROJECT_REF:-kpsnwpuydqqojwmrnkdy}"
 
 EMAIL="${SUPABASE_TEST_USER_EMAIL:-test+bizagent@example.com}"
 PASSWORD="${SUPABASE_TEST_USER_PASSWORD:-}"

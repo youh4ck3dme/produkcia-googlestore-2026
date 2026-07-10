@@ -1,7 +1,7 @@
 # BizAgent — Supabase projekt (GitHub integrácia / db push)
-# Project ref: https://supabase.com/dashboard/project/xitittqtaeyazcpaylsz
+# Project ref: https://supabase.com/dashboard/project/kpsnwpuydqqojwmrnkdy
 
-project_id = "xitittqtaeyazcpaylsz"
+project_id = "kpsnwpuydqqojwmrnkdy"
 
 [api]
 enabled = true

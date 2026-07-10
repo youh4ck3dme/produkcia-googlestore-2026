@@ -1,212 +1,186 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:bizagent/core/services/soft_delete_service.dart';
+import '../../helpers/in_memory_supabase_store.dart';
 
 void main() {
   group('SoftDeleteService', () {
-    late FakeFirebaseFirestore fakeFirestore;
+    late InMemorySupabaseStore store;
     late SoftDeleteService service;
 
     setUp(() {
-      fakeFirestore = FakeFirebaseFirestore();
-      service = SoftDeleteService(fakeFirestore);
+      store = InMemorySupabaseStore();
+      service = SoftDeleteService(store);
     });
 
     group('softDeleteItem', () {
-      test('should mark item as deleted with deletedAt timestamp', () async {
-        // Arrange
-        const collection = 'invoices';
+      test('should mark invoice as deleted in trash_items', () async {
+        const collection = SoftDeleteCollections.invoices;
         const userId = 'user123';
         const itemId = 'invoice1';
 
-        // Create initial document
-        await fakeFirestore
-            .collection(collection)
-            .doc(userId)
-            .collection('items')
-            .doc(itemId)
-            .set({'name': 'Test Invoice', 'amount': 100.0});
+        await store.upsert('invoices', {
+          'id': itemId,
+          'user_id': userId,
+          'data': {'name': 'Test Invoice', 'amount': 100.0, 'number': '2026-001'},
+          'is_deleted': false,
+        });
 
-        // Act
         await service.softDeleteItem(collection, userId, itemId);
 
-        // Assert
-        final doc = await fakeFirestore
-            .collection(collection)
-            .doc(userId)
-            .collection('items')
-            .doc(itemId)
-            .get();
+        final trash = await store.select(
+          'trash_items',
+          eq: {'user_id': userId, 'collection': collection, 'id': itemId},
+        );
+        final invoice = await store.select(
+          'invoices',
+          eq: {'id': itemId, 'user_id': userId},
+        );
 
-        expect(doc.exists, isTrue);
-        expect(doc.data()?['deletedAt'], isNotNull);
-        expect(doc.data()?['name'], 'Test Invoice'); // Original data preserved
+        expect(trash.length, 1);
+        expect(trash.first['data']['name'], 'Test Invoice');
+        expect(trash.first['data']['deletedAt'], isNotNull);
+        expect(invoice.first['is_deleted'], true);
       });
 
       test('should include delete reason when provided', () async {
-        // Arrange
-        const collection = 'invoices';
+        const collection = SoftDeleteCollections.invoices;
         const userId = 'user123';
         const itemId = 'invoice1';
         const reason = 'User requested deletion';
 
-        await fakeFirestore
-            .collection(collection)
-            .doc(userId)
-            .collection('items')
-            .doc(itemId)
-            .set({'name': 'Test Invoice'});
+        await store.upsert('invoices', {
+          'id': itemId,
+          'user_id': userId,
+          'data': {'name': 'Test Invoice'},
+          'is_deleted': false,
+        });
 
-        // Act
-        await service.softDeleteItem(collection, userId, itemId, reason: reason);
+        await service.softDeleteItem(
+          collection,
+          userId,
+          itemId,
+          reason: reason,
+        );
 
-        // Assert
-        final doc = await fakeFirestore
-            .collection(collection)
-            .doc(userId)
-            .collection('items')
-            .doc(itemId)
-            .get();
+        final trash = await store.select(
+          'trash_items',
+          eq: {'user_id': userId, 'collection': collection, 'id': itemId},
+        );
 
-        expect(doc.data()?['deleteReason'], reason);
+        expect(trash.first['data']['deleteReason'], reason);
       });
     });
 
     group('restoreItem', () {
-      test('should remove deletedAt and deleteReason fields', () async {
-        // Arrange
-        const collection = 'invoices';
+      test('should restore invoice and remove trash entry', () async {
+        const collection = SoftDeleteCollections.invoices;
         const userId = 'user123';
         const itemId = 'invoice1';
 
-        await fakeFirestore
-            .collection(collection)
-            .doc(userId)
-            .collection('items')
-            .doc(itemId)
-            .set({
-          'name': 'Test Invoice',
-          'deletedAt': DateTime.now(),
-          'deleteReason': 'Test reason',
+        await store.upsert('invoices', {
+          'id': itemId,
+          'user_id': userId,
+          'data': {'name': 'Test Invoice', 'status': 'draft'},
+          'is_deleted': true,
+        });
+        await store.upsert('trash_items', {
+          'id': itemId,
+          'user_id': userId,
+          'collection': collection,
+          'data': {
+            'name': 'Test Invoice',
+            'status': 'draft',
+            'deletedAt': DateTime.now().toIso8601String(),
+            'deleteReason': 'Test reason',
+          },
+          'deleted_at': DateTime.now().toIso8601String(),
         });
 
-        // Act
         await service.restoreItem(collection, userId, itemId);
 
-        // Assert
-        final doc = await fakeFirestore
-            .collection(collection)
-            .doc(userId)
-            .collection('items')
-            .doc(itemId)
-            .get();
+        final trash = await store.select(
+          'trash_items',
+          eq: {'user_id': userId, 'collection': collection},
+        );
+        final invoice = await store.select(
+          'invoices',
+          eq: {'id': itemId, 'user_id': userId},
+        );
 
-        expect(doc.data()?['deletedAt'], isNull);
-        expect(doc.data()?['deleteReason'], isNull);
-        expect(doc.data()?['name'], 'Test Invoice'); // Original data preserved
+        expect(trash, isEmpty);
+        expect(invoice.first['is_deleted'], false);
+        expect(invoice.first['data']['deletedAt'], isNull);
       });
     });
 
     group('cleanupExpiredItems', () {
       test('should permanently delete items older than 7 days', () async {
-        // Arrange
-        const collection = 'invoices';
+        const collection = SoftDeleteCollections.invoices;
         const userId = 'user123';
-        final eightDaysAgo = DateTime.now().subtract(const Duration(days: 8));
-        final sixDaysAgo = DateTime.now().subtract(const Duration(days: 6));
+        final eightDaysAgo =
+            DateTime.now().subtract(const Duration(days: 8)).toIso8601String();
+        final sixDaysAgo =
+            DateTime.now().subtract(const Duration(days: 6)).toIso8601String();
 
-        // Create expired item
-        await fakeFirestore
-            .collection(collection)
-            .doc(userId)
-            .collection('items')
-            .doc('expired1')
-            .set({'deletedAt': eightDaysAgo});
+        await store.upsert('trash_items', {
+          'id': 'expired1',
+          'user_id': userId,
+          'collection': collection,
+          'data': {'name': 'Expired'},
+          'deleted_at': eightDaysAgo,
+        });
+        await store.upsert('invoices', {
+          'id': 'expired1',
+          'user_id': userId,
+          'data': {'name': 'Expired'},
+          'is_deleted': true,
+        });
+        await store.upsert('trash_items', {
+          'id': 'recent1',
+          'user_id': userId,
+          'collection': collection,
+          'data': {'name': 'Recent'},
+          'deleted_at': sixDaysAgo,
+        });
 
-        // Create non-expired item
-        await fakeFirestore
-            .collection(collection)
-            .doc(userId)
-            .collection('items')
-            .doc('recent1')
-            .set({'deletedAt': sixDaysAgo});
-
-        // Act
         await service.cleanupExpiredItems(collection, userId);
 
-        // Assert
-        final expiredDoc = await fakeFirestore
-            .collection(collection)
-            .doc(userId)
-            .collection('items')
-            .doc('expired1')
-            .get();
-        final recentDoc = await fakeFirestore
-            .collection(collection)
-            .doc(userId)
-            .collection('items')
-            .doc('recent1')
-            .get();
+        final rows = await store.select(
+          'trash_items',
+          eq: {'user_id': userId, 'collection': collection},
+        );
 
-        expect(expiredDoc.exists, isFalse); // Should be deleted
-        expect(recentDoc.exists, isTrue); // Should remain
-      });
-
-      test('should not delete anything if no expired items exist', () async {
-        // Arrange
-        const collection = 'invoices';
-        const userId = 'user123';
-        final sixDaysAgo = DateTime.now().subtract(const Duration(days: 6));
-
-        await fakeFirestore
-            .collection(collection)
-            .doc(userId)
-            .collection('items')
-            .doc('recent1')
-            .set({'deletedAt': sixDaysAgo});
-
-        // Act
-        await service.cleanupExpiredItems(collection, userId);
-
-        // Assert
-        final doc = await fakeFirestore
-            .collection(collection)
-            .doc(userId)
-            .collection('items')
-            .doc('recent1')
-            .get();
-
-        expect(doc.exists, isTrue);
+        expect(rows.length, 1);
+        expect(rows.first['id'], 'recent1');
       });
     });
 
     group('getTrashItems', () {
       test('should return only items deleted within last 7 days', () async {
-        // Arrange
-        const collection = 'invoices';
+        const collection = SoftDeleteCollections.invoices;
         const userId = 'user123';
-        final sixDaysAgo = DateTime.now().subtract(const Duration(days: 6));
-        final eightDaysAgo = DateTime.now().subtract(const Duration(days: 8));
+        final sixDaysAgo =
+            DateTime.now().subtract(const Duration(days: 6)).toIso8601String();
+        final eightDaysAgo =
+            DateTime.now().subtract(const Duration(days: 8)).toIso8601String();
 
-        await fakeFirestore
-            .collection(collection)
-            .doc(userId)
-            .collection('items')
-            .doc('recent1')
-            .set({'name': 'Recent', 'deletedAt': sixDaysAgo});
+        await store.upsert('trash_items', {
+          'id': 'recent1',
+          'user_id': userId,
+          'collection': collection,
+          'data': {'name': 'Recent'},
+          'deleted_at': sixDaysAgo,
+        });
+        await store.upsert('trash_items', {
+          'id': 'expired1',
+          'user_id': userId,
+          'collection': collection,
+          'data': {'name': 'Expired'},
+          'deleted_at': eightDaysAgo,
+        });
 
-        await fakeFirestore
-            .collection(collection)
-            .doc(userId)
-            .collection('items')
-            .doc('expired1')
-            .set({'name': 'Expired', 'deletedAt': eightDaysAgo});
+        final items = await service.getTrashItems(collection, userId).first;
 
-        // Act
-        final stream = service.getTrashItems(collection, userId);
-        final items = await stream.first;
-
-        // Assert
         expect(items.length, 1);
         expect(items.first['id'], 'recent1');
         expect(items.first['collection'], collection);
@@ -215,95 +189,92 @@ void main() {
 
     group('getTrashCount', () {
       test('should return count of items in trash', () async {
-        // Arrange
-        const collection = 'invoices';
+        const collection = SoftDeleteCollections.invoices;
         const userId = 'user123';
-        final sixDaysAgo = DateTime.now().subtract(const Duration(days: 6));
+        final sixDaysAgo =
+            DateTime.now().subtract(const Duration(days: 6)).toIso8601String();
 
-        await fakeFirestore
-            .collection(collection)
-            .doc(userId)
-            .collection('items')
-            .doc('item1')
-            .set({'deletedAt': sixDaysAgo});
+        await store.upsert('trash_items', {
+          'id': 'item1',
+          'user_id': userId,
+          'collection': collection,
+          'data': {},
+          'deleted_at': sixDaysAgo,
+        });
+        await store.upsert('trash_items', {
+          'id': 'item2',
+          'user_id': userId,
+          'collection': collection,
+          'data': {},
+          'deleted_at': sixDaysAgo,
+        });
 
-        await fakeFirestore
-            .collection(collection)
-            .doc(userId)
-            .collection('items')
-            .doc('item2')
-            .set({'deletedAt': sixDaysAgo});
+        final count = await service.getTrashCount(collection, userId).first;
 
-        // Act
-        final stream = service.getTrashCount(collection, userId);
-        final count = await stream.first;
-
-        // Assert
         expect(count, 2);
       });
     });
 
     group('permanentDeleteItem', () {
-      test('should permanently delete item', () async {
-        // Arrange
-        const collection = 'invoices';
+      test('should permanently delete trash and invoice row', () async {
+        const collection = SoftDeleteCollections.invoices;
         const userId = 'user123';
         const itemId = 'invoice1';
 
-        await fakeFirestore
-            .collection(collection)
-            .doc(userId)
-            .collection('items')
-            .doc(itemId)
-            .set({'name': 'Test Invoice'});
+        await store.upsert('trash_items', {
+          'id': itemId,
+          'user_id': userId,
+          'collection': collection,
+          'data': {'name': 'Test Invoice'},
+          'deleted_at': DateTime.now().toIso8601String(),
+        });
+        await store.upsert('invoices', {
+          'id': itemId,
+          'user_id': userId,
+          'data': {'name': 'Test Invoice'},
+          'is_deleted': true,
+        });
 
-        // Act
         await service.permanentDeleteItem(collection, userId, itemId);
 
-        // Assert
-        final doc = await fakeFirestore
-            .collection(collection)
-            .doc(userId)
-            .collection('items')
-            .doc(itemId)
-            .get();
+        final trash = await store.select('trash_items', eq: {'id': itemId});
+        final invoice = await store.select('invoices', eq: {'id': itemId});
 
-        expect(doc.exists, isFalse);
+        expect(trash, isEmpty);
+        expect(invoice, isEmpty);
       });
     });
 
     group('emptyTrash', () {
       test('should permanently delete all items in trash', () async {
-        // Arrange
-        const collection = 'invoices';
+        const collection = SoftDeleteCollections.invoices;
         const userId = 'user123';
-        final sixDaysAgo = DateTime.now().subtract(const Duration(days: 6));
+        final sixDaysAgo =
+            DateTime.now().subtract(const Duration(days: 6)).toIso8601String();
 
-        await fakeFirestore
-            .collection(collection)
-            .doc(userId)
-            .collection('items')
-            .doc('item1')
-            .set({'deletedAt': sixDaysAgo});
+        await store.upsert('trash_items', {
+          'id': 'item1',
+          'user_id': userId,
+          'collection': collection,
+          'data': {},
+          'deleted_at': sixDaysAgo,
+        });
+        await store.upsert('trash_items', {
+          'id': 'item2',
+          'user_id': userId,
+          'collection': collection,
+          'data': {},
+          'deleted_at': sixDaysAgo,
+        });
 
-        await fakeFirestore
-            .collection(collection)
-            .doc(userId)
-            .collection('items')
-            .doc('item2')
-            .set({'deletedAt': sixDaysAgo});
-
-        // Act
         await service.emptyTrash(collection, userId);
 
-        // Assert
-        final snapshot = await fakeFirestore
-            .collection(collection)
-            .doc(userId)
-            .collection('items')
-            .get();
+        final rows = await store.select(
+          'trash_items',
+          eq: {'user_id': userId, 'collection': collection},
+        );
 
-        expect(snapshot.docs.length, 0);
+        expect(rows, isEmpty);
       });
     });
   });

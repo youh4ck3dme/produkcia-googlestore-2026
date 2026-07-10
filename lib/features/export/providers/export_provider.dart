@@ -1,18 +1,21 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'firestore_export_data_source.dart';
 import '../models/export_models.dart';
 import '../../../core/services/export_service.dart';
+import '../../../core/supabase/supabase_config.dart';
+import '../../../core/supabase/supabase_providers.dart';
+import 'supabase_export_data_source.dart';
 
 final exportProvider =
     StateNotifierProvider<ExportController, ExportState>((ref) {
-  return ExportController();
+  return ExportController(ref);
 });
 
 // ... exportPeriodsProvider remains the same ...
 
 class ExportController extends StateNotifier<ExportState> {
-  ExportController() : super(ExportState.idle());
+  ExportController(this._ref) : super(ExportState.idle());
+
+  final Ref _ref;
 
   Future<void> run({
     required String uid,
@@ -27,8 +30,13 @@ class ExportController extends StateNotifier<ExportState> {
     );
 
     try {
-      final dataSource =
-          FirestoreExportDataSource(FirebaseFirestore.instance, uid);
+      if (!SupabaseConfig.isReady) {
+        throw StateError('Supabase nie je inicializovaný — export nie je dostupný');
+      }
+      final dataSource = SupabaseExportDataSource(
+        _ref.read(supabaseTableStoreProvider),
+        uid,
+      );
       final service = ExportService(dataSource);
 
       final result = await service.buildZip(

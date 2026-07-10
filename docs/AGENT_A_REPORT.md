@@ -30,4 +30,4 @@ supabase functions deploy delete-account   # manuálne pred produkciou
 
 ## Deploy blocker
 
-Edge function musí byť deploynutá na projekt `xitittqtaeyazcpaylsz` pred Play testom account deletion.
+Edge function musí byť deploynutá na projekt `kpsnwpuydqqojwmrnkdy` pred Play testom account deletion.

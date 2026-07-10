@@ -1,128 +1,226 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Service for managing soft delete operations following Google/Firebase data retention policies
+import '../supabase/supabase_config.dart';
+import '../supabase/supabase_providers.dart';
+import '../supabase/supabase_table_store.dart';
+
+/// Soft delete cez Supabase `trash_items` + `is_deleted` na faktúrach.
 class SoftDeleteService {
-  final FirebaseFirestore _firestore;
+  SoftDeleteService(this._store);
 
-  SoftDeleteService(this._firestore);
+  final SupabaseTableStore? _store;
 
-  /// Soft delete an item by marking it as deleted
+  static const _trashTable = 'trash_items';
+  static const _invoicesTable = 'invoices';
+  static const _retentionDays = 7;
+
+  DateTime get _sevenDaysAgo =>
+      DateTime.now().subtract(const Duration(days: _retentionDays));
+
+  bool _withinRetention(dynamic deletedAt) {
+    if (deletedAt == null) return false;
+    final dt = deletedAt is DateTime
+        ? deletedAt
+        : DateTime.tryParse(deletedAt.toString());
+    if (dt == null) return false;
+    return dt.isAfter(_sevenDaysAgo);
+  }
+
   Future<void> softDeleteItem(
     String collection,
     String userId,
     String itemId, {
     String? reason,
   }) async {
-    final docRef = _firestore.collection(collection).doc(userId).collection('items').doc(itemId);
+    final store = _store;
+    if (store == null || !store.isAvailable) return;
 
-    await docRef.update({
-      'deletedAt': FieldValue.serverTimestamp(),
-      'deleteReason': reason,
+    final now = DateTime.now().toIso8601String();
+    var itemData = <String, dynamic>{};
+
+    if (collection == SoftDeleteCollections.invoices) {
+      final row = await store.selectMaybeSingle(
+        _invoicesTable,
+        columns: ['data'],
+        eq: {'id': itemId, 'user_id': userId},
+      );
+      if (row != null) {
+        itemData = Map<String, dynamic>.from(row['data'] as Map);
+      }
+    } else {
+      final existing = await store.selectMaybeSingle(
+        _trashTable,
+        columns: ['data'],
+        eq: {'id': itemId, 'user_id': userId, 'collection': collection},
+      );
+      if (existing != null) {
+        itemData = Map<String, dynamic>.from(existing['data'] as Map);
+      }
+    }
+
+    itemData['deletedAt'] = now;
+    if (reason != null) itemData['deleteReason'] = reason;
+
+    await store.upsert(_trashTable, {
+      'id': itemId,
+      'user_id': userId,
+      'collection': collection,
+      'data': itemData,
+      'deleted_at': now,
     });
+
+    if (collection == SoftDeleteCollections.invoices) {
+      await store.update(
+        _invoicesTable,
+        {'is_deleted': true, 'updated_at': now},
+        eq: {'id': itemId, 'user_id': userId},
+      );
+    }
   }
 
-  /// Restore a soft deleted item
   Future<void> restoreItem(String collection, String userId, String itemId) async {
-    final docRef = _firestore.collection(collection).doc(userId).collection('items').doc(itemId);
+    final store = _store;
+    if (store == null || !store.isAvailable) return;
 
-    await docRef.update({
-      'deletedAt': FieldValue.delete(),
-      'deleteReason': FieldValue.delete(),
-    });
+    final trash = await store.selectMaybeSingle(
+      _trashTable,
+      columns: ['data'],
+      eq: {'id': itemId, 'user_id': userId, 'collection': collection},
+    );
+
+    if (collection == SoftDeleteCollections.invoices && trash != null) {
+      final data = Map<String, dynamic>.from(trash['data'] as Map);
+      data.remove('deletedAt');
+      data.remove('deleteReason');
+
+      await store.upsert(_invoicesTable, {
+        'id': itemId,
+        'user_id': userId,
+        'data': data,
+        'date_issued': data['dateIssued'],
+        'status': data['status'],
+        'is_deleted': false,
+        'updated_at': DateTime.now().toIso8601String(),
+      });
+    }
+
+    await store.delete(
+      _trashTable,
+      eq: {'id': itemId, 'user_id': userId, 'collection': collection},
+    );
   }
 
-  /// Permanently delete items that are older than 7 days
   Future<void> cleanupExpiredItems(String collection, String userId) async {
-    final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
-    final query = _firestore
-        .collection(collection)
-        .doc(userId)
-        .collection('items')
-        .where('deletedAt', isLessThan: sevenDaysAgo);
+    final store = _store;
+    if (store == null || !store.isAvailable) return;
 
-    final snapshot = await query.get();
-    final batch = _firestore.batch();
+    final rows = await store.select(
+      _trashTable,
+      eq: {'user_id': userId, 'collection': collection},
+    );
 
-    for (final doc in snapshot.docs) {
-      batch.delete(doc.reference);
-    }
-
-    if (snapshot.docs.isNotEmpty) {
-      await batch.commit();
+    for (final row in rows) {
+      if (!_withinRetention(row['deleted_at'])) {
+        await _permanentDeleteRow(store, collection, userId, row['id'] as String);
+      }
     }
   }
 
-  /// Get all soft deleted items that can still be restored
-  Stream<List<Map<String, dynamic>>> getTrashItems(String collection, String userId) {
-    final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
+  Stream<List<Map<String, dynamic>>> getTrashItems(
+    String collection,
+    String userId,
+  ) {
+    final store = _store;
+    if (store == null || !store.isAvailable) {
+      return Stream.value([]);
+    }
 
-    return _firestore
-        .collection(collection)
-        .doc(userId)
-        .collection('items')
-        .where('deletedAt', isGreaterThan: sevenDaysAgo)
-        .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) => {
-              'id': doc.id,
-              'data': doc.data(),
-              'collection': collection,
-            }).toList());
+    return store
+        .stream(
+          _trashTable,
+          primaryKey: ['id'],
+          eq: {'user_id': userId, 'collection': collection},
+          orderColumn: 'deleted_at',
+          ascending: false,
+        )
+        .map((rows) => rows
+            .where((row) => _withinRetention(row['deleted_at']))
+            .map((row) => {
+                  'id': row['id'],
+                  'data': {
+                    ...Map<String, dynamic>.from(row['data'] as Map),
+                    'deletedAt': row['deleted_at'],
+                  },
+                  'collection': collection,
+                })
+            .toList());
   }
 
-  /// Get count of items in trash
   Stream<int> getTrashCount(String collection, String userId) {
-    final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
-
-    return _firestore
-        .collection(collection)
-        .doc(userId)
-        .collection('items')
-        .where('deletedAt', isGreaterThan: sevenDaysAgo)
-        .snapshots()
-        .map((snapshot) => snapshot.docs.length);
+    return getTrashItems(collection, userId).map((items) => items.length);
   }
 
-  /// Permanently delete a specific item (admin function)
-  Future<void> permanentDeleteItem(String collection, String userId, String itemId) async {
-    await _firestore
-        .collection(collection)
-        .doc(userId)
-        .collection('items')
-        .doc(itemId)
-        .delete();
+  Future<void> permanentDeleteItem(
+    String collection,
+    String userId,
+    String itemId,
+  ) async {
+    final store = _store;
+    if (store == null || !store.isAvailable) return;
+    await _permanentDeleteRow(store, collection, userId, itemId);
   }
 
-  /// Empty trash - permanently delete all soft deleted items
   Future<void> emptyTrash(String collection, String userId) async {
-    final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
-    final query = _firestore
-        .collection(collection)
-        .doc(userId)
-        .collection('items')
-        .where('deletedAt', isGreaterThan: sevenDaysAgo);
+    final store = _store;
+    if (store == null || !store.isAvailable) return;
 
-    final snapshot = await query.get();
-    final batch = _firestore.batch();
+    final rows = await store.select(
+      _trashTable,
+      eq: {'user_id': userId, 'collection': collection},
+    );
 
-    for (final doc in snapshot.docs) {
-      batch.delete(doc.reference);
+    for (final row in rows) {
+      if (_withinRetention(row['deleted_at'])) {
+        await _permanentDeleteRow(
+          store,
+          collection,
+          userId,
+          row['id'] as String,
+        );
+      }
+    }
+  }
+
+  Future<void> _permanentDeleteRow(
+    SupabaseTableStore store,
+    String collection,
+    String userId,
+    String itemId,
+  ) async {
+    if (collection == SoftDeleteCollections.invoices) {
+      await store.delete(
+        _invoicesTable,
+        eq: {'id': itemId, 'user_id': userId},
+      );
     }
 
-    if (snapshot.docs.isNotEmpty) {
-      await batch.commit();
-    }
+    await store.delete(
+      _trashTable,
+      eq: {'id': itemId, 'user_id': userId, 'collection': collection},
+    );
   }
 }
 
-// Collection names for different item types
 class SoftDeleteCollections {
   static const String invoices = 'soft_deleted_invoices';
   static const String bizBotConversations = 'soft_deleted_bizbot_conversations';
   static const String notepadItems = 'soft_deleted_notepad_items';
 }
 
-// Provider for the soft delete service
 final softDeleteServiceProvider = Provider<SoftDeleteService>((ref) {
-  return SoftDeleteService(FirebaseFirestore.instance);
+  return SoftDeleteService(
+    SupabaseConfig.isReady
+        ? ref.watch(supabaseTableStoreProvider)
+        : null,
+  );
 });

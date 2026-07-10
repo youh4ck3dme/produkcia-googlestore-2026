@@ -6,8 +6,9 @@
 set +e
 
 PROJECT_ID="bizagent-live-2026"
-DEMO_EMAIL="bizbizagent@bizbizagent.com"
-DEMO_PASSWORD="1369#1369#1369#"
+source "$(dirname "$0")/scripts/load_demo_secrets.sh"
+DEMO_EMAIL="${DEMO_ACCOUNT_EMAIL}"
+DEMO_PASSWORD="${DEMO_ACCOUNT_PASSWORD}"
 
 echo "🧪 BizAgent Production Firebase Test Suite"
 echo "=========================================="

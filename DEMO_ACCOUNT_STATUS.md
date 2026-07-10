@@ -6,7 +6,7 @@
 
 ### ✅ 1. Údaje Demo Účtu
 - ✅ **Email:** `bizbizagent@bizbizagent.com` - dokumentované vo všetkých súboroch
-- ✅ **Password:** `1369#1369#1369#` - dokumentované vo všetkých súboroch
+- ✅ **Password:** `(heslo v DEMO_ACCOUNT_SECRETS.txt — gitignored)` - dokumentované vo všetkých súboroch
 - ✅ **Provider:** Email/Password - dokumentované
 
 ### ✅ 2. Dokumentácia

@@ -12,7 +12,6 @@ import 'package:bizagent/core/services/ai_ocr_service.dart';
 import 'package:bizagent/core/services/analytics_service.dart';
 import 'package:bizagent/core/services/expense_parser_service.dart';
 import 'package:bizagent/core/services/gemini_service.dart';
-import 'package:bizagent/core/services/local_persistence_service.dart';
 import 'package:bizagent/core/services/ocr_service.dart';
 import 'package:bizagent/features/auth/models/user_model.dart';
 import 'package:bizagent/features/auth/providers/auth_repository.dart';

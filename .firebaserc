@@ -1,7 +1,8 @@
 {
   "projects": {
-    "default": "bizagent-pro-2026",
-    "production": "bizagent-pro-2026",
-    "live": "bizagent-live-2026"
+    "default": "bizagent-live-2026",
+    "production": "bizagent-live-2026",
+    "live": "bizagent-live-2026",
+    "staging": "bizagent-pro-2026"
   }
 }

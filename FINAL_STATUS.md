@@ -25,7 +25,7 @@
 ### 2. 🔐 Demo Účet
 - ✅ **Údaje aktualizované vo všetkých súboroch:**
   - Email: `bizbizagent@bizbizagent.com`
-  - Password: `1369#1369#1369#`
+  - Password: `(heslo v DEMO_ACCOUNT_SECRETS.txt — gitignored)`
   - Provider: Email/Password
 
 - ✅ **Dokumentácia:**
@@ -77,7 +77,7 @@
   1. Choď na: https://console.firebase.google.com/project/bizagent-live-2026/authentication/users
   2. Klikni "Add User"
   3. Email: `bizbizagent@bizbizagent.com`
-  4. Password: `1369#1369#1369#`
+  4. Password: `(heslo v DEMO_ACCOUNT_SECRETS.txt — gitignored)`
   5. Over, že Provider je "password" (nie Google)
 
 - [ ] **Otestovať login v aplikácii:**

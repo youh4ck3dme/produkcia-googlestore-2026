@@ -16,12 +16,13 @@ Namiesto vkladania kľúčov do súborov ich bezpečne uložíme do cloudu:
 ### Automatické nastavenie (ak máte kľúče v `.env`)
 
 ```bash
-cd /Users/youh4ck3dme/Downloads/BizAgent-produkcia-google-play
+cd ~/Projects/02_Products/bizagent
+firebase use live
 
-# Nastavenie všetkých secrets naraz
-echo "AIzaSyC_QQolZums9xyC7w4fqPT24_zhXBHCxjE" | firebase functions:secrets:set GEMINI_API_KEY
-echo "ia_7b78c4d4ecfc53bf11599130dabfed3f36ea872b193f0eda" | firebase functions:secrets:set ICOATLAS_API_KEY
-echo "6LfwZ1YsAAAAAB_vwAcbBl0SFk-NxfRap8vZjnSb" | firebase functions:secrets:set RECAPTCHA_API_KEY
+# Nastavenie secrets — hodnoty NIKDY do gitu; použij interaktívny prompt alebo stdin z lokálneho .env
+firebase functions:secrets:set GEMINI_API_KEY
+firebase functions:secrets:set ICOATLAS_API_KEY
+firebase functions:secrets:set RECAPTCHA_API_KEY
 ```
 
 ### Manuálne nastavenie

@@ -2,8 +2,9 @@
 # Skript na overenie demo účtu v Firebase
 # Spustenie: ./verify_demo_account.sh
 
-DEMO_EMAIL="bizbizagent@bizbizagent.com"
-DEMO_PASSWORD="1369#1369#1369#"
+source "$(dirname "$0")/scripts/load_demo_secrets.sh"
+DEMO_EMAIL="${DEMO_ACCOUNT_EMAIL}"
+DEMO_PASSWORD="${DEMO_ACCOUNT_PASSWORD}"
 
 echo "🔍 Overovanie Demo Účtu"
 echo "======================"

@@ -2,7 +2,6 @@ import 'package:bizagent/core/config/play_release_scope.dart';
 import 'package:bizagent/core/ui/biz_theme.dart';
 import 'package:bizagent/features/auth/models/user_model.dart';
 import 'package:bizagent/features/auth/providers/auth_repository.dart';
-import 'package:bizagent/features/expenses/providers/expenses_provider.dart';
 import 'package:bizagent/features/expenses/screens/create_expense_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

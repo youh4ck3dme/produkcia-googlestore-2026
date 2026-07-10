@@ -9,7 +9,7 @@
 2. Vyber projekt: bizagent-live-2026
 3. Authentication > Users > Add user
 4. Email: bizbizagent@bizbizagent.com
-5. Password: 1369#1369#1369#
+5. Password: (heslo v DEMO_ACCOUNT_SECRETS.txt — gitignored)
 6. ✅ Vytvoriť
 7. Overiť prihlásenie v aplikácii
 ```

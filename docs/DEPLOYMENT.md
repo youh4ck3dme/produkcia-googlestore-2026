@@ -110,7 +110,7 @@ open Runner.xcworkspace
 
 **V Xcode:**
 1. **Signing & Capabilities** → Select team
-2. **Bundle Identifier:** `sk.bizagent.app`
+2. **Bundle Identifier:** `com.bizagent.bizagent` (aktuálne v Xcode; Android používa `sk.bizagent.app` — zosúladiť pred App Store release)
 3. **Version:** `1.0.1` (sync s pubspec.yaml)
 4. **Build:** `2`
 

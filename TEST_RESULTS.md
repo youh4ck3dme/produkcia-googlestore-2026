@@ -58,7 +58,7 @@
 3. Over, že provider je `Email/Password` (nie Google Sign-In)
 4. Otestuj login s:
    - Email: `bizbizagent@bizbizagent.com`
-   - Password: `1369#1369#1369#`
+   - Password: `(heslo v DEMO_ACCOUNT_SECRETS.txt — gitignored)`
 
 ### ✅ Test 11: API Keys (Secrets)
 - ✅ `GEMINI_API_KEY` secret existuje

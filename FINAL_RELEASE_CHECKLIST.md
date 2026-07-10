@@ -36,7 +36,7 @@
 
 - [ ] ⚠️ **MANUÁLNE:** Vytvoriť demo účet v Firebase Console:
   - Email: `bizbizagent@bizbizagent.com`
-  - Heslo: `1369#1369#1369#`
+  - Heslo: `(heslo v DEMO_ACCOUNT_SECRETS.txt — gitignored)`
   - Provider: Email/Password (nie Google!)
   - Overiť prihlásenie v aplikácii
 
@@ -115,7 +115,7 @@
 
 - [ ] ⚠️ **MANUÁLNE:** Pridať demo účet:
   - **Username:** `bizbizagent@bizbizagent.com`
-  - **Password:** `1369#1369#1369#`
+  - **Password:** `(heslo v DEMO_ACCOUNT_SECRETS.txt — gitignored)`
   - **Notes:** `Test account for review purposes with pre-populated dummy data.`
 
 ### Data Safety

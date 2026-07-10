@@ -26,7 +26,7 @@ Tento dokument popisuje, ako otestovať všetky produkčné API a Firebase nasta
 
 ### 5. Firebase Auth
 - ✅ Demo účet existuje: `bizbizagent@bizbizagent.com`
-- ✅ Heslo: `1369#1369#1369#`
+- ✅ Heslo: `(heslo v DEMO_ACCOUNT_SECRETS.txt — gitignored)`
 - ✅ Provider: Email/Password (nie Google Sign-In)
 
 ## 🚀 Spustenie Testov

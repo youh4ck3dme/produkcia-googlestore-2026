@@ -47,7 +47,7 @@
 ```bash
 # Vytvoriť v Firebase Console:
 Email: bizbizagent@bizbizagent.com
-Password: 1369#1369#1369#
+Password: (heslo v DEMO_ACCOUNT_SECRETS.txt — gitignored)
 Provider: Email/Password (nie Google!)
 ```
 

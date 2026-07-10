@@ -13,7 +13,7 @@ Kompletný návod na rýchle nasadenie všetkých komponentov BizAgent aplikáci
 ### Jeden príkaz deploy
 
 ```bash
-cd /Users/youh4ck3dme/Downloads/BizAgent-produkcia-google-play && ./deploy_functions.sh
+cd ~/Projects/02_Products/bizagent && firebase use live && ./deploy_functions.sh
 ```
 
 ### Čo sa stane
@@ -26,12 +26,13 @@ cd /Users/youh4ck3dme/Downloads/BizAgent-produkcia-google-play && ./deploy_funct
 ### Prvé nastavenie secrets
 
 ```bash
-cd /Users/youh4ck3dme/Downloads/BizAgent-produkcia-google-play
+cd ~/Projects/02_Products/bizagent
+firebase use live
 
-# Nastavenie secrets (ak ešte nie sú nastavené)
-echo "AIzaSyC_QQolZums9xyC7w4fqPT24_zhXBHCxjE" | firebase functions:secrets:set GEMINI_API_KEY
-echo "ia_7b78c4d4ecfc53bf11599130dabfed3f36ea872b193f0eda" | firebase functions:secrets:set ICOATLAS_API_KEY
-echo "6LfwZ1YsAAAAAB_vwAcbBl0SFk-NxfRap8vZjnSb" | firebase functions:secrets:set RECAPTCHA_API_KEY
+# Secrets nastav interaktívne (hodnoty drž v functions/.env — gitignored)
+firebase functions:secrets:set GEMINI_API_KEY
+firebase functions:secrets:set ICOATLAS_API_KEY
+firebase functions:secrets:set RECAPTCHA_API_KEY
 ```
 
 ## 🌐 Firebase Hosting (Web)

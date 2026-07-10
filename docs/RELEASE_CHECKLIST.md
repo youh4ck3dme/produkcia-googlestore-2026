@@ -6,7 +6,7 @@ Tento dokument je tvojou poslednou zastávkou pred kliknutím na tlačidlo **"Pu
 
 ## ✅ Final Pre-Publish Checklist (5 Minút)
 
-- [ ] **Demo Účet existuje:** Overil si v Firebase Console, že user `bizbizagent@bizbizagent.com` s heslom `1369#1369#1369#` reálne existuje a je typu **"Email/Password"** (nie Google Sign-In!)?
+- [ ] **Demo Účet existuje:** Overil si v Firebase Console, že user `bizbizagent@bizbizagent.com` s heslom `(heslo v DEMO_ACCOUNT_SECRETS.txt — gitignored)` reálne existuje a je typu **"Email/Password"** (nie Google Sign-In!)?
 - [ ] **App Access:** Zadaj si v Play Console do sekcie "App Access" presne tieto credentials.
 - [ ] **Data Safety:** Máš zaškrtnuté "Photos" (kvôli skenovaniu) a "Email" (kvôli loginu)?
 - [ ] **Data Safety:** Máš priznané aj "App activity" (Analytics) a "Diagnostics" (Crashlytics)?
@@ -31,7 +31,7 @@ Ak ti Google vráti aplikáciu s chybou, nestresuj. Tu sú pripravené odpovede:
 
 ### Scenár A: "We couldn't login" (Nepodarilo sa prihlásiť)
 **Odpoveď:**
-> "Thank you for the feedback. We have verified that the testing credentials provided (bizbizagent@bizbizagent.com) are active in our Firebase authentication system. We have also ensured that our backend security rules allow the reviewer's access. Please try again with: User: bizbizagent@bizbizagent.com / Pass: 1369#1369#1369#. If the issue persists, ensure your testing environment allows Firebase Auth traffic."
+> "Thank you for the feedback. We have verified that the testing credentials provided (bizbizagent@bizbizagent.com) are active in our Firebase authentication system. We have also ensured that our backend security rules allow the reviewer's access. Please try again with: User: bizbizagent@bizbizagent.com / Pass: (heslo v DEMO_ACCOUNT_SECRETS.txt — gitignored). If the issue persists, ensure your testing environment allows Firebase Auth traffic."
 
 ### Scenár B: "Missing Data Safety details" (Chýba deklarácia dát)
 **Odpoveď:**

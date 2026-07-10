@@ -10,8 +10,14 @@
 const admin = require('firebase-admin');
 
 const PROJECT_ID = 'bizagent-live-2026';
-const DEMO_EMAIL = 'bizbizagent@bizbizagent.com';
-const DEMO_PASSWORD = '1369#1369#1369#';
+const DEMO_EMAIL = process.env.DEMO_ACCOUNT_EMAIL || 'bizbizagent@bizbizagent.com';
+const DEMO_PASSWORD = process.env.DEMO_ACCOUNT_PASSWORD;
+
+if (!DEMO_PASSWORD) {
+  console.error('❌ Nastav DEMO_ACCOUNT_PASSWORD (napr. zo súboru DEMO_ACCOUNT_SECRETS.txt).');
+  console.error('   Skopíruj DEMO_ACCOUNT_SECRETS.txt.example → DEMO_ACCOUNT_SECRETS.txt');
+  process.exit(1);
+}
 
 async function createDemoAccount() {
   console.log('🔐 Vytváranie demo účtu v Firebase');

@@ -1,0 +1,33 @@
+# Build & cache
+.dart_tool/
+build/
+coverage/
+*.log
+flutter_*.log
+
+# Node
+node_modules/
+functions/node_modules/
+
+# Secrets — nikdy do AI kontextu
+dart_defines/supabase.json
+android/key.properties
+*.jks
+*.keystore
+**/google-services.json
+.env
+.env.*
+!.env.example
+!.env.*.example
+.supabase_test_password
+
+# Store / release balíky (veľké, irelevantné pre kód)
+google_play_assets/
+GooglePlay_Release_Content/
+debug-info/
+
+# Platform noise
+android/.gradle/
+ios/Pods/
+ios/.symlinks/
+macos/Pods/

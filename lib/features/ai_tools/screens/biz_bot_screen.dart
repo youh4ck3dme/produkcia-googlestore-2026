@@ -321,7 +321,7 @@ class _BizBotScreenState extends ConsumerState<BizBotScreen> {
     if (confirmed != true) return;
 
     try {
-      if (SupabaseConfig.isConfigured) {
+      if (SupabaseConfig.isReady) {
         await SupabaseConfig.client.from('ai_reports').insert({
           'user_id': user.id,
           'message_id': msg.id,

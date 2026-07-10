@@ -113,7 +113,16 @@ echo -e "${YELLOW}🔨 Budovanie Release AAB...${NC}"
 echo "Toto môže trvať niekoľko minút..."
 echo ""
 
-if flutter build appbundle --release --obfuscate --split-debug-info=build/symbols; then
+DEFINES="dart_defines/supabase.json"
+if [[ ! -f "$DEFINES" ]]; then
+    echo ""
+    echo -e "${RED}❌ Chýba $DEFINES${NC}"
+    echo "   Release build vyžaduje Supabase URL + publishable key."
+    echo "   Skopíruj: cp dart_defines/supabase.example.json dart_defines/supabase.json"
+    exit 1
+fi
+
+if flutter build appbundle --release --obfuscate --split-debug-info=build/symbols --dart-define-from-file="$DEFINES"; then
     echo ""
     echo -e "${GREEN}✅ Build úspešný!${NC}"
     echo ""

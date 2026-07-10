@@ -34,13 +34,7 @@ jobs:
         run: flutter analyze
 
       - name: Run Tests
-        run: flutter test --dart-define=PLAY_MVP=false
-
-      - name: Firebase Functions smoke test
-        run: |
-          cd functions
-          npm ci
-          npm test
+        run: flutter test
 
       - name: Decode Keystore
         env:

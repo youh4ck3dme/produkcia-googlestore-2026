@@ -123,15 +123,31 @@ class SupabaseAuthBackend implements AuthBackend {
     final googleAuth = await googleUser.authentication;
     final idToken = googleAuth.idToken;
     if (idToken == null) {
-      throw const AuthException('Google neposkytol ID token.');
+      throw const AuthException(
+        'Google neposkytol ID token. Skontroluj SHA-1 a GOOGLE_WEB_CLIENT_ID '
+        '(bash scripts/verify_google_signin.sh).',
+      );
     }
-    final res = await _client.auth.signInWithIdToken(
-      provider: OAuthProvider.google,
-      idToken: idToken,
-      accessToken: googleAuth.accessToken,
-    );
-    final u = res.user;
-    return u == null ? null : userModelFromSupabase(u);
+    try {
+      final res = await _client.auth.signInWithIdToken(
+        provider: OAuthProvider.google,
+        idToken: idToken,
+        accessToken: googleAuth.accessToken,
+      );
+      final u = res.user;
+      return u == null ? null : userModelFromSupabase(u);
+    } on AuthException catch (e) {
+      final msg = e.message.toLowerCase();
+      if (msg.contains('bad id token') ||
+          msg.contains('invalid') && msg.contains('token')) {
+        throw AuthException(
+          'Supabase odmietol Google token. Over Google provider v dashboarde '
+          'a redirect URI (bash scripts/configure_google_oauth_supabase.sh). '
+          '(${e.message})',
+        );
+      }
+      rethrow;
+    }
   }
 
   @override

@@ -1,7 +1,7 @@
 # AGENT C — Orchestrátor + Play Store Gate
 
-**Dátum:** 2026-07-10  
-**Vetva:** `main` @ `fb218dc`  
+**Dátum:** 2026-07-10 (aktualizované)  
+**Vetva:** `main` @ `67c2bda` + P1 migrácia  
 **Verdikt:** **GO — internal testing** | **REWORK — production upload**
 
 ---
@@ -26,7 +26,7 @@ main ← feat/supabase-datalayer-p0  (fast-forward, obsahuje aj AGENT A)
 
 | Príkaz | Výsledok |
 |--------|----------|
-| `flutter test --dart-define=PLAY_MVP=false` | **380 passed, 5 skipped, 0 failed** |
+| `flutter test --dart-define=PLAY_MVP=false` | **381 passed, 5 skipped, 0 failed** |
 | `cd functions && npm test` | **all smoke checks passed** |
 | `flutter analyze` | **0 errors** (10 info) |
 | `flutter build appbundle --release` | **✓ app-release.aab (141.5 MB)** |
@@ -42,17 +42,22 @@ rg FirebaseAuth lib/features/tools lib/features/export lib/core/services/soft_de
 # → 0 matches ✅
 ```
 
-### Zostávajúci Firestore (P1 dlh — 7 súborov)
+### P1 migrácia (2026-07-10 večer)
+
+| Modul | Stav |
+|-------|------|
+| Notifikácie → Supabase | ✅ `features/tools/services/monitoring_service.dart` |
+| Číslovanie faktúr → Supabase | ✅ `SupabaseInvoiceNumberingRepository` + RPC |
+| Legacy `core/services/monitoring_service.dart` | ✅ zmazané |
+
+### Zostávajúci Firestore (P1+ — 4 súbory)
 
 | Súbor | Kategória |
 |-------|-----------|
 | `company_lookup_service.dart` | IČO cache |
-| `core/services/monitoring_service.dart` | Notifikácie |
-| `features/tools/services/monitoring_service.dart` | Monitoring backend |
-| `shared/widgets/notification_bell.dart` | Notifikácie UI |
-| `firestore_invoice_numbering_repository.dart` | Číslovanie |
 | `categorization_service.dart` | Výdavky |
 | `firestore_export_data_source.dart` | Legacy (nepoužívané) |
+| `functions/src/batchRefreshWatched.ts` | Backend monitoring |
 
 `FirebaseAuth`: **0× v produkčnom kóde** (len komentár).
 

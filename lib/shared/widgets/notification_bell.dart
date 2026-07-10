@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/ui/biz_theme.dart';
 import '../../features/tools/services/monitoring_service.dart';
 
@@ -124,8 +123,7 @@ class _NotificationsSheet extends ConsumerWidget {
                 itemBuilder: (ctx, index) {
                   final item = items[index];
                   final isRead = item['read'] == true;
-                  final timestamp = item['createdAt'];
-                  final date = timestamp is Timestamp ? timestamp.toDate() : null;
+                  final date = _parseCreatedAt(item['createdAt']);
                   
                   return ListTile(
                     tileColor: isRead ? null : theme.colorScheme.primary.withValues(alpha: 0.05),
@@ -171,7 +169,12 @@ class _NotificationsSheet extends ConsumerWidget {
   }
 
   String _formatDate(DateTime date) {
-    // Simple formatter, ideally use intl
     return '${date.day}.${date.month} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+  }
+
+  DateTime? _parseCreatedAt(dynamic value) {
+    if (value is DateTime) return value;
+    if (value is String) return DateTime.tryParse(value);
+    return null;
   }
 }

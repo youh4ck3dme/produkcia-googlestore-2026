@@ -45,6 +45,19 @@ void main() {
     expect(a.isProvisional, false);
   });
 
+  test('previewNumber shows next pool value without allocating', () async {
+    final repo = FakeRepo();
+    repo.pool = LocalPool(year: 2026, next: 7, end: 10);
+    final svc = InvoiceNumberingService(repo: repo);
+
+    final preview = await svc.previewNumber(uid: 'u', now: DateTime(2026, 1, 1));
+    final allocated = await svc.nextNumber(uid: 'u', now: DateTime(2026, 1, 1));
+
+    expect(preview, '2026/007');
+    expect(allocated.number, '2026/007');
+    expect(repo.pool?.next, 8);
+  });
+
   test('formats padded numbering', () {
     final repo = FakeRepo();
     final svc = InvoiceNumberingService(repo: repo);

@@ -19,6 +19,20 @@ class InvoiceNumberingService {
   String formatNumber(int year, int seq) =>
       '$year/${seq.toString().padLeft(3, '0')}';
 
+  /// Náhľad ďalšieho čísla bez alokácie (pre formulár).
+  Future<String> previewNumber({
+    required String uid,
+    DateTime? now,
+  }) async {
+    final date = now ?? DateTime.now();
+    final year = date.year;
+    final pool = await repo.loadLocalPool(year);
+    if (pool != null && pool.hasNext) {
+      return formatNumber(year, pool.next);
+    }
+    return formatNumber(year, 1);
+  }
+
   /// Tries:
   /// 1) local pool
   /// 2) reserve new block (online) -> save -> allocate

@@ -6,10 +6,10 @@ import '../models/invoice_model.dart';
 import '../../../core/config/play_release_scope.dart';
 import '../../../core/ui/biz_theme.dart';
 import '../../settings/providers/settings_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../../shared/utils/biz_snackbar.dart';
 import '../../../core/services/analytics_service.dart';
 import '../providers/invoices_provider.dart';
+import '../providers/invoice_numbering_provider.dart';
 import '../../auth/providers/auth_repository.dart';
 import '../../../core/services/icoatlas_service.dart';
 import '../../../core/models/ico_lookup_result.dart';
@@ -56,12 +56,13 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   // ICO Lookup State
   IcoLookupResult? _lookupResult;
   bool _isLookingUp = false;
+  bool _autoInvoiceNumber = true;
 
   @override
   void initState() {
     super.initState();
-    _loadNextNumber();
-    
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadNextNumber());
+
     _clientIcoController.addListener(_onIcoChanged);
 
     // Pre-fill if initial data provided (Funnel from IČO Lookup)
@@ -80,12 +81,22 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   }
 
   Future<void> _loadNextNumber() async {
+    final user = ref.read(authStateProvider).valueOrNull;
+    if (user == null) {
+      _numberController.text = '2026/001';
+      return;
+    }
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final lastNumber = prefs.getInt('invoice_next_number') ?? 1;
-      _numberController.text = 'FA-$lastNumber';
-    } catch (e) {
-      _numberController.text = 'FA-1';
+      final preview = await ref
+          .read(invoiceNumberingServiceProvider)
+          .previewNumber(uid: user.id);
+      if (mounted) {
+        _numberController.text = preview;
+      }
+    } catch (_) {
+      if (mounted) {
+        _numberController.text = '2026/001';
+      }
     }
   }
 
@@ -200,9 +211,16 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       return;
     }
 
-    final number = _numberController.text.isEmpty
-        ? 'FA-${const Uuid().v4().substring(0, 8)}'
-        : _numberController.text;
+    final user = ref.read(authStateProvider).valueOrNull;
+    String number = _numberController.text.trim();
+    if (_autoInvoiceNumber && user != null) {
+      final result = await ref
+          .read(invoiceNumberingServiceProvider)
+          .nextNumber(uid: user.id, now: _dateIssued);
+      number = result.number;
+    } else if (number.isEmpty) {
+      number = 'FA-${const Uuid().v4().substring(0, 8)}';
+    }
     // Simple VS generation: remove non-digits from number. If empty, use random.
     final vs = number.replaceAll(RegExp(r'[^0-9]'), '');
 
@@ -605,6 +623,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   const SizedBox(height: _fieldGap),
                     TextFormField(
                       controller: _numberController,
+                      onChanged: (_) => _autoInvoiceNumber = false,
                       decoration: _fieldDecoration(
                         'Číslo faktúry',
                         helperText: 'Generuje sa automaticky (napr. 2026/001)',

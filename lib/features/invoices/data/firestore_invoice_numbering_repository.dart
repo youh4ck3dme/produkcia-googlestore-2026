@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'invoice_numbering_repository.dart';
 
+@Deprecated('P1-migrated: use SupabaseInvoiceNumberingRepository')
 class FirestoreInvoiceNumberingRepository
     implements InvoiceNumberingRepository {
   FirestoreInvoiceNumberingRepository({

@@ -40,17 +40,20 @@ class BizStatsCard extends StatelessWidget {
         label: '$title: $metric${trend != null ? ', trend $trend' : ''}',
         container: true,
         child: Padding(
-          padding: const EdgeInsets.all(BizTheme.spacingMd),
+          padding: const EdgeInsets.symmetric(
+            horizontal: BizTheme.spacingMd,
+            vertical: 10,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
                       color: primaryColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(BizTheme.radiusMd),
@@ -66,7 +69,7 @@ class BizStatsCard extends StatelessWidget {
                     ),
                 ],
               ),
-              const SizedBox(height: BizTheme.spacingSm),
+              const SizedBox(height: 4),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,

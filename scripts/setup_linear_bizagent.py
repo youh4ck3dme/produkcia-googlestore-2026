@@ -96,6 +96,15 @@ def ensure_project(api_key: str, team_id: str, name: str, description: str) -> t
     return project["id"], project["url"]
 
 
+def existing_project_titles(api_key: str, project_id: str) -> set[str]:
+    data = gql(
+        api_key,
+        "query($projectId: String!) { project(id: $projectId) { issues { nodes { title } } } }",
+        {"projectId": project_id},
+    )
+    return {node["title"] for node in data["project"]["issues"]["nodes"]}
+
+
 def create_issue(
     api_key: str,
     team_id: str,
@@ -103,7 +112,11 @@ def create_issue(
     title: str,
     description: str,
     priority: int,
-) -> str:
+    existing: set[str],
+) -> str | None:
+    if title in existing:
+        print(f"  ↩️  Preskočené (už existuje): {title}")
+        return None
     data = gql(
         api_key,
         "mutation($input: IssueCreateInput!) { issueCreate(input: $input) { issue { identifier url } } }",
@@ -159,13 +172,18 @@ def main() -> int:
         ("P1: IAP server-side verify", "Play Developer API"),
     ]
 
+    existing = existing_project_titles(api_key, project_id)
+    print(f"→ Existujúcich issues v projekte: {len(existing)}")
+
     print("→ P0 issues (Urgent)…")
     for title, desc in p0:
-        create_issue(api_key, team_id, project_id, title, desc, priority=1)
+        create_issue(api_key, team_id, project_id, title, desc, priority=1, existing=existing)
+        existing.add(title)
 
     print("→ P1 issues (High)…")
     for title, desc in p1:
-        create_issue(api_key, team_id, project_id, title, desc, priority=2)
+        create_issue(api_key, team_id, project_id, title, desc, priority=2, existing=existing)
+        existing.add(title)
 
     print(f"\n🎉 BizAgent je v Linear: {project_url}")
     return 0

@@ -37,11 +37,46 @@ if [[ -f android/key.properties ]]; then
   fi
 fi
 
-mkdir -p android/app/src/debug
-firebase apps:sdkconfig ANDROID "$APP_ID" --project="$PROJECT" -o android/app/src/debug/google-services.json
+OAUTH_JSON="$ROOT/android/app/src/debug/google-services.json"
+mkdir -p android/app/src/debug android/app/src/release
+rm -f "$OAUTH_JSON"
+firebase apps:sdkconfig ANDROID "$APP_ID" --project="$PROJECT" -o "$OAUTH_JSON"
+
+# Firebase sdkconfig často nemá Supabase web client — doplníme ho ručne pre oba build typy.
+python3 - <<'PY'
+import json
+from pathlib import Path
+
+web_client = "90348815049-s8ecj4dq2dd5pmo172h4g9khhbt3m7lg.apps.googleusercontent.com"
+firebase_web = "90348815049-e5faruj0mfvnn34m80k9b9b5upp9nn6v.apps.googleusercontent.com"
+root = Path("android/app/src")
+
+for variant in ("debug", "release"):
+    path = root / variant / "google-services.json"
+    if not path.exists():
+        continue
+    data = json.loads(path.read_text())
+    client = data["client"][0]
+    oauth = client.setdefault("oauth_client", [])
+    if not any(o.get("client_id") == web_client for o in oauth):
+        oauth.insert(0, {"client_id": web_client, "client_type": 3})
+    invite = client.setdefault("services", {}).setdefault("appinvite_service", {})
+    others = invite.setdefault("other_platform_oauth_client", [])
+    for cid in (web_client, firebase_web):
+        if not any(o.get("client_id") == cid for o in others):
+            others.append({"client_id": cid, "client_type": 3})
+    path.write_text(json.dumps(data, indent=2) + "\n")
+
+# release = rovnaká OAuth konfigurácia ako debug (upload SHA je v Firebase)
+release = root / "release" / "google-services.json"
+debug = root / "debug" / "google-services.json"
+if debug.exists():
+    release.write_text(debug.read_text())
+PY
 
 echo ""
-echo "✓ Debug google-services.json: android/app/src/debug/google-services.json"
+echo "✓ Debug:   android/app/src/debug/google-services.json"
+echo "✓ Release: android/app/src/release/google-services.json"
 echo ""
 echo "Ďalší krok (ak chýba Android OAuth client_type=1 v JSON):"
 echo "  1. Otvor: https://console.cloud.google.com/auth/clients?project=$PROJECT"

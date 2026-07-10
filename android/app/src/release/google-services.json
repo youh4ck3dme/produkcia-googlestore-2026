@@ -1,0 +1,43 @@
+{
+  "project_info": {
+    "project_number": "90348815049",
+    "project_id": "gifted-mountain-476207-u4",
+    "storage_bucket": "gifted-mountain-476207-u4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:90348815049:android:eeab2630fb64fc2fd54318",
+        "android_client_info": {
+          "package_name": "sk.bizagent.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "90348815049-s8ecj4dq2dd5pmo172h4g9khhbt3m7lg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCqM76s2ur07H4nthgDHldLPjKuDqd1SOc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "90348815049-s8ecj4dq2dd5pmo172h4g9khhbt3m7lg.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "90348815049-e5faruj0mfvnn34m80k9b9b5upp9nn6v.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

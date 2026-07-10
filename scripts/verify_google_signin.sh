@@ -35,7 +35,7 @@ else:
 PY
 
 echo ""
-for f in android/app/google-services.json android/app/src/debug/google-services.json; do
+for f in android/app/google-services.json android/app/src/debug/google-services.json android/app/src/release/google-services.json; do
   if [[ -f "$f" ]]; then
     echo "$f:"
     python3 - <<PY

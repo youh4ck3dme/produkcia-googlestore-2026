@@ -50,12 +50,11 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyBBaw64_Dzuoyivza4vzmCDUvD8ULtj2Ck',
-    appId: '1:542280140779:web:e6610922474b2d23373bae',
-    messagingSenderId: '542280140779',
-    projectId: 'bizagent-live-2026',
-    authDomain: 'bizagent-live-2026.firebaseapp.com',
-    storageBucket: 'bizagent-live-2026.firebasestorage.app',
-    measurementId: 'G-JDLJLLB654',
+    apiKey: 'AIzaSyAtiZ0C0hk0BX28v7RXhy1IMzreH2NMTo4',
+    appId: '1:90348815049:web:5c0e2e938606a12ad54318',
+    messagingSenderId: '90348815049',
+    projectId: 'gifted-mountain-476207-u4',
+    authDomain: 'gifted-mountain-476207-u4.firebaseapp.com',
+    storageBucket: 'gifted-mountain-476207-u4.firebasestorage.app',
   );
 }

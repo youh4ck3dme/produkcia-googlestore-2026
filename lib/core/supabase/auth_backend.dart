@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../features/auth/models/user_model.dart';
+import 'google_auth_service.dart';
 
 /// Tenká auth abstrakcia pre testovateľný [AuthRepository].
 abstract class AuthBackend {
@@ -15,6 +16,8 @@ abstract class AuthBackend {
   Future<UserModel?> signInWithPassword(String email, String password);
 
   Future<UserModel?> signUp(String email, String password);
+
+  Future<UserModel?> signInWithGoogle();
 
   Future<void> signOut();
 
@@ -66,6 +69,11 @@ class _UnavailableAuthBackend implements AuthBackend {
   }
 
   @override
+  Future<UserModel?> signInWithGoogle() async {
+    throw StateError(_missingConfigMessage);
+  }
+
+  @override
   Future<void> signOut() async {}
 }
 
@@ -73,6 +81,7 @@ class SupabaseAuthBackend implements AuthBackend {
   SupabaseAuthBackend(this._client);
 
   final SupabaseClient _client;
+  late final GoogleAuthService _googleAuth = GoogleAuthService(_client);
 
   @override
   bool get isAvailable => true;
@@ -116,7 +125,11 @@ class SupabaseAuthBackend implements AuthBackend {
   }
 
   @override
+  Future<UserModel?> signInWithGoogle() => _googleAuth.signIn();
+
+  @override
   Future<void> signOut() async {
+    await _googleAuth.signOutNative();
     await _client.auth.signOut();
   }
 }

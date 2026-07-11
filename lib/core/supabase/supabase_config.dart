@@ -17,6 +17,11 @@ class SupabaseConfig {
     defaultValue: String.fromEnvironment('SUPABASE_ANON_KEY'),
   );
 
+  /// Web OAuth client ID (GCP) — potrebný pre Google Sign-In na Androide.
+  static const String googleWebClientId = String.fromEnvironment(
+    'GOOGLE_WEB_CLIENT_ID',
+  );
+
   static bool _initialized = false;
 
   static bool get isConfigured => url.isNotEmpty && publishableKey.isNotEmpty;

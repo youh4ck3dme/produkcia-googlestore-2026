@@ -28,6 +28,7 @@ dependencies:
 
   # Supabase (migrácia DB/Auth/Storage z Firebase — Firebase ostáva počas prechodu)
   supabase_flutter: ^2.14.1
+  google_sign_in: ^6.3.0
 
   in_app_purchase: ^3.2.0
 

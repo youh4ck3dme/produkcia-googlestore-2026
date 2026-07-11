@@ -34,6 +34,8 @@ class AuthRepository {
   Future<UserModel?> signUp(String email, String password) =>
       _backend.signUp(email, password);
 
+  Future<UserModel?> signInWithGoogle() => _backend.signInWithGoogle();
+
   Future<void> signOut() => _backend.signOut();
 
   Future<void> deleteAccount() async {

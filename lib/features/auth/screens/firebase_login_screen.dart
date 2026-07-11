@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show AuthException;
+import '../../../core/supabase/supabase_config.dart';
 import '../../../core/ui/biz_theme.dart';
 import '../providers/auth_repository.dart';
 
@@ -51,6 +53,28 @@ class _FirebaseLoginScreenState extends ConsumerState<FirebaseLoginScreen> {
       _showError(_getAuthErrorMessage(e));
     } catch (e) {
       _showError('Došlo k chybe. Skúste znovu');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  bool get _googleSignInAvailable =>
+      SupabaseConfig.isReady &&
+      (kIsWeb || SupabaseConfig.googleWebClientId.isNotEmpty);
+
+  Future<void> _signInWithGoogle() async {
+    if (!_googleSignInAvailable) {
+      _showError('Google prihlásenie nie je nakonfigurované');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      await ref.read(authRepositoryProvider).signInWithGoogle();
+    } on AuthException catch (e) {
+      _showError(_getAuthErrorMessage(e));
+    } catch (e) {
+      _showError('Google prihlásenie zlyhalo. Skúste znova.');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -259,6 +283,69 @@ class _FirebaseLoginScreenState extends ConsumerState<FirebaseLoginScreen> {
                     ],
 
                     const SizedBox(height: 24),
+
+                    // Google Sign-In
+                    if (_googleSignInAvailable) ...[
+                      SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: OutlinedButton.icon(
+                          onPressed: _isLoading ? null : _signInWithGoogle,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFF111827),
+                            side: BorderSide(
+                              color: Colors.grey.withValues(alpha: 0.35),
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          icon: Image.network(
+                            'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg',
+                            width: 22,
+                            height: 22,
+                            errorBuilder: (_, __, ___) => const Icon(
+                              Icons.g_mobiledata_rounded,
+                              size: 28,
+                              color: Color(0xFF4285F4),
+                            ),
+                          ),
+                          label: Text(
+                            'Prihlásiť sa cez Google',
+                            style: GoogleFonts.inter(
+                              fontSize: 12.8,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Divider(
+                              color: Colors.grey.withValues(alpha: 0.35),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: Text(
+                              'alebo emailom',
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                color: const Color(0xFF9CA3AF),
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Divider(
+                              color: Colors.grey.withValues(alpha: 0.35),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                    ],
 
                     // Sign In/Sign Up Button
                     SizedBox(

@@ -9,6 +9,9 @@
 
 > Kompletné riešenie pre faktúry, výdavky a účtovníctvo – špeciálne navrhnuté pre slovenský trh a legislatívu.
 
+**Produkčná webová URL:** [https://bizagent.sk](https://bizagent.sk)  
+Hosting: Firebase (`gifted-mountain-476207-u4`) s vlastnou doménou `bizagent.sk`. Záložné URL: `https://gifted-mountain-476207-u4.web.app`.
+
 ---
 
 ## 📚 Dokumentácia
@@ -226,14 +229,31 @@ flutter build appbundle \
 
 ### 🌐 Web (PWA)
 
+**Produkcia:** [https://bizagent.sk](https://bizagent.sk)
+
 ```bash
 flutter build web --release \
-  --web-renderer canvaskit \
-  --pwa-strategy offline-first \
-  --dart-define=FLUTTER_WEB_USE_SKIA=true
+  --dart-define-from-file=dart_defines/supabase.json \
+  --base-href "/"
 ```
 
-* **Deploy:** `firebase deploy --only hosting`
+```bash
+firebase use gifted-mountain-476207-u4
+firebase deploy --only hosting
+```
+
+Po deployi je appka dostupná na `bizagent.sk` (vlastná doména) a na `https://gifted-mountain-476207-u4.web.app` (Firebase default).
+
+**CI/CD:** push na `main` spustí [`.github/workflows/firebase_hosting.yml`](.github/workflows/firebase_hosting.yml) (build web + `firebase deploy --only hosting`). V GitHub repo **Settings → Secrets** nastav:
+`FIREBASE_SERVICE_ACCOUNT` (JSON service account pre projekt `gifted-mountain-476207-u4`), `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`.
+
+Pre Google OAuth na webe pridaj do Google Cloud Web klienta **Authorized JavaScript origins:**
+`https://bizagent.sk`, `https://gifted-mountain-476207-u4.web.app`
+
+Overenie celého auth stacku:
+```bash
+bash scripts/verify_auth_stack.sh
+```
 
 ---
 

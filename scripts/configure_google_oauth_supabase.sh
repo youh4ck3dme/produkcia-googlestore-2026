@@ -15,8 +15,16 @@ fi
 
 export GOOGLE_CLIENT_ID
 export GOOGLE_CLIENT_SECRET
-GOOGLE_CLIENT_ID=$(python3 -c "import json; print(json.load(open('$SECRETS_JSON'))['installed']['client_id'])")
-GOOGLE_CLIENT_SECRET=$(python3 -c "import json; print(json.load(open('$SECRETS_JSON'))['installed']['client_secret'])")
+read -r GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET < <(python3 -c "
+import json, sys
+data = json.load(open('$SECRETS_JSON'))
+block = data.get('web') or data.get('installed')
+if not block:
+    sys.exit('OAuth JSON musí obsahovať web alebo installed sekciu')
+print(block['client_id'])
+print(block['client_secret'])
+")
+export GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET
 
 echo "→ Supabase config push (Google provider)…"
 cd "$ROOT"

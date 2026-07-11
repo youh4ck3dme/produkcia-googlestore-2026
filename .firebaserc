@@ -1,8 +1,8 @@
 {
   "projects": {
-    "default": "bizagent-live-2026",
-    "production": "bizagent-live-2026",
-    "live": "bizagent-live-2026",
+    "default": "gifted-mountain-476207-u4",
+    "production": "gifted-mountain-476207-u4",
+    "live": "gifted-mountain-476207-u4",
     "staging": "bizagent-pro-2026"
   }
 }

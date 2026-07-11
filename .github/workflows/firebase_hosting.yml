@@ -1,0 +1,68 @@
+name: Deploy Firebase Hosting
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'lib/**'
+      - 'web/**'
+      - 'pubspec.yaml'
+      - 'pubspec.lock'
+      - 'firebase.json'
+      - '.firebaserc'
+      - 'dart_defines/**'
+      - 'scripts/generate_supabase_ci_defines.sh'
+      - '.github/workflows/firebase_hosting.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: firebase-hosting-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Build web + deploy to gifted-mountain
+    runs-on: ubuntu-latest
+    env:
+      FIREBASE_PROJECT: gifted-mountain-476207-u4
+      GOOGLE_WEB_CLIENT_ID: 90348815049-e5faruj0mfvnn34m80k9b9b5upp9nn6v.apps.googleusercontent.com
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate Supabase dart defines for CI
+        env:
+          SUPABASE_TEST_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_TEST_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          GOOGLE_WEB_CLIENT_ID: ${{ env.GOOGLE_WEB_CLIENT_ID }}
+        run: |
+          if [[ -z "${SUPABASE_TEST_URL:-}" || -z "${SUPABASE_TEST_PUBLISHABLE_KEY:-}" ]]; then
+            echo "::error::Chýbajú GitHub secrets SUPABASE_URL a SUPABASE_PUBLISHABLE_KEY"
+            exit 1
+          fi
+          bash scripts/generate_supabase_ci_defines.sh dart_defines/supabase.ci.json
+
+      - name: Build Flutter web (release)
+        run: |
+          flutter build web --release \
+            --dart-define-from-file=dart_defines/supabase.ci.json \
+            --base-href "/"
+
+      - name: Deploy to Firebase Hosting (live)
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: ${{ env.FIREBASE_PROJECT }}
+          channelId: live

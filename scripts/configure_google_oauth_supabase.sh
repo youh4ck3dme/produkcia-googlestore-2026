@@ -3,7 +3,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-SECRETS_JSON="${GOOGLE_OAUTH_JSON:-$HOME/Documents/secrets/bizagent-auth/client_secret_90348815049-s8ecj4dq2dd5pmo172h4g9khhbt3m7lg.apps.googleusercontent.com.json}"
+SECRETS_JSON="${GOOGLE_OAUTH_JSON:-$HOME/Documents/secrets/bizagent-auth/client_secret_90348815049-e5faruj0mfvnn34m80k9b9b5upp9nn6v.apps.googleusercontent.com.json}"
 PROJECT_REF="${SUPABASE_PROJECT_REF:-kpsnwpuydqqojwmrnkdy}"
 REDIRECT_URI="https://${PROJECT_REF}.supabase.co/auth/v1/callback"
 GCP_PROJECT="gifted-mountain-476207-u4"
@@ -31,7 +31,6 @@ if command -v pbcopy >/dev/null 2>&1; then
 fi
 
 CLIENTS=(
-  "90348815049-s8ecj4dq2dd5pmo172h4g9khhbt3m7lg.apps.googleusercontent.com"
   "90348815049-e5faruj0mfvnn34m80k9b9b5upp9nn6v.apps.googleusercontent.com"
 )
 

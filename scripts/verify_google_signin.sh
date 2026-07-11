@@ -119,6 +119,14 @@ if web_client.startswith("90348815049-"):
 else:
     issues.append("GOOGLE_WEB_CLIENT_ID nie je z projektu 90348815049")
 
+if web_client.endswith("s8ecj4dq2dd5pmo172h4g9khhbt3m7lg.apps.googleusercontent.com"):
+    issues.append(
+        "GOOGLE_WEB_CLIENT_ID je Desktop (installed) klient — musí byť Web application "
+        "(90348815049-e5faruj0...). Stiahni web client secret z Google Console."
+    )
+elif web_client.endswith("e5faruj0mfvnn34m80k9b9b5upp9nn6v.apps.googleusercontent.com"):
+    ok.append("GOOGLE_WEB_CLIENT_ID je Web application klient (správny typ pre ID token)")
+
 print("=== Výsledok ===")
 for line in ok:
     print(f"  ✓ {line}")

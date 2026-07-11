@@ -14,7 +14,23 @@
       },
       "oauth_client": [
         {
-          "client_id": "90348815049-s8ecj4dq2dd5pmo172h4g9khhbt3m7lg.apps.googleusercontent.com",
+          "client_id": "90348815049-mvlr12ug2aq9drh1s0f1hps93khap6g0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "sk.bizagent.app",
+            "certificate_hash": "6eed7b130c3bd82078f1aa46bb95ce631dc87010"
+          }
+        },
+        {
+          "client_id": "90348815049-fus1nbf4491k33a2uean2mcehqb8pndo.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "sk.bizagent.app",
+            "certificate_hash": "6eede2310f436dad145a5ff5d4a2e6fbdc80d9ff"
+          }
+        },
+        {
+          "client_id": "90348815049-e5faruj0mfvnn34m80k9b9b5upp9nn6v.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
@@ -27,11 +43,11 @@
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "90348815049-s8ecj4dq2dd5pmo172h4g9khhbt3m7lg.apps.googleusercontent.com",
+              "client_id": "90348815049-e5faruj0mfvnn34m80k9b9b5upp9nn6v.apps.googleusercontent.com",
               "client_type": 3
             },
             {
-              "client_id": "90348815049-e5faruj0mfvnn34m80k9b9b5upp9nn6v.apps.googleusercontent.com",
+              "client_id": "90348815049-ireo2g7l3cq9ca1js4f736qpbm9dets0.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

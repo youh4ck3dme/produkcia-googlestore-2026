@@ -47,8 +47,8 @@ python3 - <<'PY'
 import json
 from pathlib import Path
 
-web_client = "90348815049-s8ecj4dq2dd5pmo172h4g9khhbt3m7lg.apps.googleusercontent.com"
-firebase_web = "90348815049-e5faruj0mfvnn34m80k9b9b5upp9nn6v.apps.googleusercontent.com"
+web_client = "90348815049-e5faruj0mfvnn34m80k9b9b5upp9nn6v.apps.googleusercontent.com"
+firebase_web = "90348815049-ireo2g7l3cq9ca1js4f736qpbm9dets0.apps.googleusercontent.com"
 root = Path("android/app/src")
 
 for variant in ("debug", "release"):

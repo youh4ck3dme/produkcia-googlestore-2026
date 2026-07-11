@@ -11,7 +11,7 @@ import '../../notifications/services/notification_service.dart';
 final monitoringServiceProvider = Provider<MonitoringService>((ref) {
   final service = MonitoringService(ref);
 
-  final authState = ref.watch(authStateProvider).valueOrNull;
+  final authState = ref.watch(authStateProvider).value;
   if (authState != null && !authState.isAnonymous) {
     service.startListening(authState.id);
   } else {
@@ -112,7 +112,7 @@ class MonitoringService {
   }
 
   Stream<List<Map<String, dynamic>>> notifications() {
-    final uid = _userId ?? _ref.read(authStateProvider).valueOrNull?.id;
+    final uid = _userId ?? _ref.read(authStateProvider).value?.id;
     if (uid == null) return Stream.value([]);
 
     final store = _store;
@@ -144,7 +144,7 @@ class MonitoringService {
   }
 
   Future<void> markAsRead(String id) async {
-    final uid = _userId ?? _ref.read(authStateProvider).valueOrNull?.id;
+    final uid = _userId ?? _ref.read(authStateProvider).value?.id;
     if (uid == null) return;
 
     final store = _store;
@@ -157,8 +157,46 @@ class MonitoringService {
     );
   }
 
+  /// Vloží notifikáciu do Supabase + zobrazí push (Autopilot human checkpoint).
+  Future<void> publishUserNotification({
+    required String userId,
+    required String title,
+    required String body,
+    String type = 'general',
+    String? expenseId,
+  }) async {
+    final store = _store;
+    final id = 'autopilot_${DateTime.now().millisecondsSinceEpoch}';
+
+    if (store.isAvailable) {
+      try {
+        await store.upsert('notifications', {
+          'id': id,
+          'user_id': userId,
+          'data': {
+            'title': title,
+            'body': body,
+            'type': type,
+            if (expenseId != null) 'expenseId': expenseId,
+          },
+          'read': false,
+          'created_at': DateTime.now().toIso8601String(),
+        });
+      } catch (e) {
+        debugPrint('MonitoringService: publishUserNotification failed: $e');
+      }
+    }
+
+    await _ref.read(notificationServiceProvider).showNotification(
+          id: id.hashCode,
+          title: title,
+          body: body,
+          payload: expenseId != null ? '/expenses/review/$expenseId' : null,
+        );
+  }
+
   Future<void> markAllAsRead() async {
-    final uid = _userId ?? _ref.read(authStateProvider).valueOrNull?.id;
+    final uid = _userId ?? _ref.read(authStateProvider).value?.id;
     if (uid == null) return;
 
     final store = _store;

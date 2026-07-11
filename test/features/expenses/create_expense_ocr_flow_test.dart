@@ -8,11 +8,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_picker/image_picker.dart';
 
+import 'package:bizagent/core/services/local_persistence_service.dart';
 import 'package:bizagent/core/services/ai_ocr_service.dart';
 import 'package:bizagent/core/services/analytics_service.dart';
+import 'package:bizagent/core/services/expense_autopilot_service.dart';
 import 'package:bizagent/core/services/expense_parser_service.dart';
 import 'package:bizagent/core/services/gemini_service.dart';
 import 'package:bizagent/core/services/ocr_service.dart';
+import 'package:bizagent/features/expenses/models/expense_model.dart';
 import 'package:bizagent/features/auth/models/user_model.dart';
 import 'package:bizagent/features/auth/providers/auth_repository.dart';
 import 'package:bizagent/features/expenses/providers/expenses_repository.dart';
@@ -25,18 +28,49 @@ import 'package:bizagent/features/expenses/services/receipt_storage_service.dart
 
 import '../../helpers/test_app.dart';
 import '../../helpers/memory_local_persistence.dart';
+import '../../helpers/fake_monitoring_service.dart';
 
 const _testUser = UserModel(
   id: 'test-user-ocr',
   email: 'ocr@test.example.com',
 );
 
+class FakeAuthRepository implements AuthRepository {
+  @override
+  Stream<UserModel?> get authStateChanges => Stream.value(_testUser);
+
+  @override
+  UserModel? get currentUser => _testUser;
+
+  @override
+  Future<String?> get currentUserToken async => _testUser.id;
+
+  @override
+  Future<UserModel?> signIn(String email, String password) async => _testUser;
+
+  @override
+  Future<UserModel?> signUp(String email, String password) async => _testUser;
+
+  @override
+  Future<UserModel?> signInWithGoogle() async => _testUser;
+
+  @override
+  Future<void> signOut() async {}
+
+  @override
+  Future<void> deleteAccount() async {}
+
+  @override
+  void dispose() {}
+}
+
 class MockFirebaseAnalytics extends Fake implements FirebaseAnalytics {
   @override
   Future<void> logEvent({
     required String name,
-    Map<String, Object?>? parameters,
+    Map<String, Object>? parameters,
     AnalyticsCallOptions? callOptions,
+    List<AnalyticsEventItem>? items,
   }) async {}
 
   @override
@@ -108,6 +142,43 @@ class MockGeminiForOcrPipeline extends GeminiService {
   }
 }
 
+class PendingReviewAutopilot extends ExpenseAutopilotService {
+  PendingReviewAutopilot()
+      : super(
+          aiOcr: MockAiOcrService(),
+          parser: ExpenseParserService(MockGeminiForExpenseParser()),
+          monitoring: FakeMonitoringService(),
+          isVatPayer: false,
+        );
+
+  @override
+  Future<ExpenseAutopilotResult> processReceipt({
+    required String userId,
+    required ParsedReceipt ocrResult,
+  }) async {
+    return ExpenseAutopilotResult(
+      status: ExpenseAutopilotStatus.pendingReview,
+      expense: ExpenseModel(
+        id: 'pending-1',
+        userId: userId,
+        vendorName: '36396567',
+        description: 'TESCO BLOČEK',
+        amount: 42.99,
+        date: DateTime(2024, 3, 15),
+        receiptUrls:
+            ocrResult.imagePath != null ? [ocrResult.imagePath!] : const [],
+        receiptScannedAt: DateTime.now(),
+        isOcrVerified: false,
+        needsReview: true,
+        vendorIco: '36396567',
+        autopilotConfidence: 0.6,
+      ),
+      confidence: 0.6,
+      reviewReasons: const ['Chýba IČO predajcu'],
+    );
+  }
+}
+
 class MockGeminiForExpenseParser extends GeminiService {
   @override
   Future<String> analyzeJson(String context, String schema) async {
@@ -144,9 +215,11 @@ void main() {
       }
     });
 
-    List<Override> buildOverrides() {
+    List buildOverrides() {
       return [
+        authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
         authStateProvider.overrideWith((ref) => Stream.value(_testUser)),
+        localPersistenceServiceProvider.overrideWithValue(fakePersistence),
         ocrServiceProvider.overrideWithValue(MockOcrService(receiptPath)),
         aiOcrServiceProvider.overrideWithValue(MockAiOcrService()),
         analyticsServiceProvider.overrideWithValue(
@@ -165,6 +238,9 @@ void main() {
             ref.read(supabaseStorageClientProvider),
           ),
         ),
+        expenseAutopilotServiceProvider.overrideWithValue(
+          PendingReviewAutopilot(),
+        ),
       ];
     }
 
@@ -173,7 +249,7 @@ void main() {
       await tester.pumpWidget(
         testApp(
           child: const CreateExpenseScreen(),
-          overrides: buildOverrides(),
+          extraOverrides: buildOverrides(),
         ),
       );
       await tester.pumpAndSettle();
@@ -182,15 +258,13 @@ void main() {
 
       await tester.tap(find.textContaining('Skenovať bloček'));
       await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
       await tester.pumpAndSettle();
 
-      // AI-refined autofilled fields
-      expect(find.text('42.99'), findsOneWidget);
+      expect(find.textContaining('čaká na vaše potvrdenie'), findsOneWidget);
+      expect(find.textContaining('42.99'), findsOneWidget);
       expect(find.text('36396567'), findsOneWidget);
       expect(find.text('15.03.2024'), findsOneWidget);
-
-      // Success snackbar without vendor-specific AI branding
-      expect(find.text('Údaje úspešne spracované'), findsOneWidget);
       expect(
         find.descendant(
           of: find.byType(SnackBar),

@@ -15,4 +15,13 @@ class FakeMonitoringService implements MonitoringService {
 
   @override
   Future<void> markAllAsRead() async {}
+
+  @override
+  Future<void> publishUserNotification({
+    required String userId,
+    required String title,
+    required String body,
+    String type = 'general',
+    String? expenseId,
+  }) async {}
 }

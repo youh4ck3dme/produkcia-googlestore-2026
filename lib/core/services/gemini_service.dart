@@ -15,15 +15,35 @@ class GeminiService {
       : _functions = functionsClient ?? defaultFunctionsClient();
 
   final SupabaseFunctionsClient _functions;
-  // Multi-model strategy with automatic fallback
-  // Updated to use currently supported models (January 2026)
-  static const List<String> _modelPriority = [
-    'gemini-1.5-flash',     // Primary - cost effective & fast, widely available
-    'gemini-1.5-pro',       // Fallback - high quality precision
-    'gemini-2.0-flash',     // Fallback - newer model (if available)
+  /// Multi-provider priority (Qwen Cloud hackathon track → Mistral → Gemini).
+  static const List<String> _providerPriority = [
+    'qwen',
+    'mistral',
+    'gemini',
   ];
 
-  static String modelName = _modelPriority[0]; // Start with best model
+  /// Model hints per provider — server-side gateway vyberie prvý dostupný.
+  static const List<String> _modelPriority = [
+    'qwen-plus',
+    'qwen-turbo',
+    'qwen-max',
+    'mistral-small-latest',
+    'gemini-1.5-flash',
+    'gemini-1.5-pro',
+    'gemini-2.0-flash',
+  ];
+
+  static String preferredProvider = _resolvePreferredProvider();
+
+  static String modelName = _modelPriority.first;
+
+  static String _resolvePreferredProvider() {
+    const fromEnv = String.fromEnvironment('AI_PROVIDER', defaultValue: '');
+    if (fromEnv.trim().isNotEmpty) {
+      return fromEnv.trim().toLowerCase();
+    }
+    return _providerPriority.first;
+  }
 
   // Simple in-memory cache for frequent queries (LRU with max 100 entries)
   static final LinkedHashMap<String, String> _cache = LinkedHashMap<String, String>();
@@ -59,7 +79,11 @@ class GeminiService {
       debugPrint('AI: volám Supabase Edge Function generate-content');
       final res = await _functions.invoke(
         'generate-content',
-        body: {'prompt': prompt},
+        body: {
+          'prompt': prompt,
+          'provider': preferredProvider,
+          'models': _modelPriority,
+        },
       );
 
       final data = res.data;
@@ -67,21 +91,23 @@ class GeminiService {
           'AI nevrátilo žiadny text.';
       final usedModel =
           (data is Map ? data['model'] as String? : null) ?? modelName;
+      final usedProvider =
+          (data is Map ? data['provider'] as String? : null) ?? preferredProvider;
 
       _addToCache(cacheKey, responseText);
 
       _recordAnalytics(
-        model: usedModel,
+        model: '$usedProvider:$usedModel',
         fromCache: false,
         responseTime: DateTime.now().difference(startTime),
       );
 
       if (usedModel != modelName) {
         modelName = usedModel;
-        debugPrint('Switched to working model: $usedModel');
+        debugPrint('Switched to working model: $usedModel ($usedProvider)');
       }
 
-      debugPrint('AI success with $usedModel');
+      debugPrint('AI success with $usedProvider / $usedModel');
       return responseText;
     } on FunctionException catch (e) {
       debugPrint('Edge Function error: ${e.status} - ${e.details}');

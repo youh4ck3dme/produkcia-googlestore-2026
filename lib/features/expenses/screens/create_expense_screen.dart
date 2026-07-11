@@ -7,7 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import '../../../core/config/play_release_scope.dart';
 import '../../../core/services/ocr_service.dart';
-import '../../../core/services/ai_ocr_service.dart';
+import '../../../core/services/expense_autopilot_service.dart';
 
 import '../models/expense_model.dart';
 import '../models/expense_category.dart';
@@ -68,55 +68,85 @@ class _CreateExpenseScreenState extends ConsumerState<CreateExpenseScreen> {
 
   Future<void> _processSharedImage(String path) async {
     final ocrService = ref.read(ocrServiceProvider);
-    final aiOcrService = ref.read(aiOcrServiceProvider);
     final analytics = ref.read(analyticsServiceProvider);
 
-    // Track start
     analytics.logScanStarted();
-
     final result = await ocrService.scanReceiptFromPath(path);
 
     if (result != null && mounted) {
       analytics.logScanSuccess(result.vendorId ?? 'unknown');
-
-      setState(() {
-        _scannedReceiptPath = result.imagePath; // Save image path
-        _descController.text = result.originalText;
-
-        // Initial quick regex parse
-        if (result.totalAmount != null) {
-          _amountController.text = result.totalAmount!;
-        }
-        if (result.vendorId != null) _vendorController.text = result.vendorId!;
-        if (result.date != null) _tryParseDate(result.date!);
-      });
-
-      BizSnackbar.showInfo(
-        context,
-        PlayReleaseScope.showExpenseAiBranding
-            ? 'Upravujeme údaje pomocou AI...'
-            : 'Spracovávame údaje z bločku...',
-      );
-
-      // AI Refinement
-      final refined =
-          await aiOcrService.refineWithAi(result.originalText, imagePath: result.imagePath);
-
-      if (refined != null && mounted) {
-        setState(() {
-          if (refined.totalAmount != null) {
-            _amountController.text = refined.totalAmount!;
-          }
-          if (refined.vendorId != null) {
-            _vendorController.text = refined.vendorId!;
-          }
-          if (refined.date != null) _tryParseDate(refined.date!);
-          _onVendorChanged();
-        });
-
-        BizSnackbar.showSuccess(context, 'Údaje úspešne spracované');
-      }
+      await _runExpenseAutopilot(result);
     }
+  }
+
+  Future<void> _runExpenseAutopilot(ParsedReceipt ocrResult) async {
+    final user = ref.read(authStateProvider).value ??
+        ref.read(authRepositoryProvider).currentUser;
+    if (user == null) return;
+
+    BizSnackbar.showInfo(
+      context,
+      PlayReleaseScope.showExpenseAiBranding
+          ? 'Autopilot spracúva bloček (AI)...'
+          : 'Autopilot spracúva bloček...',
+    );
+
+    final autopilot = ref.read(expenseAutopilotServiceProvider);
+    final pipeline = await autopilot.processReceipt(
+      userId: user.id,
+      ocrResult: ocrResult,
+    );
+
+    if (!mounted) return;
+
+    final expense = pipeline.expense;
+    if (expense == null) {
+      _prefillFromOcr(ocrResult);
+      BizSnackbar.showError(context, 'Autopilot nedokázal spracovať bloček');
+      return;
+    }
+
+    if (pipeline.status == ExpenseAutopilotStatus.autoCommitted) {
+      await ref.read(expensesControllerProvider.notifier).addExpense(expense);
+      ref.read(analyticsServiceProvider).logExpenseCreated(
+            expense.amount,
+            expense.category?.name ?? 'other',
+          );
+      BizSnackbar.showSuccess(
+        context,
+        'Autopilot uložil výdavok (${expense.amount.toStringAsFixed(2)} €)',
+      );
+      Navigator.pop(context);
+      return;
+    }
+
+    setState(() {
+      _scannedReceiptPath = ocrResult.imagePath;
+      _descController.text = expense.description;
+      _amountController.text = expense.amount.toStringAsFixed(2);
+      _vendorController.text = expense.vendorName;
+      _date = expense.date;
+      _selectedCategory = expense.category;
+      _suggestionConfidence = expense.categorizationConfidence;
+    });
+    _onVendorChanged();
+
+    BizSnackbar.showInfo(
+      context,
+      'Výdavok čaká na vaše potvrdenie (${pipeline.reviewReasons.join(', ')})',
+    );
+  }
+
+  void _prefillFromOcr(ParsedReceipt result) {
+    setState(() {
+      _scannedReceiptPath = result.imagePath;
+      _descController.text = result.originalText;
+      if (result.totalAmount != null) {
+        _amountController.text = result.totalAmount!;
+      }
+      if (result.vendorId != null) _vendorController.text = result.vendorId!;
+      if (result.date != null) _tryParseDate(result.date!);
+    });
   }
 
   void _onVendorChanged() async {
@@ -162,56 +192,14 @@ class _CreateExpenseScreenState extends ConsumerState<CreateExpenseScreen> {
 
   Future<void> _scanReceipt() async {
     final ocrService = ref.read(ocrServiceProvider);
-    final aiOcrService = ref.read(aiOcrServiceProvider);
     final analytics = ref.read(analyticsServiceProvider);
 
-    // Track start
     analytics.logScanStarted();
-
     final result = await ocrService.scanReceipt(ImageSource.camera);
 
     if (result != null && mounted) {
       analytics.logScanSuccess(result.vendorId ?? 'unknown');
-
-      setState(() {
-        _scannedReceiptPath = result.imagePath; // Save image path
-        _descController.text = result.originalText;
-
-        // Initial quick regex parse
-        if (result.totalAmount != null) {
-          _amountController.text = result.totalAmount!;
-        }
-        if (result.vendorId != null) _vendorController.text = result.vendorId!;
-        if (result.date != null) _tryParseDate(result.date!);
-      });
-
-      // Show "Refining with AI" feedback
-      // Show "Refining with AI" feedback
-      BizSnackbar.showInfo(
-        context,
-        PlayReleaseScope.showExpenseAiBranding
-            ? 'Upravujeme údaje pomocou AI...'
-            : 'Spracovávame údaje z bločku...',
-      );
-
-      // AI Refinement
-      final refined = await aiOcrService.refineWithAi(result.originalText,
-          imagePath: result.imagePath);
-
-      if (refined != null && mounted) {
-        setState(() {
-          if (refined.totalAmount != null) {
-            _amountController.text = refined.totalAmount!;
-          }
-          if (refined.vendorId != null) {
-            _vendorController.text = refined.vendorId!;
-          }
-          if (refined.date != null) _tryParseDate(refined.date!);
-          _onVendorChanged();
-        });
-
-        BizSnackbar.showSuccess(context, 'Údaje úspešne spracované');
-      }
+      await _runExpenseAutopilot(result);
     }
   }
 

@@ -35,6 +35,24 @@ void main() {
       expect(result, 'Odpoveď z Mistral');
       expect(functions.lastFunctionName, 'generate-content');
       expect(functions.lastBody?['prompt'], 'Ahoj');
+      expect(functions.lastBody?['provider'], 'qwen');
+      expect(functions.lastBody?['models'], isA<List>());
+    });
+
+    test('respects mutable preferredProvider override', () async {
+      functions.responseData = {
+        'text': 'Mistral OK',
+        'model': 'mistral-small-latest',
+        'provider': 'mistral',
+      };
+      final service = GeminiService(functionsClient: functions);
+      final previous = GeminiService.preferredProvider;
+      GeminiService.preferredProvider = 'mistral';
+
+      await service.generateContent('Test provider');
+
+      expect(functions.lastBody?['provider'], 'mistral');
+      GeminiService.preferredProvider = previous;
     });
 
     test('uses cache on repeated identical prompt', () async {

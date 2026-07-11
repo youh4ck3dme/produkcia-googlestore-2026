@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/gemini_service.dart';
 
@@ -68,7 +70,13 @@ class ExpenseParserService {
 }
 ''');
 
-      final parsed = ParsedExpense.fromJson(response as Map<String, dynamic>);
+      final cleaned = response
+          .replaceAll('```json', '')
+          .replaceAll('```', '')
+          .trim();
+      final parsed = ParsedExpense.fromJson(
+        jsonDecode(cleaned) as Map<String, dynamic>,
+      );
 
       // Validate the parsed data
       if (parsed.amount <= 0 || parsed.description.isEmpty) {
@@ -163,8 +171,11 @@ class ExpenseParserService {
     return expense.amount > 0 &&
            expense.amount < 100000 && // Reasonable upper limit
            expense.description.isNotEmpty &&
-           expense.confidence > 0.3; // Minimum confidence threshold
+           expense.confidence >= 0.3; // Minimum confidence threshold
   }
+
+  /// Autopilot prah — pod touto hodnotou vyžadujeme potvrdenie používateľom.
+  static const double reviewConfidenceThreshold = 0.75;
 }
 
 // Provider for the expense parser service

@@ -17,6 +17,9 @@ class ExpenseModel {
   final String? thumbnailUrl; // Miniatura prvého obrázku
   final DateTime? receiptScannedAt; // Kedy naskenované
   final bool isOcrVerified; // Používateľ potvrdil OCR dáta
+  final bool needsReview; // Autopilot — čaká na potvrdenie používateľom
+  final String? vendorIco; // IČO predajcu z bločku
+  final double? autopilotConfidence; // 0.0–1.0
 
   ExpenseModel({
     required this.id,
@@ -31,6 +34,9 @@ class ExpenseModel {
     this.thumbnailUrl,
     this.receiptScannedAt,
     this.isOcrVerified = false,
+    this.needsReview = false,
+    this.vendorIco,
+    this.autopilotConfidence,
   }) : receiptUrls = receiptUrls ?? [];
 
   factory ExpenseModel.fromMap(Map<String, dynamic> map, String id) {
@@ -51,6 +57,9 @@ class ExpenseModel {
           ? DateTime.parse(map['receiptScannedAt'])
           : null,
       isOcrVerified: map['isOcrVerified'] ?? false,
+      needsReview: map['needsReview'] ?? false,
+      vendorIco: map['vendorIco'],
+      autopilotConfidence: (map['autopilotConfidence'] as num?)?.toDouble(),
     );
   }
 
@@ -67,6 +76,9 @@ class ExpenseModel {
       'thumbnailUrl': thumbnailUrl,
       'receiptScannedAt': receiptScannedAt?.toIso8601String(),
       'isOcrVerified': isOcrVerified,
+      'needsReview': needsReview,
+      'vendorIco': vendorIco,
+      'autopilotConfidence': autopilotConfidence,
     };
   }
 
@@ -83,6 +95,9 @@ class ExpenseModel {
     String? thumbnailUrl,
     DateTime? receiptScannedAt,
     bool? isOcrVerified,
+    bool? needsReview,
+    String? vendorIco,
+    double? autopilotConfidence,
   }) {
     return ExpenseModel(
       id: id ?? this.id,
@@ -98,6 +113,9 @@ class ExpenseModel {
       thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
       receiptScannedAt: receiptScannedAt ?? this.receiptScannedAt,
       isOcrVerified: isOcrVerified ?? this.isOcrVerified,
+      needsReview: needsReview ?? this.needsReview,
+      vendorIco: vendorIco ?? this.vendorIco,
+      autopilotConfidence: autopilotConfidence ?? this.autopilotConfidence,
     );
   }
 }

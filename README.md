@@ -251,6 +251,8 @@ Po deployi je appka dostupná na `bizagent.sk` (vlastná doména) a na `https://
 | [firebase_hosting.yml](.github/workflows/firebase_hosting.yml) | push `main` (web paths) | `FIREBASE_SERVICE_ACCOUNT`, `SUPABASE_TEST_URL`, `SUPABASE_TEST_PUBLISHABLE_KEY` |
 | [android_release.yml](.github/workflows/android_release.yml) | tag `v*` or manual | `SUPABASE_TEST_URL`, `SUPABASE_TEST_PUBLISHABLE_KEY`, `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEY_PROPERTIES` |
 
+Nastavenie GitHub secrets z lokálnych súborov: `./scripts/setup_github_android_secrets.sh --with-supabase` (pozri [docs/SECRETS_HYGIENE.md](docs/SECRETS_HYGIENE.md)).
+
 `GOOGLE_WEB_CLIENT_ID` je nastavený priamo v workflow env (rovnaký pre web aj Android release).
 
 Android release build používa:

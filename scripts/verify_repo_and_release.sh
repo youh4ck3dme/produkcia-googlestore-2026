@@ -86,6 +86,23 @@ if [ -f android/key.properties ] && [ -f android/app/upload-keystore.jks ]; then
 else
   warn "Chýba signing — spusti: ./setup_android_play_signing.sh"
 fi
+
+echo "── GitHub Actions secrets (android_release) ──"
+if command -v gh >/dev/null 2>&1; then
+  MISSING_GH=""
+  for name in ANDROID_KEYSTORE_BASE64 ANDROID_KEY_PROPERTIES SUPABASE_TEST_URL SUPABASE_TEST_PUBLISHABLE_KEY; do
+    if ! gh secret list 2>/dev/null | awk '{print $1}' | grep -qx "$name"; then
+      MISSING_GH="${MISSING_GH} ${name}"
+    fi
+  done
+  if [ -z "$MISSING_GH" ]; then
+    ok "GitHub secrets pre android_release.yml"
+  else
+    warn "Chýbajú GitHub secrets:$MISSING_GH — spusti: ./scripts/setup_github_android_secrets.sh --with-supabase"
+  fi
+else
+  warn "gh CLI nenájdený — neviem overiť GitHub secrets"
+fi
 AAB_PATH="build/app/outputs/bundle/release/app-release.aab"
 if [ -f "$AAB_PATH" ]; then
   ls -lh "$AAB_PATH"

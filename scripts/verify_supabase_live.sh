@@ -29,10 +29,15 @@ fi
 URL=$(python3 -c "import json; print(json.load(open('$DEFINES'))['SUPABASE_URL'])")
 ANON=$(python3 -c "import json; print(json.load(open('$DEFINES'))['SUPABASE_PUBLISHABLE_KEY'])")
 
-if [[ "$ANON" != eyJ* ]]; then
+# Nové publishable kľúče (sb_publishable_*) sú platné pre REST/Auth API.
+# Legacy JWT anon (eyJ*) sa sťahuje len ak kľúč nie je ani publishable ani JWT.
+if [[ "$ANON" != eyJ* && "$ANON" != sb_publishable_* ]]; then
   LEGACY=$(supabase projects api-keys --project-ref "$PROJECT_REF" -o json 2>/dev/null | python3 -c "
 import json,sys
-for item in json.load(sys.stdin):
+raw = sys.stdin.read().strip()
+if not raw:
+    sys.exit(0)
+for item in json.loads(raw):
     if item.get('name')=='anon':
         print(item['api_key']); break
 " || true)
@@ -42,7 +47,10 @@ fi
 if [[ -z "$SERVICE_KEY" ]]; then
   SERVICE_KEY=$(supabase projects api-keys --project-ref "$PROJECT_REF" -o json 2>/dev/null | python3 -c "
 import json,sys
-for item in json.load(sys.stdin):
+raw = sys.stdin.read().strip()
+if not raw:
+    sys.exit(0)
+for item in json.loads(raw):
     if item.get('name')=='service_role':
         print(item['api_key']); break
 " || true)

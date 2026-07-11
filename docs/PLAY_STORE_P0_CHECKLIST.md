@@ -35,8 +35,8 @@
 | 17 | Google OAuth na Supabase | ⚠️ | `bash scripts/configure_google_oauth_supabase.sh` + redirect URI v Google Console |
 | 18 | Edge function secrets (MISTRAL/Gemini) | ⚠️ | Supabase Dashboard → Edge Functions → Secrets |
 | 19 | Deploy `invoice_counters` migrácie | ⚠️ | `supabase db push` alebo merge migration na live |
-| 20 | Privacy Policy URL | ⚠️ | https://bizagent.sk/privacy-policy.html |
-| 21 | Account deletion URL | ⚠️ | https://bizagent.sk/delete-account.html |
+| 20 | Privacy Policy URL | ✅ | https://bizagent.sk/privacy-policy.html (live, overené curl 2026-07-11) |
+| 21 | Account deletion URL | ✅ | https://bizagent.sk/delete-account.html (live, overené curl 2026-07-11) |
 | 22 | Live E2E test (login → faktúra → delete) | ⚠️ | `bash scripts/e2e_login_checklist.sh` + manuálny checklist |
 | 23 | Demo účet pre Play review | ⚠️ | `DEMO_ACCOUNT_SECRETS.txt` |
 | 24 | Rotácia leaked secrets | ⚠️ | git history — demo heslo + API keys |

@@ -77,7 +77,7 @@ Pri otázke **„Is this data shared with third parties?"** použi tabuľku niž
 | **Google (Firebase Crashlytics)** | Crash logs, stack traces | Automaticky (native SDK) | [`pubspec.yaml`](../pubspec.yaml) L23, [`android/app/build.gradle.kts`](../android/app/build.gradle.kts) L9 |
 | **Google (Firebase Performance)** | Diagnostics, performance traces | Automaticky (native SDK) | [`pubspec.yaml`](../pubspec.yaml) L22, [`android/app/build.gradle.kts`](../android/app/build.gradle.kts) L8 |
 | **Google (Sign-In OAuth)** | Email, meno (auth flow) | Len pri Google prihlásení | [`lib/core/supabase/google_auth_service.dart`](../lib/core/supabase/google_auth_service.dart) L29, L69–73 |
-| **Google Play Billing** | Purchase history, purchase tokens | Pri IAP / obnovení | [`lib/features/billing/billing_service.dart`](../lib/features/billing/billing_service.dart) L5, L67–157 |
+| **Google Play Billing** | Purchase history, purchase tokens | Pri IAP / obnovení | [`lib/features/billing/billing_service.dart`](../lib/features/billing/billing_service.dart) L4, L103–157 |
 | **Mistral AI** | AI prompty (BizBot, OCR text, finančný kontext) | Pri AI volaniach | [`supabase/functions/generate-content/index.ts`](../supabase/functions/generate-content/index.ts) L34–72 |
 | **Google Gemini** (fallback) | AI prompty | Ak je nastavený `GEMINI_API_KEY` | [`supabase/functions/generate-content/index.ts`](../supabase/functions/generate-content/index.ts) L74–98 |
 
@@ -343,7 +343,8 @@ Edge function [`delete-account`](../supabase/functions/delete-account/index.ts) 
 - [ ] **Encrypted in transit: Yes**
 - [ ] **Deletion mechanism: Yes** (in-app + URL + email)
 - [ ] Verejný Data Safety text v store listing zodpovedá deklarácii
-- [ ] *(Odporúčané)* Aktualizovať [`PRIVACY_POLICY.md`](PRIVACY_POLICY.md) — stále spomína Firestore namiesto Supabase
+- [ ] *(Odporúčané)* Doplniť do [`PRIVACY_POLICY.md`](PRIVACY_POLICY.md) / web HTML: **Firebase Crashlytics + Performance** (deklarované tu v sekcii 4, v privacy texte zatiaľ chýbajú)
+- [ ] *(OK)* Firestore v [`PRIVACY_POLICY.md`](PRIVACY_POLICY.md) je zámerne ako **legacy** (IČO cache, kategorizácia) — zhodné s kódom
 
 ---
 

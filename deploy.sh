@@ -26,4 +26,5 @@ echo "☁️  Deploying to Firebase..."
 firebase deploy
 
 echo "✅ Deployment Successful!"
-echo "📍 URL: https://bizagent-live-2026.web.app"
+echo "📍 Privacy: https://bizagent.sk/privacy-policy.html"
+echo "📍 Deletion: https://bizagent.sk/delete-account.html"

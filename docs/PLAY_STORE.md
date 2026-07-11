@@ -130,7 +130,7 @@ Kompletné riešenie pre faktúry, výdavky a accounting, špeciálne navrhnuté
 Email: youh4ck3dme@gmail.com
 Web: https://bizagent.sk
 
-🔒 Privacy Policy: https://youh4ck3dme.github.io/BizAgent/privacy.html
+🔒 Privacy Policy: https://bizagent.sk/privacy-policy.html
 
 Vyskúšaj BizAgent ešte dnes a zjednoduš si podnikanie! 🚀
 ```
@@ -198,7 +198,7 @@ Vyskúšaj BizAgent ešte dnes a zjednoduš si podnikanie! 🚀
 
 **Required:** Yes (collects user data)
 
-**URL:** `https://youh4ck3dme.github.io/BizAgent/privacy.html`
+**URL:** `https://bizagent.sk/privacy-policy.html`
 
 **Must include:**
 - What data is collected (email, company info, invoices, expenses)

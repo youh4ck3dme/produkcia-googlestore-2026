@@ -46,7 +46,7 @@ Google sa bude pýtať na dáta. Odpovede:
 
 ### Privacy Policy
 - [ ] Vložte URL na Privacy Policy.
-- [ ] *Tip:* Môžete použiť text z `docs/PRIVACY_POLICY.md` a dať ho na web (napr. `https://bizagent-live-2026.web.app/privacy-policy.html`).
+- [ ] *Tip:* Môžete použiť text z `docs/PRIVACY_POLICY.md` a dať ho na web (napr. `https://bizagent.sk/privacy-policy.html`).
 
 ## 4. Internal Testing
 - [ ] V menu "Testing" -> "Internal testing".

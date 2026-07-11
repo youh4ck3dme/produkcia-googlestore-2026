@@ -1,0 +1,11 @@
+# Allow-list repository secrets referenced by workflows so actionlint does not
+# report undefined secret access (e.g. ANDROID_KEYSTORE_BASE64).
+config-secrets:
+  - ANDROID_KEYSTORE_BASE64
+  - ANDROID_KEY_PROPERTIES
+  - SUPABASE_TEST_PUBLISHABLE_KEY
+  - SUPABASE_TEST_SERVICE_KEY
+  - SUPABASE_TEST_URL
+  - SUPABASE_TEST_USER_EMAIL
+  - SUPABASE_TEST_USER_PASSWORD
+  - FIREBASE_SERVICE_ACCOUNT

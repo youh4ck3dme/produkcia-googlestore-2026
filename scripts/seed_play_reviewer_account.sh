@@ -52,8 +52,7 @@ if [[ ! -f "$SUPABASE_DEFINES" ]]; then
   exit 1
 fi
 
-read -r SUPABASE_URL PUBLISHABLE_KEY <<EOF
-$(python3 -c "
+SUPABASE_URL=$(python3 -c "
 import json, sys
 d = json.load(open('$SUPABASE_DEFINES'))
 url = (d.get('SUPABASE_URL') or '').strip()
@@ -63,9 +62,13 @@ if not url or 'YOUR_PROJECT' in url or 'REPLACE' in url:
 if not key or 'YOUR_KEY' in key or 'REPLACE' in key:
     sys.exit('invalid key')
 print(url)
+")
+PUBLISHABLE_KEY=$(python3 -c "
+import json, sys
+d = json.load(open('$SUPABASE_DEFINES'))
+key = (d.get('SUPABASE_PUBLISHABLE_KEY') or d.get('SUPABASE_ANON_KEY') or '').strip()
 print(key)
 ")
-EOF
 
 SERVICE_ROLE=$(supabase projects api-keys --project-ref "$PROJECT_REF" -o json | python3 -c "
 import json, sys

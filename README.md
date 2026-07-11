@@ -244,8 +244,22 @@ firebase deploy --only hosting
 
 Po deployi je appka dostupná na `bizagent.sk` (vlastná doména) a na `https://gifted-mountain-476207-u4.web.app` (Firebase default).
 
-**CI/CD:** push na `main` spustí [`.github/workflows/firebase_hosting.yml`](.github/workflows/firebase_hosting.yml) (build web + `firebase deploy --only hosting`). V GitHub repo **Settings → Secrets** nastav:
-`FIREBASE_SERVICE_ACCOUNT` (JSON service account pre projekt `gifted-mountain-476207-u4`), `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`.
+**CI/CD**
+
+| Workflow | Trigger | Secrets |
+|----------|---------|---------|
+| [firebase_hosting.yml](.github/workflows/firebase_hosting.yml) | push `main` (web paths) | `FIREBASE_SERVICE_ACCOUNT`, `SUPABASE_TEST_URL`, `SUPABASE_TEST_PUBLISHABLE_KEY` |
+| [android_release.yml](.github/workflows/android_release.yml) | tag `v*` or manual | `SUPABASE_TEST_URL`, `SUPABASE_TEST_PUBLISHABLE_KEY`, `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEY_PROPERTIES` |
+
+`GOOGLE_WEB_CLIENT_ID` je nastavený priamo v workflow env (rovnaký pre web aj Android release).
+
+Android release build používa:
+```bash
+flutter build appbundle --release --obfuscate --split-debug-info=build/symbols \
+  --dart-define-from-file=dart_defines/supabase.ci.json
+```
+
+Lokálny ekvivalent: `./build_release_aab.sh` (používa `dart_defines/supabase.json`).
 
 Pre Google OAuth na webe pridaj do Google Cloud Web klienta **Authorized JavaScript origins:**
 `https://bizagent.sk`, `https://gifted-mountain-476207-u4.web.app`
@@ -264,9 +278,9 @@ bash scripts/verify_auth_stack.sh
 ### Finálny Checklist
 
 * [ ] **[GOOGLE_PLAY_UPLOAD_CHECKLIST.md](./GOOGLE_PLAY_UPLOAD_CHECKLIST.md)** - Kompletný krok-za-krokom návod
-* [ ] Demo účet: `bizbizagent@bizbizagent.com` (pozri [DEMO_ACCOUNT_SETUP.md](./docs/DEMO_ACCOUNT_SETUP.md))
-* [ ] Android build: `flutter build appbundle --release`
-* [ ] Všetky testy prešli: `./comprehensive_test.sh`
+* [ ] Play reviewer účet: `bizagent@bizagent.sk` — `bash scripts/seed_play_reviewer_account.sh` ([DEMO_ACCOUNT_SETUP.md](./docs/DEMO_ACCOUNT_SETUP.md))
+* [ ] Android build: `./build_release_aab.sh`
+* [ ] Všetky testy prešli: `./run_core_tests.sh`
 
 ### Dokumentácia
 

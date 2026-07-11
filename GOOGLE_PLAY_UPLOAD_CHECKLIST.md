@@ -5,19 +5,24 @@
 
 ## ✅ Pred Uploadom
 
-### 1. Demo Účet v Firebase
-- [ ] **Účet existuje:** `bizbizagent@bizbizagent.com`
-- [ ] **Heslo:** *(drž lokálne v `DEMO_ACCOUNT_SECRETS.txt`, necommitovať)*
-- [ ] **Provider:** Email/Password (nie Google Sign-In!)
-- [ ] **Overenie:** Skús sa prihlásiť v aplikácii s týmito údajmi
-- [ ] **Pozri:** [DEMO_ACCOUNT_SETUP.md](./docs/DEMO_ACCOUNT_SETUP.md) pre podrobnosti
+### 1. Play Reviewer účet v Supabase
+- [ ] **Seed skript:** `bash scripts/seed_play_reviewer_account.sh`
+- [ ] **Email:** `bizagent@bizagent.sk`
+- [ ] **Heslo:** *(lokálne v `.play_reviewer_password`, necommitovať)*
+- [ ] **Provider:** Supabase Auth — Email/Password (nie Firebase, nie Google Sign-In)
+- [ ] **Seed dáta:** 2 faktúry, 1 výdavok, 1 notifikácia, user_settings s IČO/DIČ
+- [ ] **Overenie:** REST sign-in OK + manuálny login v release AAB
+- [ ] **Setup:** [DEMO_ACCOUNT_SETUP.md](./docs/DEMO_ACCOUNT_SETUP.md)
+- [ ] **Play Console text:** [PLAY_APP_ACCESS_NOTES.md](./docs/PLAY_APP_ACCESS_NOTES.md)
 
 ### 2. Android Build
 - [ ] **Vytvoriť AAB súbor:**
   ```bash
-  flutter build appbundle --release --obfuscate --split-debug-info=build/symbols
+  ./build_release_aab.sh
   ```
+  (obsahuje `--dart-define-from-file=dart_defines/supabase.json` + obfuscate)
 - [ ] **Overiť súbor:** `build/app/outputs/bundle/release/app-release.aab`
+- [ ] **Overiť Supabase embed:** skript automaticky kontroluje `supabase.co` v `libapp.so`
 - [ ] **Veľkosť:** Mala by byť < 50MB
 
 ### 3. Testovanie
@@ -75,9 +80,10 @@
 
 #### 3.3 App Access (DÔLEŽITÉ!)
 - [ ] **All or some functionality is restricted?** → **Yes**
-- [ ] **Username:** `bizbizagent@bizbizagent.com`
-- [ ] **Password:** *(demo heslo; neuvádzať do repozitára)*
-- [ ] **Notes:** `This is a test account strictly for review purposes. It comes with pre-populated dummy data.`
+- [ ] **Skopíruj z:** [PLAY_APP_ACCESS_NOTES.md](./docs/PLAY_APP_ACCESS_NOTES.md)
+- [ ] **Username:** `bizagent@bizagent.sk`
+- [ ] **Password:** *(z `.play_reviewer_password`, necommitovať)*
+- [ ] **Notes:** Email/Password login; no hidden gestures in release; sample data pre-loaded in Supabase
 
 #### 3.4 Data Safety (KRITICKÉ!)
 - [ ] **Does your app collect or share any user data?** → **Yes**

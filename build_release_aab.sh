@@ -25,6 +25,23 @@
 
 set -e
 
+# Release build flags (aligned with .github/workflows/android_release.yml)
+FLUTTER_RELEASE_BUILD_FLAGS=(
+  --release
+  --obfuscate
+  --split-debug-info=build/symbols
+)
+
+verify_aab_supabase_embedded() {
+  local aab_path=$1
+  if unzip -p "$aab_path" base/lib/arm64-v8a/libapp.so 2>/dev/null | strings | rg -q 'supabase\.co'; then
+    echo -e "${GREEN}✅ Supabase URL embedded v libapp.so${NC}"
+    return 0
+  fi
+  echo -e "${RED}❌ SUPABASE_URL not found in libapp.so — chýbajú dart defines?${NC}"
+  return 1
+}
+
 echo "🚀 BizAgent — Release AAB (NEW Play listing: sk.bizagent.app)"
 echo "=================================================="
 echo ""
@@ -122,7 +139,7 @@ if [[ ! -f "$DEFINES" ]]; then
     exit 1
 fi
 
-if flutter build appbundle --release --obfuscate --split-debug-info=build/symbols --dart-define-from-file="$DEFINES"; then
+if flutter build appbundle "${FLUTTER_RELEASE_BUILD_FLAGS[@]}" --dart-define-from-file="$DEFINES"; then
     echo ""
     echo -e "${GREEN}✅ Build úspešný!${NC}"
     echo ""
@@ -132,6 +149,7 @@ if flutter build appbundle --release --obfuscate --split-debug-info=build/symbol
         SIZE=$(du -h "$AAB_PATH" | cut -f1)
         echo -e "${GREEN}📦 AAB súbor: ${AAB_PATH}${NC}"
         echo -e "${GREEN}📊 Veľkosť: ${SIZE}${NC}"
+        verify_aab_supabase_embedded "$AAB_PATH"
         echo ""
         echo -e "${GREEN}🎉 Aplikácia je pripravená na upload do Google Play!${NC}"
         echo ""

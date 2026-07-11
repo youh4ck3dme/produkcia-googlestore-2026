@@ -5,11 +5,23 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+  workflow_call:
+    secrets:
+      SUPABASE_TEST_URL:
+        required: true
+      SUPABASE_TEST_PUBLISHABLE_KEY:
+        required: true
+      ANDROID_KEYSTORE_BASE64:
+        required: true
+      ANDROID_KEY_PROPERTIES:
+        required: true
 
 jobs:
   build:
     name: Build Android App Bundle
     runs-on: ubuntu-latest
+    env:
+      GOOGLE_WEB_CLIENT_ID: 90348815049-e5faruj0mfvnn34m80k9b9b5upp9nn6v.apps.googleusercontent.com
 
     steps:
       - name: Checkout code
@@ -36,20 +48,43 @@ jobs:
       - name: Run Tests
         run: flutter test
 
+      - name: Generate Supabase dart defines for CI
+        env:
+          SUPABASE_TEST_URL: ${{ secrets.SUPABASE_TEST_URL }}
+          SUPABASE_TEST_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_TEST_PUBLISHABLE_KEY }}
+          GOOGLE_WEB_CLIENT_ID: ${{ env.GOOGLE_WEB_CLIENT_ID }}
+        run: |
+          if [[ -z "${SUPABASE_TEST_URL:-}" || -z "${SUPABASE_TEST_PUBLISHABLE_KEY:-}" ]]; then
+            echo "::error::Missing SUPABASE_TEST_URL / SUPABASE_TEST_PUBLISHABLE_KEY"
+            exit 1
+          fi
+          bash scripts/generate_supabase_ci_defines.sh dart_defines/supabase.ci.json
+
       - name: Decode Keystore
         env:
-          KEYSTORE_BASE64: "${{ secrets.ANDROID_KEYSTORE_BASE64 }}"
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
           echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
 
       - name: Create key.properties
         env:
-          KEY_PROPS: "${{ secrets.ANDROID_KEY_PROPERTIES }}"
+          KEY_PROPS: ${{ secrets.ANDROID_KEY_PROPERTIES }}
         run: |
           echo "$KEY_PROPS" > android/key.properties
 
       - name: Build App Bundle
-        run: flutter build appbundle --release
+        run: |
+          flutter build appbundle \
+            --release \
+            --obfuscate \
+            --split-debug-info=build/symbols \
+            --dart-define-from-file=dart_defines/supabase.ci.json
+
+      - name: Verify Supabase URL embedded in AAB
+        run: |
+          AAB="build/app/outputs/bundle/release/app-release.aab"
+          unzip -p "$AAB" base/lib/arm64-v8a/libapp.so | strings | rg -q 'supabase\.co' \
+            || (echo "::error::SUPABASE_URL not found in libapp.so — missing dart defines?" && exit 1)
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4

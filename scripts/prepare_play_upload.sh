@@ -58,8 +58,8 @@ AAB size:     $SIZE
 SHA-256:      $SHA256
 MD5:          $MD5
 
-Privacy URL:  https://web-one-beta-76.vercel.app/privacy.html
-Deletion URL: https://web-one-beta-76.vercel.app/delete-account.html
+Privacy URL:  https://bizagent.sk/privacy-policy.html
+Deletion URL: https://bizagent.sk/delete-account.html
 Supabase:     kpsnwpuydqqojwmrnkdy
 
 Play Console checklist:

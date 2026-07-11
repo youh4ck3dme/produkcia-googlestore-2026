@@ -1,140 +1,79 @@
-# 🔐 Demo Účet - Nastavenie
+# Play Reviewer Account (Supabase)
 
-Tento dokument popisuje, ako vytvoriť a overiť demo účet pre Google Play review.
+Google Play reviewer sa prihlasuje cez **Supabase Auth** (email + heslo), nie Firebase.
 
-## 📋 Údaje Demo Účtu
+## Údaje účtu
 
-- **Email:** `bizbizagent@bizbizagent.com`
-- **Password:** *(NEUKLADAŤ do repozitára; drž lokálne v `DEMO_ACCOUNT_SECRETS.txt`)*
-- **Provider:** Email/Password (nie Google Sign-In!)
+| Pole | Hodnota |
+|------|---------|
+| **Email** | `bizagent@bizagent.sk` |
+| **Password** | Lokálne v `.play_reviewer_password` (gitignored) |
+| **Supabase project** | `kpsnwpuydqqojwmrnkdy` |
 
-### 🔒 Lokálne uloženie hesla (odporúčané)
-
-1. Skopíruj šablónu:
-   - `DEMO_ACCOUNT_SECRETS.example.txt` → `DEMO_ACCOUNT_SECRETS.txt`
-2. Doplň `DEMO_PASSWORD=...`
-3. Súbor `DEMO_ACCOUNT_SECRETS.txt` je v `.gitignore` (necommitne sa).
-
-## 🚀 Vytvorenie Účtu
-
-### Metóda 1: Manuálne cez Firebase Console (Odporúčané)
-
-1. Choď na [Firebase Console](https://console.firebase.google.com/project/bizagent-live-2026/authentication/users)
-2. Klikni na **"Add User"** (alebo **"Pridať používateľa"**)
-3. Vyplň formulár:
-   - **Email:** `bizbizagent@bizbizagent.com`
-   - **Password:** *(použi hodnotu z `DEMO_ACCOUNT_SECRETS.txt`)*
-   - **Send email verification:** ❌ (zruš zaškrtnutie - nie je potrebné pre demo účet)
-4. Klikni **"Add User"**
-5. **DÔLEŽITÉ:** Over, že v stĺpci **"Provider"** vidíš ikonu obálky (📧 Email), nie G (Google)
-
-### Metóda 2: Pomocou Skriptu
+## Vytvorenie / obnovenie účtu a seed dát
 
 ```bash
-# Zobraz inštrukcie
-./create_demo_account.sh
-
-# Alebo použij Node.js skript (ak máš Firebase Admin SDK)
-node create_demo_account.js
+# Vyžaduje: supabase CLI (logged in), dart_defines/supabase.json
+bash scripts/seed_play_reviewer_account.sh
 ```
 
-**Poznámka:** Firebase CLI nepodporuje priame vytváranie používateľov, takže skript zobrazí manuálne inštrukcie.
+Skript:
 
-## ✅ Overenie Účtu
+1. Vytvorí alebo aktualizuje používateľa v Supabase Auth (`email_confirm: true`)
+2. Vygeneruje heslo do `.play_reviewer_password` (pri prvom behu) alebo ho znovu použije
+3. Seedne 2 faktúry, 1 výdavok, 1 notifikáciu a `user_settings` s IČO/DIČ
+4. Overí REST sign-in a počet riadkov v tabuľkách
 
-### 1. V Firebase Console
+**Rotácia hesla po review:**
 
-1. Choď na [Firebase Console > Authentication > Users](https://console.firebase.google.com/project/bizagent-live-2026/authentication/users)
-2. Nájdi user `bizbizagent@bizbizagent.com`
-3. Over:
-   - ✅ Účet existuje
-   - ✅ Status je **"Enabled"**
-   - ✅ Provider je **"password"** (nie "google.com")
-   - ✅ Email je overený (alebo nie je potrebné pre demo)
+```bash
+bash scripts/seed_play_reviewer_account.sh --force-password
+```
 
-### 2. Testovanie v Aplikácii
+Potom aktualizuj heslo v Google Play Console → App access.
 
-1. Spusti aplikáciu
-2. Choď na prihlasovaciu obrazovku
-3. Zadaj:
-   - Email: `bizbizagent@bizbizagent.com`
-   - Password: *(použi lokálne uložené demo heslo)*
-4. Klikni "Prihlásiť sa"
-5. Over, že sa úspešne prihlásil
+## Overenie
 
-### 3. Testovanie v Firebase Console
+### REST (automaticky v skripte)
 
-1. Choď na [Firebase Console > Authentication > Users](https://console.firebase.google.com/project/bizagent-live-2026/authentication/users)
-2. Nájdi user `bizbizagent@bizbizagent.com`
-3. Klikni na tri bodky (⋮) vedľa účtu
-4. Vyber **"Test User"** alebo **"Testovať používateľa"**
-5. Over, že sa otvorí testovacia obrazovka
+Skript na konci overí `POST /auth/v1/token?grant_type=password` a SELECT na `invoices`, `expenses`, `notifications`, `user_settings`.
 
-## 🔧 Riešenie Problémov
+### Manuálne v aplikácii
 
-### Účet už existuje
+```bash
+./build_release_aab.sh
+# nainštaluj AAB na zariadenie/emulátor, prihlás sa:
+#   Email: bizagent@bizagent.sk
+#   Password: (obsah .play_reviewer_password)
+```
 
-Ak účet už existuje, môžeš:
-1. **Aktualizovať heslo:**
-   - Firebase Console > Authentication > Users
-   - Klikni na účet
-   - Klikni "Reset Password" alebo "Zmeniť heslo"
-   - Nastav nové heslo: *(podľa `DEMO_ACCOUNT_SECRETS.txt`)*
+Release build **neobsahuje** Demo Mode triple-tap (`PlayReleaseScope.playMvp=true`). Reviewer sa spolieha na seed dáta v Supabase, nie na skryté gesto.
 
-2. **Vymazať a vytvoriť znova:**
-   - Firebase Console > Authentication > Users
-   - Klikni na účet
-   - Klikni "Delete User"
-   - Vytvor nový účet podľa Metódy 1
+### Supabase Dashboard
 
-### Provider je Google (nie Email/Password)
+1. [Authentication → Users](https://supabase.com/dashboard/project/kpsnwpuydqqojwmrnkdy/auth/users) — user `bizagent@bizagent.sk`
+2. Table Editor — riadky v `invoices`, `expenses`, `notifications`, `user_settings` pre `user_id` reviewera
 
-Ak vidíš v stĺpci "Provider" ikonu G (Google), účet bol vytvorený cez Google Sign-In.
+## Google Play Console
 
-**Riešenie:**
-1. Vymazať účet
-2. Vytvoriť nový účet manuálne cez Firebase Console
-3. **DÔLEŽITÉ:** Použiť "Add User" (nie "Add Google User")
+Text pre App access skopíruj z [PLAY_APP_ACCESS_NOTES.md](./PLAY_APP_ACCESS_NOTES.md).
 
-### Účet je disabled
+## Riešenie problémov
 
-Ak je účet disabled:
-1. Firebase Console > Authentication > Users
-2. Klikni na účet
-3. Klikni "Enable User"
+| Problém | Riešenie |
+|---------|----------|
+| `invalid url` / chýba supabase.json | `cp dart_defines/supabase.example.json dart_defines/supabase.json` a doplň kľúče |
+| `service_role` sa nepodarilo načítať | `supabase login` a over project ref |
+| Sign-in HTTP 401 | Spusti seed znova; `--force-password` ak heslo v Play Console nesedí |
+| Prázdna app po prihlásení | Spusti seed znova — dáta sa upsertujú idempotentne |
 
-### Heslo nefunguje
+## Bezpečnosť
 
-1. Skontroluj, že používaš heslo z `DEMO_ACCOUNT_SECRETS.txt`
-2. Skús resetovať heslo v Firebase Console
-3. Over, že používaš správny email: `bizbizagent@bizbizagent.com`
+- Heslo je verejné v Play Console počas review — po schválení rotuj: `--force-password`
+- `.play_reviewer_password` nikdy necommituj
+- Účet je len pre Google Play review, nie pre produkčných zákazníkov
 
-## 📝 Pre Google Play Submission
+## Súvisiace dokumenty
 
-Pri vypĺňaní formulára v Google Play Console:
-
-1. **App Access** sekcia:
-   - Vyber: "All or some functionality is restricted"
-   - **Username:** `bizbizagent@bizbizagent.com`
-   - **Password:** *(demo heslo; neuvádzať do repozitára)*
-   - **Notes:** "This is a test account strictly for review purposes. It comes with pre-populated dummy data."
-
-2. **Overenie:**
-   - Účet musí existovať pred odoslaním aplikácie
-   - Účet musí byť typu Email/Password
-   - Účet musí byť Enabled
-
-## 🔒 Bezpečnosť
-
-- Demo účet je určený **len pre Google Play review**
-- Po schválení aplikácie môžeš účet:
-  - Nechať aktívny (pre budúce testovanie)
-  - Alebo deaktivovať/vymazať
-- Heslo je verejné (v Google Play Console), takže po review ho zmeň alebo účet vymazať
-
-## 📞 Podpora
-
-Ak máš problémy:
-1. Skontroluj [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)
-2. Pozri Firebase Console > Authentication > Users
-3. Skontroluj Firebase Console > Authentication > Settings > Sign-in method
+- [PLAY_APP_ACCESS_NOTES.md](./PLAY_APP_ACCESS_NOTES.md) — copy-paste pre Play Console
+- [GOOGLE_PLAY_UPLOAD_CHECKLIST.md](../GOOGLE_PLAY_UPLOAD_CHECKLIST.md) — finálny upload checklist

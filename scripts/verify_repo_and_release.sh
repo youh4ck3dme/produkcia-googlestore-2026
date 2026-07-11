@@ -1,10 +1,25 @@
 #!/usr/bin/env bash
 # Overí sync GitHub ↔ lokál, Android identitu, Firebase JSON a core test gate.
-# Usage: ./scripts/verify_repo_and_release.sh
+# Usage: ./scripts/verify_repo_and_release.sh [--require-aab]
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
+
+REQUIRE_AAB=false
+for arg in "$@"; do
+  case "$arg" in
+    --require-aab) REQUIRE_AAB=true ;;
+    -h|--help)
+      echo "Usage: ./scripts/verify_repo_and_release.sh [--require-aab]"
+      exit 0
+      ;;
+    *)
+      echo "Neznámy argument: $arg" >&2
+      exit 1
+      ;;
+  esac
+done
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -13,7 +28,7 @@ NC='\033[0m'
 
 ok() { echo -e "${GREEN}✓${NC} $*"; }
 warn() { echo -e "${YELLOW}!${NC} $*"; }
-fail() { echo -e "${RED}✗${NC} $*"; }
+fail() { echo -e "${RED}✗${NC} $*"; exit 1; }
 
 echo "BizAgent — verify repo & Play release readiness"
 echo "==============================================="
@@ -37,6 +52,27 @@ else
 fi
 echo ""
 
+echo "── Supabase defines ──"
+if [ -f dart_defines/supabase.json ]; then
+  if python3 - <<'PY'
+import json, sys
+d = json.load(open("dart_defines/supabase.json"))
+url = (d.get("SUPABASE_URL") or "").strip()
+key = (d.get("SUPABASE_PUBLISHABLE_KEY") or d.get("SUPABASE_ANON_KEY") or "").strip()
+bad = not url or "YOUR_PROJECT" in url or "REPLACE" in url
+bad = bad or not key or "YOUR_KEY" in key or "REPLACE" in key
+sys.exit(1 if bad else 0)
+PY
+  then
+    ok "dart_defines/supabase.json — URL + key nastavené"
+  else
+    fail "dart_defines/supabase.json obsahuje placeholder — doplň pred release buildom"
+  fi
+else
+  warn "Chýba dart_defines/supabase.json — ./build_release_aab.sh zlyhá"
+fi
+echo ""
+
 echo "── Android identita ──"
 APP_ID=$(grep -E 'applicationId\s*=' android/app/build.gradle.kts | head -1 | sed 's/.*"\(.*\)".*/\1/')
 echo "applicationId: $APP_ID"
@@ -50,10 +86,37 @@ if [ -f android/key.properties ] && [ -f android/app/upload-keystore.jks ]; then
 else
   warn "Chýba signing — spusti: ./setup_android_play_signing.sh"
 fi
-if [ -f build/app/outputs/bundle/release/app-release.aab ]; then
-  ls -lh build/app/outputs/bundle/release/app-release.aab
+AAB_PATH="build/app/outputs/bundle/release/app-release.aab"
+if [ -f "$AAB_PATH" ]; then
+  ls -lh "$AAB_PATH"
+  if unzip -p "$AAB_PATH" base/lib/arm64-v8a/libapp.so 2>/dev/null | strings | rg -q 'supabase\.co'; then
+    ok "AAB obsahuje Supabase URL (dart defines OK)"
+  else
+    if [ "$REQUIRE_AAB" = true ]; then
+      fail "AAB existuje, ale Supabase URL chýba v libapp.so — rebuild s ./build_release_aab.sh"
+    else
+      warn "AAB existuje, ale Supabase URL nenájdená — rebuild s ./build_release_aab.sh"
+    fi
+  fi
 else
-  warn "AAB ešte neexistuje — flutter build appbundle --release"
+  if [ "$REQUIRE_AAB" = true ]; then
+    fail "AAB neexistuje — spusti: ./build_release_aab.sh"
+  else
+    warn "AAB ešte neexistuje — spusti: ./build_release_aab.sh"
+  fi
+fi
+echo ""
+
+echo "── Play reviewer account ──"
+if [ -f scripts/seed_play_reviewer_account.sh ]; then
+  ok "seed_play_reviewer_account.sh existuje"
+else
+  warn "Chýba scripts/seed_play_reviewer_account.sh"
+fi
+if [ -f .play_reviewer_password ]; then
+  ok "Play reviewer heslo (.play_reviewer_password)"
+else
+  warn "Chýba .play_reviewer_password — spusti: bash scripts/seed_play_reviewer_account.sh"
 fi
 echo ""
 

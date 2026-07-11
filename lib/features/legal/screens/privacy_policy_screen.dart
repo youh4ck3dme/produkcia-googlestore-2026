@@ -19,31 +19,31 @@ class PrivacyPolicyScreen extends StatelessWidget {
             Text(
               'Zásady ochrany osobných údajov',
               style: GoogleFonts.roboto(
-                fontSize: 22.4, // Reduced by 20% (28 * 0.8)
+                fontSize: 22.4,
                 fontWeight: FontWeight.bold,
                 color: BizTheme.slovakBlue,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Platné od: 21. januára 2026 • V súlade s GDPR',
+              'Platné od: 11. júla 2026 • V súlade s GDPR',
               style: GoogleFonts.roboto(
-                fontSize: 11.2, // Reduced by 20% (14 * 0.8)
+                fontSize: 11.2,
                 color: BizTheme.gray600,
               ),
             ),
             const SizedBox(height: 24),
             _buildSection(
               '1. Prevádzkovateľ',
-              'Prevádzkovateľom aplikácie BizAgent je:\n\nBizAgent s.r.o.\nKontakt: support@bizagent.sk\n\nÚdaje o sídle a registrácii spoločnosti sú dostupné na vyžiadanie na uvedenej emailovej adrese.',
+              'Prevádzkovateľom aplikácie BizAgent je:\n\nBizAgent s.r.o.\nKontakt: support@bizagent.sk\nGDPR: gdpr@bizagent.sk\n\nÚdaje o sídle a registrácii spoločnosti sú dostupné na vyžiadanie na uvedenej emailovej adrese.',
             ),
             _buildSection(
               '2. Aké údaje spracovávame',
-              'V aplikácii BizAgent spracovávame nasledujúce údaje:\n\n• Vaše identifikačné údaje (meno, IČO, DIČ, adresa)\n• Údaje o faktúrach a klientoch\n• Údaje o výdavkoch a príjmoch\n• Fotografie účteniek (spracované lokálne pomocou Google ML Kit OCR)\n• Autentifikačné údaje (email, heslo - hashované)\n• Technické údaje (IP adresa, typ zariadenia)',
+              'V aplikácii BizAgent spracovávame nasledujúce údaje:\n\n• Vaše identifikačné údaje (meno, IČO, DIČ, adresa)\n• Údaje o faktúrach a klientoch\n• Údaje o výdavkoch a príjmoch\n• Autentifikačné údaje (email, heslo – hashované cez Supabase Auth)\n• Fotografie účteniek (nahraté do Supabase Storage; text z bločkov spracovaný lokálne cez Google ML Kit OCR)\n• AI prompty a história BizBot chatu (uložená v Supabase)\n• Technické údaje (anonymné analytické udalosti cez Firebase Analytics)',
             ),
             _buildSection(
               '3. Účel spracovania',
-              'Vaše údaje spracovávame na:\n\n• Poskytovanie služieb aplikácie BizAgent\n• Evidenciu fakturácie a výdavkov\n• Komunikáciu s vami\n• Zabezpečenie a zlepšenie našich služieb\n• Plnenie zákonných povinností',
+              'Vaše údaje spracovávame na:\n\n• Poskytovanie služieb aplikácie BizAgent\n• Evidenciu fakturácie a výdavkov\n• AI asistenciu (analýza dát, generovanie odpovedí)\n• Správu predplatného a in-app nákupov\n• Komunikáciu s vami\n• Zabezpečenie a zlepšenie našich služieb\n• Plnenie zákonných povinností',
             ),
             _buildSection(
               '4. Právny základ',
@@ -55,23 +55,23 @@ class PrivacyPolicyScreen extends StatelessWidget {
             ),
             _buildSection(
               '6. Zdieľanie údajov',
-              'Vaše údaje môžeme zdieľať s:\n\n• Firebase/Google Cloud (hosting a databáza)\n• Google AI (Gemini) - len pre AI funkcie\n• Google ML Kit - OCR spracovanie fotografií účteniek (lokálne na zariadení)\n• Úrady (len v prípade zákonnej povinnosti)\n\nVaše údaje NEZDIEĽAME s tretími stranami na marketingové účely.',
+              'Vaše údaje môžeme zdieľať s:\n\n• Supabase Inc. (EÚ, eu-central-1) – autentifikácia, databáza, úložisko, Edge Functions\n• Mistral AI a Google (Gemini) – spracovanie AI promptov (len pri aktívnom používaní AI funkcií)\n• Google ML Kit – OCR na zariadení\n• Google Firebase Analytics – anonymné štatistiky\n• Apple App Store / Google Play – spracovanie platieb\n• Google Firebase / Firestore (obmedzené legacy) – cache IČO, kategorizácia výdavkov\n• icoatlas.sk (voliteľné) – vyhľadávanie v obchodnom registri\n• Úradmi (len v prípade zákonnej povinnosti)\n\nVaše údaje NEZDIEĽAME s tretími stranami na marketingové účely.',
             ),
             _buildSection(
-              '7. Vaše práva',
-              'Máte právo:\n\n• Na prístup k svojim údajom\n• Na opravu nesprávnych údajov\n• Na vymazanie údajov ("právo na zabudnutie")\n• Na obmedzenie spracovania\n• Na prenosnosť údajov\n• Namietať proti spracovaniu\n• Podať sťažnosť na Úrad na ochranu osobných údajov SR',
+              '7. AI funkcie',
+              'AI funkcie (BizBot, daňový asistent, generátor e-mailov, analýzy) spracovávajú vaše textové dotazy a relevantný obchodný kontext cez Supabase Edge Function, ktorá forwarduje prompty na Mistral AI (primárne) alebo Google Gemini (záložne). História BizBot chatu je uložená v Supabase do zmazania účtu. Odpovede AI sú iba informatívne a nenahrádzajú odborné poradenstvo.',
             ),
             _buildSection(
-              '8. Zabezpečenie',
-              'Vaše údaje sú:\n\n• Šifrované počas prenosu (TLS/SSL)\n• Uložené na bezpečných serveroch Google Cloud\n• ChránenéFirebaseAutentifikáciou\n• Pravidelne zálohované',
+              '8. Predplatné a in-app nákupy',
+              'Aplikácia ponúka voliteľné platené plány (sub_pro_monthly, sub_pro_year, sub_business_monthly, one_time_starter) spracované cez Apple App Store alebo Google Play Billing. Platobné údaje spracúva výhradne platforma obchodu; BizAgent neukladá údaje o platobnej karte.',
             ),
             _buildSection(
-              '9. Cookies a analytika',
-              'Aplikácia používa:\n\n• Firebase Analytics (anonymné štatistiky používania)\n• Nevyhnutné cookies na autentifikáciu\n\nAI funkcie (Gemini) spracovávajú vaše dotazy, ale neuchovávajú históriu.',
+              '9. Vaše práva a vymazanie účtu',
+              'Máte právo:\n\n• Na prístup k svojim údajom\n• Na opravu nesprávnych údajov\n• Na vymazanie údajov ("právo na zabudnutie")\n• Na obmedzenie spracovania\n• Na prenosnosť údajov\n• Namietať proti spracovaniu\n• Podať sťažnosť na Úrad na ochranu osobných údajov SR\n\nÚčet môžete vymazať:\n• V aplikácii: Nastavenia → Zmazať účet a všetky dáta (okamžite)\n• E-mailom: support@bizagent.sk\n• Web: https://bizagent.sk/delete-account.html',
             ),
             _buildSection(
-              '10. Zmeny zásad',
-              'O zmenách týchto zásad vás budeme informovať v aplikácii. Odporúčame ich pravidelne kontrolovať.',
+              '10. Zabezpečenie',
+              'Vaše údaje sú:\n\n• Šifrované počas prenosu (TLS/SSL)\n• Uložené na serveroch Supabase v EÚ (eu-central-1)\n• Chránené autentifikáciou a Row Level Security (RLS)\n• Edge Functions vyžadujú platnú prihlásenú reláciu',
             ),
             _buildSection(
               '11. Kontaktujte nás',
@@ -97,7 +97,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
                     child: Text(
                       'Vaše súkromie je pre nás prioritou. Všetky údaje sú chránené podľa európskych štandardov GDPR.',
                       style: GoogleFonts.roboto(
-                        fontSize: 11.2, // Reduced by 20% (14 * 0.8)
+                        fontSize: 11.2,
                         color: BizTheme.gray700,
                       ),
                     ),
@@ -120,7 +120,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
           Text(
             title,
             style: GoogleFonts.roboto(
-              fontSize: 14.4, // Reduced by 20% (18 * 0.8)
+              fontSize: 14.4,
               fontWeight: FontWeight.bold,
               color: BizTheme.gray900,
             ),

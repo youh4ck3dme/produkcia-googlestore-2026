@@ -1,56 +1,114 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Privacy Policy - BizAgent</title>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; line-height: 1.6; color: #333; }
-        h1 { color: #2563eb; border-bottom: 2px solid #2563eb; padding-bottom: 10px; }
-        h2 { color: #1e40af; margin-top: 30px; }
-        ul { padding-left: 25px; }
-        li { margin: 8px 0; }
-        .lang-switch { text-align: right; margin-bottom: 20px; }
-        .lang-switch a { color: #2563eb; text-decoration: none; margin: 0 10px; }
-        .lang-switch a:hover { text-decoration: underline; }
-        .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 0.9em; color: #666; }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Privacy Policy - BizAgent</title>
+  <link rel="alternate" hreflang="sk" href="privacy-policy.html" />
+  <style>
+    body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 16px; line-height: 1.7; color: #1a1a1a; }
+    h1 { color: #2563EB; }
+    h2 { color: #333; margin-top: 2em; }
+    .meta { color: #666; font-size: 0.9em; }
+    ul { padding-left: 1.5em; }
+    .lang-switch { text-align: right; margin-bottom: 20px; }
+    .lang-switch a { color: #2563EB; text-decoration: none; margin: 0 10px; }
+    .lang-switch a:hover { text-decoration: underline; }
+    .footer { margin-top: 3em; padding-top: 1em; border-top: 1px solid #eee; color: #666; font-size: 0.85em; }
+    a { color: #2563EB; }
+  </style>
 </head>
 <body>
-    <div class="lang-switch">
-        <a href="privacy.html">SK</a> | <a href="#en">EN</a>
-    </div>
+  <div class="lang-switch">
+    <a href="privacy-policy.html">SK</a> | <a href="#en">EN</a>
+  </div>
 
-    <h1 id="en">Privacy Policy</h1>
-    <p><strong>BizAgent</strong> is an app for invoicing and expense tracking. We respect your privacy.</p>
+  <h1 id="en">Privacy Policy</h1>
+  <p class="meta">Effective from: July 11, 2026 &bull; BizAgent App &bull; GDPR compliant (EU Regulation 2016/679)</p>
 
-    <h2>Data we process</h2>
-    <ul>
-        <li><strong>Accounting data</strong> you enter (invoices, expenses, business settings).</li>
-        <li><strong>Account login data</strong> (Firebase Authentication).</li>
-        <li><strong>Technical identifiers</strong> required to operate the service (e.g., user ID in the database).</li>
-    </ul>
+  <h2>1. Data Controller</h2>
+  <p>The data controller for the BizAgent app is BizAgent s.r.o.<br>
+  Contact: <a href="mailto:support@bizagent.sk">support@bizagent.sk</a><br>
+  GDPR: <a href="mailto:gdpr@bizagent.sk">gdpr@bizagent.sk</a></p>
 
-    <h2>Where data is stored</h2>
-    <p>Your data is stored in <strong>Firebase/Firestore</strong> under your user account. Access is limited to authenticated users.</p>
+  <h2>2. Data We Process</h2>
+  <ul>
+    <li>Identification data (name, company ID, tax ID, business address)</li>
+    <li>Invoice and client data</li>
+    <li>Expense and income records</li>
+    <li>Authentication data (email, password – stored in hashed form via Supabase Auth)</li>
+    <li>Receipt photos (uploaded to Supabase Storage; text extracted on-device via Google ML Kit OCR)</li>
+    <li>AI prompts and BizBot chat history (stored in Supabase)</li>
+    <li>Technical data (anonymous analytics events via Firebase Analytics)</li>
+  </ul>
 
-    <h2>Camera & files</h2>
-    <ul>
-        <li><strong>Camera</strong> may be used to scan receipts (OCR) to help create expenses.</li>
-        <li>The app may generate and share <strong>exports</strong> (e.g., PDF/ZIP) via the system share dialog.</li>
-    </ul>
+  <h2>3. Purpose of Processing</h2>
+  <ul>
+    <li>Providing app services (invoicing, expense tracking)</li>
+    <li>AI assistance (data analysis, response generation)</li>
+    <li>Subscription and in-app purchase management</li>
+    <li>Communication with users</li>
+    <li>Security and service improvement</li>
+    <li>Legal compliance</li>
+  </ul>
 
-    <h2>Sharing with third parties</h2>
-    <p>We <strong>do not sell</strong> your data. Data may be processed by <strong>Google Firebase</strong> services (hosting, database, authentication) to provide the app functionality.</p>
+  <h2>4. Legal Basis</h2>
+  <ul>
+    <li>User consent (Art. 6(1)(a) GDPR)</li>
+    <li>Contract performance (Art. 6(1)(b) GDPR)</li>
+    <li>Legitimate interest of the controller (Art. 6(1)(f) GDPR)</li>
+  </ul>
 
-    <h2>Security</h2>
-    <p>We use authentication and database access rules. We recommend using strong sign-in and not sharing your account.</p>
+  <h2>5. Data Retention</h2>
+  <p>We retain your data for the duration of app use. Accounting documents per legal retention periods (up to 10 years). After account deletion, all data is permanently removed.</p>
 
-    <h2>Contact</h2>
-    <p>If you have privacy questions, contact: <strong>support@bizagent.sk</strong></p>
+  <h2>6. Sharing with Third Parties</h2>
+  <ul>
+    <li><strong>Supabase Inc.</strong> (EU, eu-central-1) – authentication, database, file storage, Edge Functions</li>
+    <li><strong>Mistral AI</strong> and <strong>Google (Gemini)</strong> – AI prompt processing (only when you actively use AI features)</li>
+    <li><strong>Google ML Kit</strong> – on-device text recognition from receipt photos</li>
+    <li><strong>Google Firebase Analytics</strong> – anonymous usage statistics</li>
+    <li><strong>Apple App Store / Google Play</strong> – payment processing for subscriptions and in-app purchases</li>
+    <li><strong>Google Firebase / Firestore</strong> (limited legacy) – IČO lookup cache, expense categorization</li>
+    <li><strong>icoatlas.sk</strong> (optional) – company registry lookups</li>
+    <li><strong>Slovak authorities</strong> – only when legally required</li>
+  </ul>
+  <p>We do <strong>not sell</strong> your data to third parties for marketing purposes.</p>
 
-    <div class="footer">
-        <p><em>Last updated: January 17, 2026</em></p>
-    </div>
+  <h2>7. AI Features – Special Notice</h2>
+  <p>AI features (BizBot, tax assistant, email generator, analytics) process your text queries and relevant business context via a Supabase Edge Function, which forwards prompts to Mistral AI (primary) or Google Gemini (fallback). BizBot chat history is stored in Supabase until account deletion. AI responses are informational only and do not replace professional advice.</p>
+
+  <h2>8. Subscriptions and In-App Purchases</h2>
+  <p>The app offers optional paid plans (<code>sub_pro_monthly</code>, <code>sub_pro_year</code>, <code>sub_business_monthly</code>, <code>one_time_starter</code>) processed through Apple App Store or Google Play Billing. Payment details are handled entirely by the platform store; BizAgent does not store payment card data.</p>
+
+  <h2>9. Your Rights and Account Deletion</h2>
+  <ul>
+    <li>Right of access</li>
+    <li>Right to rectification</li>
+    <li>Right to erasure ("right to be forgotten")</li>
+    <li>Right to restriction of processing</li>
+    <li>Right to data portability</li>
+    <li>Right to object</li>
+    <li>Right to lodge a complaint with the Slovak Data Protection Authority</li>
+  </ul>
+  <p>You can delete your account:</p>
+  <ul>
+    <li><strong>In-app:</strong> Settings → "Delete account and all data" (immediate)</li>
+    <li><strong>By email:</strong> <a href="mailto:support@bizagent.sk">support@bizagent.sk</a></li>
+    <li><strong>Web:</strong> <a href="https://bizagent.sk/delete-account.html">https://bizagent.sk/delete-account.html</a></li>
+  </ul>
+
+  <h2>10. Security</h2>
+  <p>Data is encrypted in transit (TLS/SSL), stored on Supabase servers in the EU (eu-central-1), protected by authentication and Row Level Security (RLS). Edge Functions require a valid authenticated session.</p>
+
+  <h2>11. Contact</h2>
+  <p>Email: <a href="mailto:gdpr@bizagent.sk">gdpr@bizagent.sk</a><br>
+  General contact: <a href="mailto:support@bizagent.sk">support@bizagent.sk</a></p>
+  <p>We respond to requests within 30 days.</p>
+
+  <div class="footer">
+    <p><a href="privacy-policy.html">Slovenská verzia</a> &bull; <a href="delete-account.html">Account Deletion</a></p>
+    <p>&copy; 2026 BizAgent s.r.o. All rights reserved.</p>
+  </div>
 </body>
 </html>

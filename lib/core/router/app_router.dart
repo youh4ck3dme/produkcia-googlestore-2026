@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -59,6 +60,11 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final path = state.uri.path;
 
+      // OAuth návrat: ?code= v URL (pred vyčistením) — nepresmerovávaj preč z login
+      if (kIsWeb && Uri.base.queryParameters.containsKey('code')) {
+        return path == '/login' ? null : '/login';
+      }
+
       // 1. Loading / initialization — drž sa login/onboarding, žiadny splash
       if (authState.isLoading ||
           onboardingState.isLoading ||
@@ -72,8 +78,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         return path == '/login' ? null : '/login';
       }
 
-      final isLoggedIn = authState.valueOrNull != null;
-      final seenOnboarding = onboardingState.valueOrNull ?? false;
+      final isLoggedIn = authState.value != null;
+      final seenOnboarding = onboardingState.value ?? false;
 
       // 3. Onboarding Flow
       if (!seenOnboarding) {
@@ -141,7 +147,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           return Consumer(
             builder: (context, ref, _) {
-              final user = ref.watch(authStateProvider).valueOrNull;
+              final user = ref.watch(authStateProvider).value;
               if (user == null) return const BizAuthRequired();
               return ExportScreen(uid: user.id);
             },

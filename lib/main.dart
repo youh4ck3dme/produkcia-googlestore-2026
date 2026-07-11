@@ -5,6 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'firebase_options.dart';
 import 'core/supabase/supabase_config.dart';
+import 'core/supabase/oauth_callback_handler.dart';
 import 'app.dart';
 import 'core/services/local_persistence_service.dart';
 import 'core/demo_mode/demo_mode_service.dart';
@@ -40,7 +41,16 @@ void main() async {
 
   // Supabase (DB/Auth/Storage). Vyžaduje dart_defines/supabase.json alebo --dart-define.
   await SupabaseConfig.initialize();
-  
+
+  // Web OAuth: vymení ?code= za session pred prvým renderom (hash URL #/login).
+  if (kIsWeb) {
+    try {
+      await recoverOAuthSessionFromBrowserUrl();
+    } catch (_) {
+      // Router nechá používateľa na /login; chyba sa zobrazí v UI.
+    }
+  }
+
   runApp(
     ProviderScope(
       overrides: [

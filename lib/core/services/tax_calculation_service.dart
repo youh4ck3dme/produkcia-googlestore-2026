@@ -30,6 +30,28 @@ class TaxTotals {
 }
 
 class TaxCalculationService {
+  /// SK DPH — zákon č. 222/2004 Z. z., platné sadzby 2026.
+  static const double vatStandardRate = 0.20;
+  static const double vatReducedRate = 0.10;
+  static const double vatZeroRate = 0.0;
+  static const List<double> vatRates = [
+    vatStandardRate,
+    vatReducedRate,
+    vatZeroRate,
+  ];
+
+  /// §4 ods. 6 — povinnosť registrácie platcu DPH (12 po sebe idúcich mesiacov).
+  static const double vatRegistrationThresholdEur = 49790.0;
+
+  /// §43a ZDP — orientačný limit príjmov pre paušálne výdavky (mikrodaňovník).
+  static const double microTaxpayerIncomeLimitEur = 100000.0;
+
+  static String vatRateLabel(double rate) =>
+      '${(rate * 100).round()} %';
+
+  static double defaultVatRateForPayer(bool isVatPayer) =>
+      isVatPayer ? vatStandardRate : vatZeroRate;
+
   /// Item base is assumed NET (bez DPH).
   TaxLine calcLine({required double baseAmount, required double vatRate}) {
     final base = Money.round2(baseAmount);

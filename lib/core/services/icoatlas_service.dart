@@ -74,7 +74,9 @@ class IcoAtlasService {
 
         final data = raw['data'];
         if (data is Map<String, dynamic>) {
-          final parsed = IcoLookupResult.fromIcoAtlasApi(data);
+          final parsed = await _enrichVatRegister(
+            IcoLookupResult.fromIcoAtlasApi(data),
+          );
           return parsed.isValid ? parsed : null;
         }
 
@@ -92,7 +94,9 @@ class IcoAtlasService {
         }
 
         // Back-compat formats.
-        final parsed = IcoLookupResult.fromRealApi(raw);
+        final parsed = await _enrichVatRegister(
+          IcoLookupResult.fromRealApi(raw),
+        );
         return parsed.isValid ? parsed : null;
       }
       return null;
@@ -158,6 +162,60 @@ class IcoAtlasService {
       return null;
     } catch (e) {
       debugPrint('Secure lookup error: $e');
+      return null;
+    }
+  }
+
+  /// Doplní IČ DPH z registra platiteľov FS, ak icoatlas vráti len RPO údaje.
+  Future<IcoLookupResult> _enrichVatRegister(IcoLookupResult result) async {
+    if (result.isVatPayer || result.icoNorm.isEmpty) return result;
+
+    final icDph = await _fetchVatIcDphFromFsRegister(result.icoNorm);
+    if (icDph == null || icDph.isEmpty) return result;
+
+    return result.copyWith(icDph: icDph);
+  }
+
+  /// Register platiteľov DPH — Finančná správa (OpenData IZ).
+  Future<String?> _fetchVatIcDphFromFsRegister(String icoNorm) async {
+    try {
+      final response = await Dio(BaseOptions(
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 10),
+        headers: const {'Accept': 'application/json'},
+      )).get(
+        'https://iz.opendata.financnasprava.sk/api/vatpayers',
+        queryParameters: {'ico': icoNorm},
+      );
+
+      if (response.statusCode != 200 || response.data == null) return null;
+
+      final data = response.data;
+      if (data is Map<String, dynamic>) {
+        final icDph = IcoLookupResult.pickNullableString(data, [
+          'icDph',
+          'ic_dph',
+          'vatId',
+          'vat_id',
+        ]);
+        if (icDph != null) return icDph;
+
+        final items = data['items'] ?? data['data'] ?? data['results'];
+        if (items is List && items.isNotEmpty) {
+          final first = items.first;
+          if (first is Map<String, dynamic>) {
+            return IcoLookupResult.pickNullableString(first, [
+              'icDph',
+              'ic_dph',
+              'vatId',
+              'vat_id',
+            ]);
+          }
+        }
+      }
+      return null;
+    } catch (e) {
+      debugPrint('FS DPH register lookup failed: $e');
       return null;
     }
   }

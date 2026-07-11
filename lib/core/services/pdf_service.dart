@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:bizagent/features/invoices/models/invoice_model.dart';
 import '../../features/settings/models/user_settings_model.dart';
 import 'pay_by_square_service.dart';
+import 'tax_calculation_service.dart';
 
 final pdfServiceProvider = Provider<PdfService>((ref) {
   return PdfService();
@@ -59,6 +60,11 @@ Future<Uint8List> _generateInvoiceTask(InvoiceGenerationArgs args) async {
 
   final currency = NumberFormat.currency(locale: 'sk_SK', symbol: '€');
   final dateFormat = DateFormat('dd.MM.yyyy');
+  final tax = TaxCalculationService();
+  final isVatPayer = settings.isVatPayer;
+  final taxLines =
+      invoice.items.map((item) => item.toTaxLine(tax)).toList(growable: false);
+  final taxTotals = tax.calcTotals(taxLines);
 
   pdf.addPage(
     pw.Page(
@@ -217,7 +223,7 @@ Future<Uint8List> _generateInvoiceTask(InvoiceGenerationArgs args) async {
                           'Dátum vystavenia: ${dateFormat.format(invoice.dateIssued)}',
                           style: const pw.TextStyle(fontSize: 10)),
                       pw.Text(
-                          'Dátum dodania: ${dateFormat.format(invoice.dateIssued)}',
+                          'Dátum dodania: ${dateFormat.format(invoice.dateSupply)}',
                           style: const pw.TextStyle(fontSize: 10)),
                     ]),
                 pw.Column(
@@ -234,6 +240,19 @@ Future<Uint8List> _generateInvoiceTask(InvoiceGenerationArgs args) async {
             ),
             pw.SizedBox(height: 20),
 
+            if (!isVatPayer)
+              pw.Padding(
+                padding: const pw.EdgeInsets.only(bottom: 8),
+                child: pw.Text(
+                  'Dodávateľ nie je platiteľom dane z pridanej hodnoty.',
+                  style: pw.TextStyle(
+                    fontSize: 9,
+                    fontStyle: pw.FontStyle.italic,
+                    color: PdfColors.grey700,
+                  ),
+                ),
+              ),
+
             // ITEMS TABLE
             pw.TableHelper.fromTextArray(
               context: context,
@@ -246,30 +265,66 @@ Future<Uint8List> _generateInvoiceTask(InvoiceGenerationArgs args) async {
                   const pw.BoxDecoration(color: PdfColors.blue800),
               cellStyle: const pw.TextStyle(fontSize: 10),
               cellHeight: 25,
-              cellAlignments: {
-                0: pw.Alignment.centerLeft,
-                1: pw.Alignment.centerRight,
-                2: pw.Alignment.centerRight,
-                3: pw.Alignment.centerRight,
-                4: pw.Alignment.centerRight,
-              },
-              columnWidths: {
-                0: const pw.FlexColumnWidth(4),
-                1: const pw.FlexColumnWidth(1),
-                2: const pw.FlexColumnWidth(2),
-                3: const pw.FlexColumnWidth(1),
-                4: const pw.FlexColumnWidth(2),
-              },
-              headers: ['Popis', 'Mn.', 'J.cena', 'DPH', 'Spolu'],
-              data: invoice.items.map((item) {
+              cellAlignments: isVatPayer
+                  ? {
+                      0: pw.Alignment.centerLeft,
+                      1: pw.Alignment.centerRight,
+                      2: pw.Alignment.centerRight,
+                      3: pw.Alignment.centerRight,
+                      4: pw.Alignment.centerRight,
+                      5: pw.Alignment.centerRight,
+                    }
+                  : {
+                      0: pw.Alignment.centerLeft,
+                      1: pw.Alignment.centerRight,
+                      2: pw.Alignment.centerRight,
+                      3: pw.Alignment.centerRight,
+                    },
+              columnWidths: isVatPayer
+                  ? {
+                      0: const pw.FlexColumnWidth(4),
+                      1: const pw.FlexColumnWidth(1),
+                      2: const pw.FlexColumnWidth(2),
+                      3: const pw.FlexColumnWidth(1),
+                      4: const pw.FlexColumnWidth(1.5),
+                      5: const pw.FlexColumnWidth(2),
+                    }
+                  : {
+                      0: const pw.FlexColumnWidth(4),
+                      1: const pw.FlexColumnWidth(1),
+                      2: const pw.FlexColumnWidth(2),
+                      3: const pw.FlexColumnWidth(2),
+                    },
+              headers: isVatPayer
+                  ? [
+                      'Popis',
+                      'Mn.',
+                      'J.cena bez DPH',
+                      'DPH %',
+                      'DPH €',
+                      'Spolu',
+                    ]
+                  : ['Popis', 'Mn.', 'J.cena', 'Spolu'],
+              data: List<List<String>>.generate(invoice.items.length, (index) {
+                final item = invoice.items[index];
+                final line = taxLines[index];
+                if (isVatPayer) {
+                  return [
+                    item.description,
+                    item.quantity.toString(),
+                    currency.format(line.base),
+                    TaxCalculationService.vatRateLabel(line.vatRate),
+                    currency.format(line.vatAmount),
+                    currency.format(line.total),
+                  ];
+                }
                 return [
                   item.description,
                   item.quantity.toString(),
-                  currency.format(item.unitPrice),
-                  '${(item.vatRate * 100).toInt()}%',
-                  currency.format(item.totalWithVat),
+                  currency.format(line.base),
+                  currency.format(line.base),
                 ];
-              }).toList(),
+              }),
             ),
             pw.Divider(),
 
@@ -320,36 +375,34 @@ Future<Uint8List> _generateInvoiceTask(InvoiceGenerationArgs args) async {
                 pw.Expanded(
                   child: pw.Column(
                     children: [
-                      // VAT Breakdown
-                      pw.Container(
-                        margin: const pw.EdgeInsets.only(bottom: 10),
-                        child: pw.TableHelper.fromTextArray(
-                          border: pw.TableBorder.all(
-                              color: PdfColors.grey300, width: 0.5),
-                          headerStyle: pw.TextStyle(
-                              fontSize: 8, fontWeight: pw.FontWeight.bold),
-                          cellStyle: const pw.TextStyle(fontSize: 8),
-                          headers: ['Sadzba', 'Základ', 'DPH', 'Spolu'],
-                          data: invoice.items.isEmpty
-                              ? []
-                              : [
-                                  ...invoice.vatBreakdown.entries.map((entry) {
-                                    final rate = entry.key;
-                                    final itemsInRate = invoice.items
-                                        .where((i) => i.vatRate == rate);
-                                    final base = itemsInRate.fold(
-                                        0.0, (sum, i) => sum + i.subtotal);
-                                    final vat = entry.value;
-                                    return [
-                                      '${(rate * 100).toInt()}%',
-                                      currency.format(base),
-                                      currency.format(vat),
-                                      currency.format(base + vat),
-                                    ];
-                                  }),
-                                ],
+                      if (isVatPayer)
+                        pw.Container(
+                          margin: const pw.EdgeInsets.only(bottom: 10),
+                          child: pw.TableHelper.fromTextArray(
+                            border: pw.TableBorder.all(
+                                color: PdfColors.grey300, width: 0.5),
+                            headerStyle: pw.TextStyle(
+                                fontSize: 8, fontWeight: pw.FontWeight.bold),
+                            cellStyle: const pw.TextStyle(fontSize: 8),
+                            headers: ['Sadzba', 'Základ', 'DPH', 'Spolu'],
+                            data: taxTotals.vatBreakdown.entries.map((entry) {
+                              final rate = entry.key;
+                              final vat = entry.value;
+                              final base = taxLines
+                                  .where((line) => line.vatRate == rate)
+                                  .fold<double>(
+                                    0,
+                                    (sum, line) => sum + line.base,
+                                  );
+                              return [
+                                TaxCalculationService.vatRateLabel(rate),
+                                currency.format(base),
+                                currency.format(vat),
+                                currency.format(base + vat),
+                              ];
+                            }).toList(),
+                          ),
                         ),
-                      ),
 
                       // GRAND TOTAL
                       pw.Container(
@@ -361,21 +414,28 @@ Future<Uint8List> _generateInvoiceTask(InvoiceGenerationArgs args) async {
                                 mainAxisAlignment:
                                     pw.MainAxisAlignment.spaceBetween,
                                 children: [
-                                  pw.Text('Základ celkom:',
+                                  pw.Text(
+                                      isVatPayer
+                                          ? 'Základ celkom:'
+                                          : 'Suma celkom:',
                                       style: const pw.TextStyle(fontSize: 10)),
                                   pw.Text(
-                                      currency.format(invoice.totalBeforeVat),
+                                      currency.format(taxTotals.baseTotal),
                                       style: const pw.TextStyle(fontSize: 10)),
                                 ]),
-                            pw.Row(
-                                mainAxisAlignment:
-                                    pw.MainAxisAlignment.spaceBetween,
-                                children: [
-                                  pw.Text('DPH celkom:',
-                                      style: const pw.TextStyle(fontSize: 10)),
-                                  pw.Text(currency.format(invoice.totalVat),
-                                      style: const pw.TextStyle(fontSize: 10)),
-                                ]),
+                            if (isVatPayer)
+                              pw.Row(
+                                  mainAxisAlignment:
+                                      pw.MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    pw.Text('DPH celkom:',
+                                        style:
+                                            const pw.TextStyle(fontSize: 10)),
+                                    pw.Text(
+                                        currency.format(taxTotals.vatTotal),
+                                        style:
+                                            const pw.TextStyle(fontSize: 10)),
+                                  ]),
                             pw.Divider(color: PdfColors.blue800),
                             pw.Row(
                                 mainAxisAlignment:
@@ -385,7 +445,7 @@ Future<Uint8List> _generateInvoiceTask(InvoiceGenerationArgs args) async {
                                       style: pw.TextStyle(
                                           fontWeight: pw.FontWeight.bold,
                                           fontSize: 14)),
-                                  pw.Text(currency.format(invoice.grandTotal),
+                                  pw.Text(currency.format(taxTotals.grandTotal),
                                       style: pw.TextStyle(
                                           fontWeight: pw.FontWeight.bold,
                                           fontSize: 14,

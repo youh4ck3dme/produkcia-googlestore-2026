@@ -242,6 +242,12 @@ class IcoLookupResult {
   factory IcoLookupResult.fromIcoAtlasApi(Map<String, dynamic> json) {
     final rawIco = json['ico']?.toString() ?? '';
     final normIco = rawIco.replaceAll(RegExp(r'\D'), '');
+    final icDph = pickNullableString(json, [
+      'ic_dph',
+      'icDph',
+      'vat_id',
+      'icDPH',
+    ]);
 
     return IcoLookupResult(
       ico: rawIco,
@@ -250,17 +256,68 @@ class IcoLookupResult {
       status: (json['status'] ?? '').toString(),
       street: (json['address'] ?? '').toString(),
       city: (json['city'] ?? '').toString(),
-      postalCode: (json['zip'] ?? '').toString(),
-      dic: json['dic']?.toString(),
-      icDph: json['ic_dph']?.toString(),
+      postalCode: (json['zip'] ?? json['postalCode'] ?? '').toString(),
+      dic: pickNullableString(json, ['dic', 'tax_id']),
+      icDph: icDph,
       cachedAt: DateTime.now(),
     );
+  }
+
+  static String? pickNullableString(
+    Map<String, dynamic> json,
+    List<String> keys,
+  ) {
+    for (final key in keys) {
+      final value = json[key];
+      if (value == null) continue;
+      final text = value.toString().trim();
+      if (text.isNotEmpty) return text;
+    }
+    return null;
   }
 
   // --- Getters ---
 
   bool get isValid => name.isNotEmpty;
-  
+
+  /// Platiteľ DPH podľa IČ DPH z RPO / registra platiteľov FS.
+  bool get isVatPayer {
+    final id = icDph?.trim() ?? '';
+    return id.isNotEmpty;
+  }
+
+  IcoLookupResult copyWith({
+    String? dic,
+    String? icDph,
+    String? name,
+    String? status,
+    String? street,
+    String? city,
+    String? postalCode,
+  }) {
+    return IcoLookupResult(
+      ico: ico,
+      icoNorm: icoNorm,
+      name: name ?? this.name,
+      status: status ?? this.status,
+      street: street ?? this.street,
+      city: city ?? this.city,
+      postalCode: postalCode ?? this.postalCode,
+      dic: dic ?? this.dic,
+      icDph: icDph ?? this.icDph,
+      riskHint: riskHint,
+      riskLevel: riskLevel,
+      confidence: confidence,
+      headline: headline,
+      explanation: explanation,
+      resetIn: resetIn,
+      isRateLimited: isRateLimited,
+      isPaymentRequired: isPaymentRequired,
+      isOffline: isOffline,
+      cachedAt: cachedAt,
+    );
+  }
+
   String get fullAddress {
     final parts = [street, postalCode, city].where((s) => s.isNotEmpty).toList();
     return parts.join(', ');

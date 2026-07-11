@@ -13,6 +13,11 @@ class CompanyInfo {
     required this.address,
   });
 
+  bool get isVatPayer {
+    final id = icDph?.trim() ?? '';
+    return id.isNotEmpty;
+  }
+
   factory CompanyInfo.fromMap(Map<String, dynamic> map) {
     return CompanyInfo(
       name: map['name'] ?? '',

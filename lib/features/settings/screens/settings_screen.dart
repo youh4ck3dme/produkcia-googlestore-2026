@@ -108,6 +108,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           if (company.dic != null) _dicController.text = company.dic!;
           if (company.icDph != null) _icDphController.text = company.icDph!;
         });
+        if (company.isVatPayer) {
+          await ref.read(settingsControllerProvider.notifier).updateVatPayer(true);
+        }
         BizSnackbar.showSuccess(context, 'Našli sme: ${company.name}');
       }
     } catch (e) {

@@ -12,6 +12,7 @@ import '../providers/invoices_provider.dart';
 import '../providers/invoice_numbering_provider.dart';
 import '../../auth/providers/auth_repository.dart';
 import '../../../core/services/icoatlas_service.dart';
+import '../../../core/services/tax_calculation_service.dart';
 import '../../../core/models/ico_lookup_result.dart';
 import '../../limits/usage_limiter.dart';
 import '../../billing/billing_service.dart';
@@ -81,7 +82,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   }
 
   Future<void> _loadNextNumber() async {
-    final user = ref.read(authStateProvider).valueOrNull;
+    final user = ref.read(authStateProvider).value;
     if (user == null) {
       _numberController.text = '2026/001';
       return;
@@ -186,7 +187,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       _itemQtyController.clear();
       _itemPriceController.clear();
       // Reset to default
-      _itemVatRate = isVatPayer ? 0.20 : 0.0;
+      _itemVatRate = TaxCalculationService.defaultVatRateForPayer(isVatPayer);
     });
 
     BizSnackbar.showInfo(context, 'Položka pridaná: $itemDesc');
@@ -211,7 +212,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       return;
     }
 
-    final user = ref.read(authStateProvider).valueOrNull;
+    final user = ref.read(authStateProvider).value;
     String number = _numberController.text.trim();
     if (_autoInvoiceNumber && user != null) {
       final result = await ref
@@ -287,7 +288,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         _items.add(InvoiceItemModel(
           title: 'Mesačný paušál - správa kampaní',
           amount: 450.0,
-          vatRate: 0.20,
+          vatRate: TaxCalculationService.vatStandardRate,
         ));
       }
       
@@ -403,12 +404,12 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     final theme = Theme.of(context);
     // final isDark = theme.brightness == Brightness.dark;
     final settingsAsync = ref.watch(settingsProvider);
-    final settings = settingsAsync.valueOrNull;
+    final settings = settingsAsync.value;
     final isVatPayer = settings?.isVatPayer ?? false;
 
     // Initialize VAT rate once settings are loaded
     if (!_vatRateInitialized && settings != null) {
-      _itemVatRate = isVatPayer ? 0.20 : 0.0;
+      _itemVatRate = TaxCalculationService.defaultVatRateForPayer(isVatPayer);
       _vatRateInitialized = true;
     }
 
@@ -781,11 +782,16 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                             value: _itemVatRate,
                             underline: const SizedBox(),
                             borderRadius: BorderRadius.circular(BizTheme.radiusMd),
-                            items: const [
-                              DropdownMenuItem(value: 0.0, child: Text('0%')),
-                              DropdownMenuItem(value: 0.1, child: Text('10%')),
-                              DropdownMenuItem(value: 0.2, child: Text('20%')),
-                            ],
+                            items: TaxCalculationService.vatRates
+                                .map(
+                                  (rate) => DropdownMenuItem(
+                                    value: rate,
+                                    child: Text(
+                                      TaxCalculationService.vatRateLabel(rate),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
                             onChanged: (val) => setState(() => _itemVatRate = val!),
                           ),
                         OutlinedButton(

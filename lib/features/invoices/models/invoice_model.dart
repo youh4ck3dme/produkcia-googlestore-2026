@@ -117,6 +117,8 @@ class InvoiceModel extends SoftDeleteModel {
   final String? clientDic;
   final String? clientIcDph;
   final DateTime dateIssued;
+  /// Dátum dodania tovaru/služby (§74 zákona o DPH); default = dátum vystavenia.
+  final DateTime dateSupply;
   final DateTime dateDue;
   final List<InvoiceItemModel> items;
   final double totalAmount;
@@ -141,6 +143,7 @@ class InvoiceModel extends SoftDeleteModel {
     this.clientDic,
     this.clientIcDph,
     required this.dateIssued,
+    DateTime? dateSupply,
     required this.dateDue,
     required this.items,
     required this.totalAmount,
@@ -151,7 +154,7 @@ class InvoiceModel extends SoftDeleteModel {
     this.paymentDate,
     this.paymentMethod,
     this.isNumberProvisional = false,
-  });
+  }) : dateSupply = dateSupply ?? dateIssued;
 
   // VAT Calculations
   double get totalBeforeVat =>
@@ -181,6 +184,7 @@ class InvoiceModel extends SoftDeleteModel {
     String? clientDic,
     String? clientIcDph,
     DateTime? dateIssued,
+    DateTime? dateSupply,
     DateTime? dateDue,
     List<InvoiceItemModel>? items,
     double? totalAmount,
@@ -205,6 +209,7 @@ class InvoiceModel extends SoftDeleteModel {
       clientDic: clientDic ?? this.clientDic,
       clientIcDph: clientIcDph ?? this.clientIcDph,
       dateIssued: dateIssued ?? this.dateIssued,
+      dateSupply: dateSupply ?? this.dateSupply,
       dateDue: dateDue ?? this.dateDue,
       items: items ?? this.items,
       totalAmount: totalAmount ?? this.totalAmount,
@@ -236,6 +241,9 @@ class InvoiceModel extends SoftDeleteModel {
       clientDic: map['clientDic'],
       clientIcDph: map['clientIcDph'],
       dateIssued: DateTime.parse(map['dateIssued']),
+      dateSupply: map['dateSupply'] != null
+          ? DateTime.parse(map['dateSupply'])
+          : DateTime.parse(map['dateIssued']),
       dateDue: DateTime.parse(map['dateDue']),
       items: (map['items'] as List<dynamic>?)
               ?.map((x) => InvoiceItemModel.fromMap(x))
@@ -268,6 +276,7 @@ class InvoiceModel extends SoftDeleteModel {
       'clientDic': clientDic,
       'clientIcDph': clientIcDph,
       'dateIssued': dateIssued.toIso8601String(),
+      'dateSupply': dateSupply.toIso8601String(),
       'dateDue': dateDue.toIso8601String(),
       'items': items.map((x) => x.toMap()).toList(),
       'totalAmount': totalAmount,

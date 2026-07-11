@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/services/tax_calculation_service.dart';
 import '../../invoices/providers/invoices_provider.dart';
 import '../../expenses/providers/expenses_provider.dart';
 import '../../settings/providers/settings_provider.dart';
@@ -37,7 +38,7 @@ class TaxEstimationModel {
 final taxEstimationProvider = Provider<AsyncValue<TaxEstimationModel>>((ref) {
   final invoicesAsync = ref.watch(invoicesProvider);
   final expensesAsync = ref.watch(expensesProvider);
-  final settings = ref.watch(settingsProvider).valueOrNull;
+  final settings = ref.watch(settingsProvider).value;
 
   return invoicesAsync.when(
     loading: () => const AsyncValue.loading(),
@@ -78,15 +79,21 @@ final taxEstimationProvider = Provider<AsyncValue<TaxEstimationModel>>((ref) {
           // Simplified: 15% income tax on profit for small business
           final double incomeTax = profit > 0 ? profit * 0.15 : 0;
           
-          // VAT Estimate: Assume 20% rate if payer
           final double vatLiability;
           final isVatPayer = settings?.isVatPayer ?? false;
+          final tax = TaxCalculationService();
           if (isVatPayer) {
-             // In Slovakia, for a simplified estimate: (Output VAT - Input VAT)
-             // We estimate based on total amounts (gross / 1.2 * 0.2)
-             final double outputVat = (revenue / 1.2) * 0.2;
-             final double inputVat = (costs / 1.2) * 0.2;
-             vatLiability = outputVat - inputVat;
+            final standard = TaxCalculationService.vatStandardRate;
+            final grossFactor = 1 + standard;
+            final outputVat = tax.calcLine(
+              baseAmount: revenue / grossFactor,
+              vatRate: standard,
+            ).vatAmount;
+            final inputVat = tax.calcLine(
+              baseAmount: costs / grossFactor,
+              vatRate: standard,
+            ).vatAmount;
+            vatLiability = outputVat - inputVat;
           } else {
             vatLiability = 0;
           }

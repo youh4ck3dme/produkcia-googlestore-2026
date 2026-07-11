@@ -1,9 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/services/tax_calculation_service.dart';
 import '../../invoices/providers/invoices_provider.dart';
 import '../../invoices/models/invoice_model.dart';
-
-// Threshold for SK VAT registration (12 consecutive months)
-const double vatRegistrationThreshold = 49790.00;
 
 class TaxThermometerResult {
   final double currentTurnover;
@@ -15,12 +13,21 @@ class TaxThermometerResult {
 
   TaxThermometerResult({
     required this.currentTurnover,
-    this.threshold = vatRegistrationThreshold,
-  })  : percentage = currentTurnover / vatRegistrationThreshold,
-        isSafe = (currentTurnover / vatRegistrationThreshold) < 0.8,
-        isWarning = (currentTurnover / vatRegistrationThreshold) >= 0.8 &&
-            (currentTurnover / vatRegistrationThreshold) < 1.0,
-        isCritical = (currentTurnover / vatRegistrationThreshold) >= 1.0;
+    this.threshold = TaxCalculationService.vatRegistrationThresholdEur,
+  })  : percentage =
+            currentTurnover / TaxCalculationService.vatRegistrationThresholdEur,
+        isSafe = (currentTurnover /
+                TaxCalculationService.vatRegistrationThresholdEur) <
+            0.8,
+        isWarning = (currentTurnover /
+                    TaxCalculationService.vatRegistrationThresholdEur) >=
+                0.8 &&
+            (currentTurnover /
+                    TaxCalculationService.vatRegistrationThresholdEur) <
+                1.0,
+        isCritical = (currentTurnover /
+                TaxCalculationService.vatRegistrationThresholdEur) >=
+            1.0;
 }
 
 final taxThermometerProvider =

@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/i18n/app_strings.dart';
 import '../../../core/i18n/l10n.dart';
+import '../../../core/services/ai_consent_service.dart';
 import '../../../core/supabase/supabase_config.dart';
+import '../../legal/widgets/ai_consent_dialog.dart';
 import '../services/biz_bot_service.dart';
 import '../../../core/ui/biz_theme.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -78,6 +80,17 @@ class _BizBotScreenState extends ConsumerState<BizBotScreen> {
       return;
     }
 
+    if (!mounted) return;
+    final consent = ref.read(aiConsentServiceProvider);
+    if (!await showAiConsentDialog(context, consent)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.t(AppStr.gdprAiConsentRequired))),
+        );
+      }
+      return;
+    }
+
     setState(() {
       _controller.clear();
       _isLoading = true;
@@ -98,6 +111,7 @@ class _BizBotScreenState extends ConsumerState<BizBotScreen> {
       await repo.addMessage(uid: uid, text: response, isUser: false);
       await ref.read(billingProvider.notifier).recordAiRequest();
     } catch (e) {
+      if (!mounted) return;
       final lower = e.toString().toLowerCase();
       String errorMessage = context.t(AppStr.bizBotErrorGeneric);
       if (e.toString().contains('API kľúč') || lower.contains('permission')) {

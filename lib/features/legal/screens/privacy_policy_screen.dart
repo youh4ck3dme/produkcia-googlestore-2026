@@ -55,11 +55,11 @@ class PrivacyPolicyScreen extends StatelessWidget {
             ),
             _buildSection(
               '6. Zdieľanie údajov',
-              'Vaše údaje môžeme zdieľať s:\n\n• Supabase Inc. (EÚ, eu-central-1) – autentifikácia, databáza, úložisko, Edge Functions\n• Mistral AI a Google (Gemini) – spracovanie AI promptov (len pri aktívnom používaní AI funkcií)\n• Google ML Kit – OCR na zariadení\n• Google Firebase Analytics – anonymné štatistiky\n• Apple App Store / Google Play – spracovanie platieb\n• Google Firebase / Firestore (obmedzené legacy) – cache IČO, kategorizácia výdavkov\n• icoatlas.sk (voliteľné) – vyhľadávanie v obchodnom registri\n• Úradmi (len v prípade zákonnej povinnosti)\n\nVaše údaje NEZDIEĽAME s tretími stranami na marketingové účely.',
+              'Vaše údaje môžeme zdieľať s:\n\n• Supabase Inc. (EÚ, eu-central-1) – autentifikácia, databáza, úložisko, Edge Functions\n• Qwen Cloud (Alibaba DashScope), Mistral AI a Google (Gemini) – spracovanie AI promptov (len pri aktívnom používaní AI funkcií a po vašom súhlase)\n• Google ML Kit – OCR na zariadení\n• Google Firebase Analytics, Crashlytics, Performance – anonymné štatistiky a diagnostika\n• Apple App Store / Google Play – spracovanie platieb\n• Google Firebase / Firestore (obmedzené legacy) – cache IČO, kategorizácia výdavkov\n• icoatlas.sk (voliteľné) – vyhľadávanie v obchodnom registri\n• Úradmi (len v prípade zákonnej povinnosti)\n\nVaše údaje NEZDIEĽAME s tretími stranami na marketingové účely.',
             ),
             _buildSection(
               '7. AI funkcie',
-              'AI funkcie (BizBot, daňový asistent, generátor e-mailov, analýzy) spracovávajú vaše textové dotazy a relevantný obchodný kontext cez Supabase Edge Function, ktorá forwarduje prompty na Mistral AI (primárne) alebo Google Gemini (záložne). História BizBot chatu je uložená v Supabase do zmazania účtu. Odpovede AI sú iba informatívne a nenahrádzajú odborné poradenstvo.',
+              'AI funkcie (BizBot, daňový asistent, generátor e-mailov, analýzy, Autopilot výdavkov) spracovávajú vaše textové dotazy a relevantný obchodný kontext cez Supabase Edge Function, ktorá forwarduje prompty na Qwen Cloud (primárne), Mistral AI alebo Google Gemini (záložne). Pred prvým použitím AI vás aplikácia požiada o súhlas. História BizBot chatu je uložená v Supabase do zmazania účtu. Odpovede AI sú iba informatívne a nenahrádzajú odborné poradenstvo.',
             ),
             _buildSection(
               '8. Predplatné a in-app nákupy',

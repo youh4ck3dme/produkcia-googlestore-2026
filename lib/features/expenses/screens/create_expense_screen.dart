@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import '../../../core/config/play_release_scope.dart';
+import '../../../core/services/ai_consent_service.dart';
+import '../../legal/widgets/ai_consent_dialog.dart';
 import '../../../core/i18n/app_strings.dart';
 import '../../../core/i18n/l10n.dart';
 import '../../../core/services/ocr_service.dart';
@@ -86,6 +88,17 @@ class _CreateExpenseScreenState extends ConsumerState<CreateExpenseScreen> {
         ref.read(authRepositoryProvider).currentUser;
     if (user == null) return;
 
+    if (!mounted) return;
+    final consent = ref.read(aiConsentServiceProvider);
+    if (!await showAiConsentDialog(context, consent)) {
+      if (mounted) {
+        _prefillFromOcr(ocrResult);
+        BizSnackbar.showInfo(context, context.t(AppStr.gdprAiConsentRequired));
+      }
+      return;
+    }
+
+    if (!mounted) return;
     BizSnackbar.showInfo(
       context,
       PlayReleaseScope.showExpenseAiBranding

@@ -65,7 +65,8 @@
   <h2>6. Sharing with Third Parties</h2>
   <ul>
     <li><strong>Supabase Inc.</strong> (EU, eu-central-1) – authentication, database, file storage, Edge Functions</li>
-    <li><strong>Mistral AI</strong> and <strong>Google (Gemini)</strong> – AI prompt processing (only when you actively use AI features)</li>
+    <li><strong>Qwen Cloud (Alibaba DashScope)</strong>, <strong>Mistral AI</strong> and <strong>Google (Gemini)</strong> – AI prompt processing (only after consent and when you actively use AI features)</li>
+    <li><strong>Google Firebase Crashlytics / Performance</strong> – app diagnostics and stability</li>
     <li><strong>Google ML Kit</strong> – on-device text recognition from receipt photos</li>
     <li><strong>Google Firebase Analytics</strong> – anonymous usage statistics</li>
     <li><strong>Apple App Store / Google Play</strong> – payment processing for subscriptions and in-app purchases</li>
@@ -76,7 +77,7 @@
   <p>We do <strong>not sell</strong> your data to third parties for marketing purposes.</p>
 
   <h2>7. AI Features – Special Notice</h2>
-  <p>AI features (BizBot, tax assistant, email generator, analytics) process your text queries and relevant business context via a Supabase Edge Function, which forwards prompts to Mistral AI (primary) or Google Gemini (fallback). BizBot chat history is stored in Supabase until account deletion. AI responses are informational only and do not replace professional advice.</p>
+  <p>AI features (BizBot, tax assistant, email generator, analytics, expense autopilot) process your text queries and relevant business context via a Supabase Edge Function, which forwards prompts to Qwen Cloud (primary), Mistral AI, or Google Gemini (fallback). The app asks for your consent before the first AI use. BizBot chat history is stored in Supabase until account deletion. AI responses are informational only and do not replace professional advice.</p>
 
   <h2>8. Subscriptions and In-App Purchases</h2>
   <p>The app offers optional paid plans (<code>sub_pro_monthly</code>, <code>sub_pro_year</code>, <code>sub_business_monthly</code>, <code>one_time_starter</code>) processed through Apple App Store or Google Play Billing. Payment details are handled entirely by the platform store; BizAgent does not store payment card data.</p>

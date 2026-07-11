@@ -25,7 +25,7 @@ For a better experience, while using our Service, we may require you to provide 
 ### 2. Service Providers
 We employ third-party companies to operate the App:
 *   **Supabase Inc.** (EU — eu-central-1): Authentication, database, file storage, and Edge Functions.
-*   **Mistral AI** and **Google (Gemini):** Processing of AI prompts when you actively use AI features. Prompts are routed through our Supabase Edge Function; the primary provider is Mistral, with Gemini as fallback.
+*   **Qwen Cloud (Alibaba DashScope), Mistral AI** and **Google (Gemini):** Processing of AI prompts when you actively use AI features (after in-app consent). Prompts are routed through our Supabase Edge Function; the primary provider is Qwen Cloud, with Mistral and Gemini as fallbacks.
 *   **Google:** ML Kit (on-device OCR), Firebase Analytics.
 *   **Apple App Store / Google Play:** Payment processing for subscriptions and in-app purchases.
 *   **Google Firebase / Firestore** (limited legacy use): IČO company lookup cache and expense categorization history.
@@ -34,7 +34,7 @@ We employ third-party companies to operate the App:
 These third parties have access to your Personal Information only to perform these tasks on our behalf and are obligated not to disclose or use it for any other purpose.
 
 ### 3. AI Processing
-When you use AI features, your text content is sent to our Supabase Edge Function, which forwards prompts to Mistral AI (primary) or Google Gemini (fallback). Prompts are limited to 10,000 characters and require an authenticated session. AI responses are informational only and do not constitute legal, tax, or professional advice. BizBot chat history is stored in our database until you delete your account.
+When you use AI features, your text content is sent to our Supabase Edge Function, which forwards prompts to Qwen Cloud (primary), Mistral AI, or Google Gemini (fallback). The app requests your consent before the first AI use. Prompts are limited to 10,000 characters and require an authenticated session. AI responses are informational only and do not constitute legal, tax, or professional advice. BizBot chat history is stored in our database until you delete your account.
 
 ### 4. Subscriptions and In-App Purchases
 The App offers optional paid plans processed through Apple App Store or Google Play Billing:
@@ -83,7 +83,7 @@ Pre správne fungovanie aplikácie spracúvame tieto údaje:
 ### 2. Poskytovatelia služieb
 Aplikácia využíva služby tretích strán:
 *   **Supabase Inc.** (EÚ — eu-central-1): Autentifikácia, databáza, úložisko súborov a Edge Functions.
-*   **Mistral AI** a **Google (Gemini):** Spracovanie AI promptov pri aktívnom používaní AI funkcií. Prompty prechádzajú cez našu Supabase Edge Function; primárny poskytovateľ je Mistral, záložný Gemini.
+*   **Qwen Cloud (Alibaba DashScope), Mistral AI** a **Google (Gemini):** Spracovanie AI promptov pri aktívnom používaní AI funkcií (po súhlase v aplikácii). Prompty prechádzajú cez našu Supabase Edge Function; primárny poskytovateľ je Qwen Cloud, záložní Mistral a Gemini.
 *   **Google:** ML Kit (OCR na zariadení), Firebase Analytics.
 *   **Apple App Store / Google Play:** Spracovanie platieb za predplatné a in-app nákupy.
 *   **Google Firebase / Firestore** (obmedzené legacy použitie): Cache IČO lookupov a história kategorizácie výdavkov.
@@ -92,7 +92,7 @@ Aplikácia využíva služby tretích strán:
 Tieto strany majú prístup k vašim údajom len v nevyhnutnom rozsahu na vykonanie týchto úloh a sú viazané mlčanlivosťou.
 
 ### 3. Spracovanie AI
-Pri používaní AI funkcií sa váš textový obsah odosiela na našu Supabase Edge Function, ktorá forwarduje prompty na Mistral AI (primárne) alebo Google Gemini (záložne). Prompty sú limitované na 10 000 znakov a vyžadujú prihlásenú reláciu. AI odpovede sú iba informatívne a nenahrádzajú právne, daňové ani odborné poradenstvo. História BizBot chatu je uložená v databáze do zmazania účtu.
+Pri používaní AI funkcií sa váš textový obsah odosiela na našu Supabase Edge Function, ktorá forwarduje prompty na Qwen Cloud (primárne), Mistral AI alebo Google Gemini (záložne). Aplikácia pred prvým použitím AI žiada o súhlas. Prompty sú limitované na 10 000 znakov a vyžadujú prihlásenú reláciu. AI odpovede sú iba informatívne a nenahrádzajú právne, daňové ani odborné poradenstvo. História BizBot chatu je uložená v databáze do zmazania účtu.
 
 ### 4. Predplatné a in-app nákupy
 Aplikácia ponúka voliteľné platené plány spracované cez Apple App Store alebo Google Play Billing:

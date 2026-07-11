@@ -49,7 +49,8 @@ flowchart LR
     FA[Firebase Analytics]
     FC[Firebase Crashlytics]
     FP[Firebase Performance]
-    Mistral[Mistral AI]
+    Qwen[Qwen Cloud primary]
+    Mistral[Mistral AI fallback]
     Gemini[Google Gemini fallback]
   end
 
@@ -60,6 +61,7 @@ flowchart LR
   UI -->|crashes perf SDK| FC
   UI -->|crashes perf SDK| FP
   UI -->|AI prompts| EF
+  EF --> Qwen
   EF --> Mistral
   EF --> Gemini
   MLKit -->|OCR text optional| EF
@@ -78,8 +80,9 @@ Pri otázke **„Is this data shared with third parties?"** použi tabuľku niž
 | **Google (Firebase Performance)** | Diagnostics, performance traces | Automaticky (native SDK) | [`pubspec.yaml`](../pubspec.yaml) L22, [`android/app/build.gradle.kts`](../android/app/build.gradle.kts) L8 |
 | **Google (Sign-In OAuth)** | Email, meno (auth flow) | Len pri Google prihlásení | [`lib/core/supabase/google_auth_service.dart`](../lib/core/supabase/google_auth_service.dart) L29, L69–73 |
 | **Google Play Billing** | Purchase history, purchase tokens | Pri IAP / obnovení | [`lib/features/billing/billing_service.dart`](../lib/features/billing/billing_service.dart) L4, L103–157 |
-| **Mistral AI** | AI prompty (BizBot, OCR text, finančný kontext) | Pri AI volaniach | [`supabase/functions/generate-content/index.ts`](../supabase/functions/generate-content/index.ts) L34–72 |
-| **Google Gemini** (fallback) | AI prompty | Ak je nastavený `GEMINI_API_KEY` | [`supabase/functions/generate-content/index.ts`](../supabase/functions/generate-content/index.ts) L74–98 |
+| **Qwen Cloud (Alibaba DashScope)** | AI prompty (BizBot, OCR text, finančný kontext) | Pri AI volaniach (po súhlase v aplikácii) | [`supabase/functions/generate-content/index.ts`](../supabase/functions/generate-content/index.ts) L36–75 |
+| **Mistral AI** (fallback) | AI prompty | Ak Qwen zlyhá | [`supabase/functions/generate-content/index.ts`](../supabase/functions/generate-content/index.ts) L77–98 |
+| **Google Gemini** (fallback) | AI prompty | Ak je nastavený `GEMINI_API_KEY` | [`supabase/functions/generate-content/index.ts`](../supabase/functions/generate-content/index.ts) L100+ |
 
 **Nie je „Shared" (Collected only — vlastný backend):**
 
@@ -105,7 +108,7 @@ Pre každý typ v wizardi zaškrtni kategóriu a skopíruj odpovede z riadku.
 | **Financial info → Purchase history** | Yes | Yes (Google Play) | No | Optional | App functionality | [`lib/features/billing/billing_service.dart`](../lib/features/billing/billing_service.dart) L5, L125–157 |
 | **Photos and videos → Photos** | Yes | No | No | Optional (users can choose) | App functionality | OCR: [`lib/core/services/ocr_service.dart`](../lib/core/services/ocr_service.dart) L60–64; Upload: [`lib/core/supabase/supabase_storage_client.dart`](../lib/core/supabase/supabase_storage_client.dart) L74–93; [`create_expense_screen.dart`](../lib/features/expenses/screens/create_expense_screen.dart) L271–282 |
 | **App activity → App interactions** | Yes | Yes (Google) | No | Required | Analytics | [`lib/core/services/analytics_service.dart`](../lib/core/services/analytics_service.dart); auto `screen_view`: [`app_router.dart`](../lib/core/router/app_router.dart) L57 |
-| **App activity → Other user-generated content** | Yes | Yes (Mistral/Gemini) | No | Optional | App functionality | BizBot: [`lib/features/ai_tools/services/biz_bot_service.dart`](../lib/features/ai_tools/services/biz_bot_service.dart) L18–42; Edge fn: [`gemini_service.dart`](../lib/core/services/gemini_service.dart) L60–63; História: [`bizbot_history_provider.dart`](../lib/features/ai_tools/providers/bizbot_history_provider.dart) L13, L36–41 |
+| **App activity → Other user-generated content** | Yes | Yes (Qwen/Mistral/Gemini) | No | Optional | App functionality | Súhlas: [`lib/features/legal/widgets/ai_consent_dialog.dart`](../lib/features/legal/widgets/ai_consent_dialog.dart); BizBot: [`lib/features/ai_tools/services/biz_bot_service.dart`](../lib/features/ai_tools/services/biz_bot_service.dart); Edge fn: [`gemini_service.dart`](../lib/core/services/gemini_service.dart); História: [`bizbot_history_provider.dart`](../lib/features/ai_tools/providers/bizbot_history_provider.dart) |
 | **App info and performance → Crash logs** | Yes | Yes (Google) | No | Required | Analytics | [`pubspec.yaml`](../pubspec.yaml) L23; [`android/app/build.gradle.kts`](../android/app/build.gradle.kts) L9; init: [`lib/main.dart`](../lib/main.dart) L37–39 |
 | **App info and performance → Diagnostics** | Yes | Yes (Google) | No | Required | Analytics | [`pubspec.yaml`](../pubspec.yaml) L22; [`android/app/build.gradle.kts`](../android/app/build.gradle.kts) L8 |
 

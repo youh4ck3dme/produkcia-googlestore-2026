@@ -412,6 +412,13 @@ enum AppStr {
   authHasAccountSignIn,
   authProcessing,
   authWrongCredentials,
+
+  // GDPR / AI consent
+  gdprAiConsentTitle,
+  gdprAiConsentBody,
+  gdprAiConsentAccept,
+  gdprAiConsentDecline,
+  gdprAiConsentRequired,
 }
 
 class AppStringsSK {
@@ -860,5 +867,14 @@ class AppStringsSK {
     AppStr.authHasAccountSignIn: "Už máte účet? Prihláste sa",
     AppStr.authProcessing: "Spracovávam...",
     AppStr.authWrongCredentials: "Nesprávny email alebo heslo",
+
+    // GDPR / AI consent
+    AppStr.gdprAiConsentTitle: "Súhlas so spracovaním cez AI",
+    AppStr.gdprAiConsentBody:
+        "BizBot a ďalšie AI funkcie odosielajú vaše textové dotazy a obchodný kontext na cloud služby (Qwen Cloud, Mistral AI, Google Gemini) na generovanie odpovedí. História BizBot chatu je uložená v Supabase do zmazania účtu. Odpovede AI sú iba informatívne a nenahrádzajú odborné poradenstvo. Pokračovaním udeľujete súhlas so spracovaním podľa Zásad ochrany osobných údajov.",
+    AppStr.gdprAiConsentAccept: "Súhlasím",
+    AppStr.gdprAiConsentDecline: "Nie teraz",
+    AppStr.gdprAiConsentRequired:
+        "Na používanie AI funkcií je potrebný súhlas so spracovaním údajov.",
   };
 }

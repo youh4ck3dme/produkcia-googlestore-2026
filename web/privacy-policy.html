@@ -65,7 +65,8 @@
   <h2>6. Zdieľanie údajov s tretími stranami</h2>
   <ul>
     <li><strong>Supabase Inc.</strong> (EÚ, eu-central-1) – autentifikácia, databáza, úložisko súborov, Edge Functions</li>
-    <li><strong>Mistral AI</strong> a <strong>Google (Gemini)</strong> – spracovanie AI promptov (len ak používateľ aktívne využíva AI funkcie)</li>
+    <li><strong>Qwen Cloud (Alibaba DashScope)</strong>, <strong>Mistral AI</strong> a <strong>Google (Gemini)</strong> – spracovanie AI promptov (len po súhlase a pri aktívnom používaní AI funkcií)</li>
+    <li><strong>Google Firebase Crashlytics / Performance</strong> – diagnostika a stabilita aplikácie</li>
     <li><strong>Google ML Kit</strong> – rozpoznávanie textu z fotografií účteniek priamo na zariadení</li>
     <li><strong>Google Firebase Analytics</strong> – anonymné štatistiky používania</li>
     <li><strong>Apple App Store / Google Play</strong> – spracovanie platieb za predplatné a in-app nákupy</li>
@@ -76,7 +77,7 @@
   <p>Vaše údaje <strong>nepredávame</strong> tretím stranám na marketingové účely.</p>
 
   <h2>7. AI funkcie – osobitné upozornenie</h2>
-  <p>AI funkcie (BizBot, daňový asistent, generátor e-mailov, analýzy) spracovávajú vaše textové dotazy a relevantný obchodný kontext prostredníctvom Supabase Edge Function, ktorá forwarduje prompty na Mistral AI (primárne) alebo Google Gemini (záložne). História BizBot chatu je uložená v Supabase do zmazania účtu. Odpovede AI sú iba informatívne a nenahrádzajú odborné poradenstvo.</p>
+  <p>AI funkcie (BizBot, daňový asistent, generátor e-mailov, analýzy, Autopilot výdavkov) spracovávajú vaše textové dotazy a relevantný obchodný kontext prostredníctvom Supabase Edge Function, ktorá forwarduje prompty na Qwen Cloud (primárne), Mistral AI alebo Google Gemini (záložne). Pred prvým použitím AI vás aplikácia požiada o súhlas. História BizBot chatu je uložená v Supabase do zmazania účtu. Odpovede AI sú iba informatívne a nenahrádzajú odborné poradenstvo.</p>
 
   <h2>8. Predplatné a in-app nákupy</h2>
   <p>Aplikácia ponúka voliteľné platené plány (<code>sub_pro_monthly</code>, <code>sub_pro_year</code>, <code>sub_business_monthly</code>, <code>one_time_starter</code>) spracované cez Apple App Store alebo Google Play Billing. Platobné údaje spracúva výhradne platforma obchodu; BizAgent neukladá údaje o platobnej karte.</p>

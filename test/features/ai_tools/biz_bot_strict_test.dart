@@ -33,7 +33,9 @@ void main() {
   late UsageLimiter testLimiter;
 
   setUpAll(() async {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({
+      'bizagent_ai_consent_granted_v1': true,
+    });
     final prefs = await SharedPreferences.getInstance();
     testLimiter = UsageLimiter(prefs);
     await initializeDateFormatting('sk', null);

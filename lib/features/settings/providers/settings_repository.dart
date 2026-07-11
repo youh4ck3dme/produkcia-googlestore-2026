@@ -24,20 +24,36 @@ class SettingsRepository {
     if (store == null || !store.isAvailable) {
       return Stream<UserSettingsModel>.value(UserSettingsModel.empty());
     }
-    return store
+    return _watchSettingsResilient(store, userId);
+  }
+
+  /// REST fetch first, then optional Realtime — avoids crash when publication
+  /// is missing (RealtimeSubscribeException on `user_settings`).
+  Stream<UserSettingsModel> _watchSettingsResilient(
+    SupabaseTableStore store,
+    String userId,
+  ) async* {
+    yield await getSettings(userId);
+
+    final realtime = store
         .stream(
           _table,
           primaryKey: ['user_id'],
           eq: {'user_id': userId},
         )
-        .map<UserSettingsModel>((rows) {
-      if (rows.isEmpty) return UserSettingsModel.empty();
-      final data = rows.first['data'];
-      if (data is Map) {
-        return UserSettingsModel.fromMap(Map<String, dynamic>.from(data));
-      }
-      return UserSettingsModel.empty();
-    });
+        .map(_rowsToSettings)
+        .handleError((Object _, StackTrace __) {});
+
+    yield* realtime;
+  }
+
+  UserSettingsModel _rowsToSettings(List<Map<String, dynamic>> rows) {
+    if (rows.isEmpty) return UserSettingsModel.empty();
+    final data = rows.first['data'];
+    if (data is Map) {
+      return UserSettingsModel.fromMap(Map<String, dynamic>.from(data));
+    }
+    return UserSettingsModel.empty();
   }
 
   Future<UserSettingsModel> getSettings(String userId) async {

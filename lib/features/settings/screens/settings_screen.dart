@@ -41,7 +41,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void initState() {
     super.initState();
     final settings =
-        ref.read(settingsProvider).valueOrNull ?? UserSettingsModel.empty();
+        ref.read(settingsProvider).value ?? UserSettingsModel.empty();
     _nameController = TextEditingController(text: settings.companyName);
     _addressController = TextEditingController(text: settings.companyAddress);
     _icoController = TextEditingController(text: settings.companyIco);
@@ -67,7 +67,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final current =
-        ref.read(settingsProvider).valueOrNull ?? UserSettingsModel.empty();
+        ref.read(settingsProvider).value ?? UserSettingsModel.empty();
     final updated = current.copyWith(
       companyName: _nameController.text,
       companyAddress: _addressController.text,
@@ -360,7 +360,35 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         ),
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Chyba: $err')),
+        error: (err, stack) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                const SizedBox(height: 16),
+                const Text(
+                  'Nepodarilo sa načítať nastavenia',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '$err',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 13, color: Colors.grey),
+                ),
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: () => ref.invalidate(settingsProvider),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Skúsiť znova'),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

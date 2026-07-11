@@ -15,8 +15,8 @@
 #
 # NOVÁ PLAY LISTING (2026): applicationId sk.bizagent.app — nie update starej com.bizagent.live.
 #   1) Play Console: Create app (new package), Play App Signing, upload AAB.
-#   2) Firebase: Project bizagent-live-2026 → Add Android app sk.bizagent.app + SHA-1/256 upload key.
-#      Stiahni google-services.json → android/app/ a spusti: dart run flutterfire_cli:flutterfire configure
+#   2) Firebase: Project gifted-mountain-476207-u4 → Android app sk.bizagent.app + SHA-1 upload key.
+#      google-services.json v android/app/ (bash scripts/setup_google_signin_firebase.sh)
 #   3) android/key.properties + upload keystore (starý .jks nemazať).
 #
 # Kedy: len pred uploadom do Play Console — nie pri bežnom commite.

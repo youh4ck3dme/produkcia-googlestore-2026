@@ -84,12 +84,15 @@ if [[ "$WITH_SUPABASE" == true ]]; then
     echo "==> SUPABASE_TEST_URL + SUPABASE_TEST_PUBLISHABLE_KEY (z $DEFINES)"
     printf '%s' "$SUPABASE_URL" | gh secret set SUPABASE_TEST_URL
     printf '%s' "$PUBLISHABLE_KEY" | gh secret set SUPABASE_TEST_PUBLISHABLE_KEY
+    # Aliasy pre firebase_hosting.yml (rovnaké hodnoty)
+    printf '%s' "$SUPABASE_URL" | gh secret set SUPABASE_URL
+    printf '%s' "$PUBLISHABLE_KEY" | gh secret set SUPABASE_PUBLISHABLE_KEY
   fi
 fi
 
 echo ""
 echo "Hotovo. GitHub secrets pre android_release.yml:"
-gh secret list | rg 'ANDROID_|SUPABASE_TEST_(URL|PUBLISHABLE_KEY)' || true
+gh secret list | rg 'ANDROID_|SUPABASE(_TEST)?_(URL|PUBLISHABLE_KEY)' || true
 echo ""
 echo "Lokálne súbory zostávajú na mieste (gitignored):"
 echo "  - $KEYSTORE"

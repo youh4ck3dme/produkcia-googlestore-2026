@@ -253,6 +253,8 @@ Po deployi je appka dostupná na `bizagent.sk` (vlastná doména) a na `https://
 
 Nastavenie GitHub secrets z lokálnych súborov: `./scripts/setup_github_android_secrets.sh --with-supabase` (pozri [docs/SECRETS_HYGIENE.md](docs/SECRETS_HYGIENE.md)).
 
+Manuálny CI release build: `./scripts/trigger_android_release_ci.sh` — kompletný návod [docs/ANDROID_RELEASE_CI.md](docs/ANDROID_RELEASE_CI.md).
+
 `GOOGLE_WEB_CLIENT_ID` je nastavený priamo v workflow env (rovnaký pre web aj Android release).
 
 Android release build používa:

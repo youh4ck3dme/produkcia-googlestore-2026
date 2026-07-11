@@ -163,7 +163,7 @@ echo ""
 echo "── Firebase CLI ──"
 if command -v firebase >/dev/null; then
   firebase login:list 2>/dev/null | head -3 || true
-  firebase use 2>/dev/null | head -1 || warn "firebase use bizagent-live-2026"
+  firebase use 2>/dev/null | head -1 || warn "firebase use gifted-mountain-476207-u4"
 else
   warn "firebase CLI nenájdený"
 fi

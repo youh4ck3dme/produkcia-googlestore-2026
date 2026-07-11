@@ -5,21 +5,16 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
-  workflow_call:
-    secrets:
-      SUPABASE_TEST_URL:
-        required: true
-      SUPABASE_TEST_PUBLISHABLE_KEY:
-        required: true
-      ANDROID_KEYSTORE_BASE64:
-        required: true
-      ANDROID_KEY_PROPERTIES:
-        required: true
+
+concurrency:
+  group: android-release-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
     name: Build Android App Bundle
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     env:
       GOOGLE_WEB_CLIENT_ID: 90348815049-e5faruj0mfvnn34m80k9b9b5upp9nn6v.apps.googleusercontent.com
 
@@ -30,23 +25,23 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
+          distribution: zulu
           java-version: '17'
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.38.7'
-          channel: 'stable'
+          channel: stable
+          cache: true
 
-      - name: Install Dependencies
-        run: flutter pub get
+      - name: Install dependencies
+        run: |
+          flutter config --no-enable-swift-package-manager
+          flutter pub get
 
-      - name: Analyze Code
-        run: flutter analyze
-
-      - name: Run Tests
-        run: flutter test
+      - name: Core test gate
+        run: ./run_core_tests.sh
 
       - name: Generate Supabase dart defines for CI
         env:
@@ -56,21 +51,49 @@ jobs:
         run: |
           if [[ -z "${SUPABASE_TEST_URL:-}" || -z "${SUPABASE_TEST_PUBLISHABLE_KEY:-}" ]]; then
             echo "::error::Missing SUPABASE_TEST_URL / SUPABASE_TEST_PUBLISHABLE_KEY"
+            echo "Run: ./scripts/setup_github_android_secrets.sh --with-supabase"
             exit 1
           fi
           bash scripts/generate_supabase_ci_defines.sh dart_defines/supabase.ci.json
+          python3 -c "
+          import json
+          d = json.load(open('dart_defines/supabase.ci.json'))
+          assert d.get('SUPABASE_URL'), 'SUPABASE_URL empty'
+          assert d.get('SUPABASE_PUBLISHABLE_KEY'), 'SUPABASE_PUBLISHABLE_KEY empty'
+          print('supabase.ci.json OK:', d['SUPABASE_URL'])
+          "
 
-      - name: Decode Keystore
+      - name: Decode keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
+          if [[ -z "${KEYSTORE_BASE64:-}" ]]; then
+            echo "::error::Missing ANDROID_KEYSTORE_BASE64"
+            echo "Run: ./scripts/setup_github_android_secrets.sh"
+            exit 1
+          fi
           echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
+          test -s android/app/upload-keystore.jks
 
       - name: Create key.properties
         env:
           KEY_PROPS: ${{ secrets.ANDROID_KEY_PROPERTIES }}
         run: |
-          echo "$KEY_PROPS" > android/key.properties
+          if [[ -z "${KEY_PROPS:-}" ]]; then
+            echo "::error::Missing ANDROID_KEY_PROPERTIES"
+            exit 1
+          fi
+          printf '%s\n' "$KEY_PROPS" > android/key.properties
+          grep -q '^storeFile=' android/key.properties
+          grep -q '^keyAlias=' android/key.properties
+
+      - name: Verify signing config
+        run: |
+          STORE_PASS=$(grep -E '^storePassword=' android/key.properties | cut -d= -f2-)
+          KEY_ALIAS=$(grep -E '^keyAlias=' android/key.properties | cut -d= -f2-)
+          keytool -list -keystore android/app/upload-keystore.jks \
+            -storepass "$STORE_PASS" -alias "$KEY_ALIAS" >/dev/null
+          echo "Keystore + alias OK ($KEY_ALIAS)"
 
       - name: Build App Bundle
         run: |
@@ -83,12 +106,22 @@ jobs:
       - name: Verify Supabase URL embedded in AAB
         run: |
           AAB="build/app/outputs/bundle/release/app-release.aab"
+          test -f "$AAB"
           unzip -p "$AAB" base/lib/arm64-v8a/libapp.so | strings | rg -q 'supabase\.co' \
             || (echo "::error::SUPABASE_URL not found in libapp.so — missing dart defines?" && exit 1)
+          ls -lh "$AAB"
 
-      - name: Upload Artifact
+      - name: Upload AAB artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-release-bundle
           path: build/app/outputs/bundle/release/app-release.aab
-          retention-days: 7
+          retention-days: 30
+
+      - name: Upload debug symbols
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-symbols
+          path: build/symbols/
+          retention-days: 30
+          if-no-files-found: warn

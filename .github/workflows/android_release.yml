@@ -107,7 +107,7 @@ jobs:
         run: |
           AAB="build/app/outputs/bundle/release/app-release.aab"
           test -f "$AAB"
-          unzip -p "$AAB" base/lib/arm64-v8a/libapp.so | strings | rg -q 'supabase\.co' \
+          unzip -p "$AAB" base/lib/arm64-v8a/libapp.so | strings | grep -q 'supabase\.co' \
             || (echo "::error::SUPABASE_URL not found in libapp.so — missing dart defines?" && exit 1)
           ls -lh "$AAB"
 

@@ -7,6 +7,7 @@ import '../../../core/services/pdf_service.dart';
 import '../../settings/providers/settings_provider.dart';
 import '../models/invoice_model.dart';
 import '../providers/invoices_provider.dart';
+import '../widgets/pay_by_square_qr_card.dart';
 import '../../../core/services/analytics_service.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -17,6 +18,8 @@ class InvoiceDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final settingsAsync = ref.watch(settingsProvider);
+
     return Scaffold(
       appBar: AppBar(
         actions: [
@@ -240,6 +243,34 @@ class InvoiceDetailScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
+
+            settingsAsync.when(
+              data: (settings) {
+                final iban = settings.iban?.trim();
+                final showQr = settings.showQrOnInvoice &&
+                    (iban?.isNotEmpty ?? false) &&
+                    invoice.status != InvoiceStatus.paid &&
+                    invoice.status != InvoiceStatus.cancelled;
+                if (!showQr) return const SizedBox.shrink();
+
+                return Column(
+                  children: [
+                    PayBySquareQrCard(
+                      iban: iban!,
+                      swift: settings.swift,
+                      amountEur: invoice.grandTotal,
+                      variableSymbol: invoice.variableSymbol ?? '',
+                      recipientName: settings.companyName,
+                      dateDue: invoice.dateDue,
+                      note: 'Faktúra ${invoice.number}',
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                );
+              },
+              loading: () => const SizedBox.shrink(),
+              error: (_, __) => const SizedBox.shrink(),
+            ),
 
             // Total
             Align(

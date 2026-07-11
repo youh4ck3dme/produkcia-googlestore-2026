@@ -42,6 +42,8 @@ class MockAuthRepository implements AuthRepository {
   @override
   Future<UserModel?> signUp(String email, String password) async => null;
   @override
+  Future<UserModel?> signInWithGoogle() async => null;
+  @override
   Future<void> signOut() async {}
   @override
   Future<void> deleteAccount() async {}

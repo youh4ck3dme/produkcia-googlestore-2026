@@ -21,11 +21,14 @@ class FakeAuthBackend implements AuthBackend {
 
   UserModel? signInResult;
   UserModel? signUpResult;
+  UserModel? signInWithGoogleResult;
   bool signInCalled = false;
+  bool signInWithGoogleCalled = false;
   String? lastSignInEmail;
   String? lastSignInPassword;
   Exception? signInError;
   Exception? signUpError;
+  Exception? signInWithGoogleError;
 
   @override
   Stream<UserModel?> get authStateChanges =>
@@ -59,6 +62,13 @@ class FakeAuthBackend implements AuthBackend {
   }
 
   @override
+  Future<UserModel?> signInWithGoogle() async {
+    signInWithGoogleCalled = true;
+    if (signInWithGoogleError != null) throw signInWithGoogleError!;
+    return signInWithGoogleResult;
+  }
+
+  @override
   Future<void> signOut() async {
     signOutCalled = true;
     currentUserValue = null;
@@ -82,6 +92,11 @@ class UnavailableFakeAuthBackend extends FakeAuthBackend {
 
   @override
   Future<UserModel?> signUp(String email, String password) async {
+    throw StateError(_missingConfigMessage);
+  }
+
+  @override
+  Future<UserModel?> signInWithGoogle() async {
     throw StateError(_missingConfigMessage);
   }
 }

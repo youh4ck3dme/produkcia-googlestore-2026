@@ -56,6 +56,20 @@ class MockAuthRepository implements AuthRepository {
   }
 
   @override
+  Future<UserModel?> signInWithGoogle() async {
+    if (_shouldThrow) {
+      throw Exception(_throwError ?? 'Google sign in failed');
+    }
+    _currentUser = const UserModel(
+      id: 'google-user',
+      email: 'google@test.com',
+      displayName: 'Google User',
+    );
+    _authStateController.add(_currentUser);
+    return _currentUser;
+  }
+
+  @override
   Future<void> signOut() async {
     if (_shouldThrow) {
       throw Exception(_throwError ?? 'Sign out failed');

@@ -271,12 +271,7 @@ class _ChameleonLoginScreenState extends ConsumerState<ChameleonLoginScreen>
                                 ],
 
                                 const SizedBox(height: 24),
-                                
-                                // Google Sign In
-                                _buildGoogleNeonButton(authState.isLoading),
 
-                                const SizedBox(height: 24),
-                                
                                 // Toggle
                                 TextButton(
                                   onPressed: () {
@@ -379,90 +374,4 @@ class _ChameleonLoginScreenState extends ConsumerState<ChameleonLoginScreen>
     );
   }
 
-  Widget _buildGoogleNeonButton(bool isLoading) {
-    return SizedBox(
-      height: 54,
-      width: double.infinity,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // 1. Rotating Neon Gradient
-          AnimatedBuilder(
-            animation: _rotationController,
-            builder: (context, child) {
-              return Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  gradient: SweepGradient(
-                    transform: GradientRotation(_rotationController.value * 2 * 3.14159),
-                    colors: const [
-                       Colors.white,
-                       BizTheme.slovakBlue, // Blue
-                       Colors.white,
-                       BizTheme.nationalRed, // Red
-                       Colors.white,
-                    ],
-                    stops: const [0.0, 0.25, 0.5, 0.75, 1.0],
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: BizTheme.slovakBlue.withValues(alpha: 0.2),
-                      blurRadius: 8,
-                      spreadRadius: 1,
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-          // 2. The Button (White Overlay for Light Mode)
-          Container(
-            margin: const EdgeInsets.all(2),
-            decoration: BoxDecoration(
-              color: Colors.white, 
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: OutlinedButton(
-               onPressed: isLoading
-                  ? null
-                  : () async {
-                      await ref.read(authControllerProvider.notifier).signInWithGoogle();
-                    },
-              style: OutlinedButton.styleFrom(
-                splashFactory: NoSplash.splashFactory,
-                overlayColor: Colors.transparent,
-                side: BorderSide.none,
-                padding: EdgeInsets.zero,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                minimumSize: const Size(double.infinity, 50),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    height: 24,
-                    width: 24,
-                    child: Image.asset('assets/icons/google_g.png'),
-                  ),
-                  const SizedBox(width: 12),
-                  const Flexible(
-                    child: Text(
-                      'Cez Google',
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: Colors.black87,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }

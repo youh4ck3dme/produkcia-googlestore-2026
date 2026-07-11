@@ -12,38 +12,16 @@ class LoginScreen extends ConsumerStatefulWidget {
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends ConsumerState<LoginScreen>
-    with TickerProviderStateMixin {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLogin = true;
 
-  late AnimationController _pulseController;
-
-  late AnimationController _rotationController;
-
-  @override
-  void initState() {
-    super.initState();
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    )..repeat(reverse: true);
-
-    _rotationController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 4),
-    )..repeat();
-
-  }
-
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
-    _pulseController.dispose();
-    _rotationController.dispose();
     super.dispose();
   }
 
@@ -183,123 +161,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                           ),
                         ),
 
-                      const SizedBox(height: 24),
-
-                      // Divider
-                      Row(
-                        children: [
-                          const Expanded(child: Divider()),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Text(
-                              'ALEBO',
-                              style: TextStyle(
-                                color: Colors.grey[500],
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                          const Expanded(child: Divider()),
-                        ],
-                      ),
-                      
-                      const SizedBox(height: 24),
-
-                      // Google Sign In with Neon Orbit Effect
-                      Center(
-                        child: SizedBox(
-                          height: 54,
-                          width: double.infinity,
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              // 1. Rotating Neon Gradient
-                              AnimatedBuilder(
-                                animation: _rotationController,
-                                builder: (context, child) {
-                                  return Container(
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(12),
-                                      gradient: SweepGradient(
-                                        transform: GradientRotation(_rotationController.value * 2 * 3.14159),
-                                        colors: const [
-                                          Color(0xFF4285F4), // Google Blue
-                                          Color(0xFFDB4437), // Google Red
-                                          Color(0xFFF4B400), // Google Yellow
-                                          Color(0xFF0F9D58), // Google Green
-                                          Color(0xFF4285F4), // Closing Loop
-                                        ],
-                                        stops: const [0.0, 0.25, 0.5, 0.75, 1.0],
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: const Color(0xFF4285F4).withValues(alpha: 0.4),
-                                          blurRadius: 12,
-                                          spreadRadius: 1,
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                },
-                              ),
-                              // 2. The Button (White Overlay)
-                              Container(
-                                margin: const EdgeInsets.all(2), // 2px border width
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: OutlinedButton(
-                                  onPressed: authState.isLoading
-                                      ? null
-                                      : () async {
-                                          await ref
-                                              .read(authControllerProvider.notifier)
-                                              .signInWithGoogle();
-                                        },
-                                  style: OutlinedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
-                                    side: BorderSide.none, // Hide default border
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    backgroundColor: Colors.transparent, // Let Container color show
-                                    splashFactory: NoSplash.splashFactory, // Disable ripple effect
-                                    overlayColor: Colors.transparent, // Disable hover tint
-                                    minimumSize: const Size(double.infinity, 50),
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Padding(
-                                        padding: const EdgeInsets.all(8.0),
-                                        child: SizedBox(
-                                          height: 24,
-                                          width: 24,
-                                          child: Image.asset('assets/icons/google_g.png'),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      const Flexible(
-                                        child: Text(
-                                          'Prihlásiť sa cez Google',
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w500,
-                                            color: Color(0xFF1F2937),
-                                          ),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      
                       const SizedBox(height: 16),
                       TextButton(
                         onPressed: authState.isLoading

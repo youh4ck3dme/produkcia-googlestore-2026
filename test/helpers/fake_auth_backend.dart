@@ -14,10 +14,6 @@ class FakeAuthBackend implements AuthBackend {
   UserModel? currentUserValue;
   Stream<UserModel?>? authStream;
 
-  bool oauthCalled = false;
-  String? oauthRedirect;
-  bool googleNativeCalled = false;
-  UserModel? googleNativeResult;
   bool signOutCalled = false;
   bool invokeCalled = false;
   String? invokedFunction;
@@ -29,7 +25,6 @@ class FakeAuthBackend implements AuthBackend {
   String? lastSignInPassword;
   Exception? signInError;
   Exception? signUpError;
-  Exception? googleNativeError;
 
   @override
   Stream<UserModel?> get authStateChanges =>
@@ -45,19 +40,6 @@ class FakeAuthBackend implements AuthBackend {
   Future<void> invokeFunction(String name) async {
     invokeCalled = true;
     invokedFunction = name;
-  }
-
-  @override
-  Future<UserModel?> signInWithGoogleNative() async {
-    googleNativeCalled = true;
-    if (googleNativeError != null) throw googleNativeError!;
-    return googleNativeResult;
-  }
-
-  @override
-  Future<void> signInWithOAuthGoogle({required String redirectTo}) async {
-    oauthCalled = true;
-    oauthRedirect = redirectTo;
   }
 
   @override

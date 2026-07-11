@@ -56,20 +56,6 @@ class MockAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<UserModel?> signInWithGoogle() async {
-    if (_shouldThrow) {
-      throw Exception(_throwError ?? 'Google sign in failed');
-    }
-    _currentUser = const UserModel(
-      id: 'googleuser123',
-      email: 'google@example.com',
-      displayName: 'Google User',
-    );
-    _authStateController.add(_currentUser);
-    return _currentUser;
-  }
-
-  @override
   Future<void> signOut() async {
     if (_shouldThrow) {
       throw Exception(_throwError ?? 'Sign out failed');
@@ -176,36 +162,6 @@ void main() {
 
         // Act
         await controller.signUp(email, password);
-
-        // Assert
-        expect(container.read(authControllerProvider).hasError, isTrue);
-      });
-    });
-
-    group('signInWithGoogle', () {
-      test('should set loading state then success state', () async {
-        // Arrange
-        final controller = container.read(authControllerProvider.notifier);
-
-        // Act
-        final future = controller.signInWithGoogle();
-
-        // Assert - Check loading state
-        expect(container.read(authControllerProvider).isLoading, isTrue);
-
-        await future;
-
-        // Assert - Check success state
-        expect(container.read(authControllerProvider).hasValue, isTrue);
-      });
-
-      test('should set error state on failure', () async {
-        // Arrange
-        mockRepository.setShouldThrow(true, 'Google sign in cancelled');
-        final controller = container.read(authControllerProvider.notifier);
-
-        // Act
-        await controller.signInWithGoogle();
 
         // Assert
         expect(container.read(authControllerProvider).hasError, isTrue);

@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show AuthException;
 import '../../../core/ui/biz_theme.dart';
-import '../../../core/debug/agent_log.dart';
 import '../providers/auth_repository.dart';
 
 class FirebaseLoginScreen extends ConsumerStatefulWidget {
@@ -83,60 +82,6 @@ class _FirebaseLoginScreenState extends ConsumerState<FirebaseLoginScreen> {
       _showError(_getAuthErrorMessage(e));
     } catch (e) {
       _showError('Došlo k chybe. Skúste znovu');
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _signInWithGoogle() async {
-    setState(() => _isLoading = true);
-    try {
-      // #region agent log
-      agentLog(
-        hypothesisId: 'H2',
-        location: 'lib/features/auth/screens/firebase_login_screen.dart:_signInWithGoogle:tap',
-        message: 'User tapped Google sign-in button',
-        data: {'isSignIn': _isSignIn},
-      );
-      // #endregion agent log
-
-      // Single source of truth: AuthRepository handles web/native specifics.
-      final user = await ref.read(authRepositoryProvider).signInWithGoogle();
-      if (user == null) {
-        // Cancelled or failed without FirebaseAuthException.
-        // #region agent log
-        agentLog(
-          hypothesisId: 'H2',
-          location: 'lib/features/auth/screens/firebase_login_screen.dart:_signInWithGoogle:nullUser',
-          message: 'Google sign-in returned null user (cancel/fail)',
-          data: const {},
-        );
-        // #endregion agent log
-        _showError('Prihlásenie bolo zrušené alebo zlyhalo.');
-      }
-    } on AuthException catch (e) {
-      // #region agent log
-      agentLog(
-        hypothesisId: 'H3',
-        location: 'lib/features/auth/screens/firebase_login_screen.dart:_signInWithGoogle:AuthException',
-        message: 'AuthException during Google sign-in',
-        data: {'msg': e.message},
-      );
-      // #endregion agent log
-      _showError(_getAuthErrorMessage(e));
-    } catch (e) {
-      // #region agent log
-      agentLog(
-        hypothesisId: 'H4',
-        location: 'lib/features/auth/screens/firebase_login_screen.dart:_signInWithGoogle:catch',
-        message: 'Non-Firebase exception during Google sign-in',
-        data: {
-          'type': e.runtimeType.toString(),
-          'msg': e.toString().substring(0, e.toString().length.clamp(0, 200)),
-        },
-      );
-      // #endregion agent log
-      _showError('Došlo k chybe pri prihlasovaní: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -346,53 +291,6 @@ class _FirebaseLoginScreenState extends ConsumerState<FirebaseLoginScreen> {
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Divider
-                    Row(
-                      children: [
-                        Expanded(child: Divider(color: Colors.grey.withValues(alpha: 0.3))),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Text(
-                            'alebo',
-                            style: TextStyle(color: Colors.grey.withValues(alpha: 0.6)),
-                          ),
-                        ),
-                        Expanded(child: Divider(color: Colors.grey.withValues(alpha: 0.3))),
-                      ],
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Google Sign In Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: OutlinedButton.icon(
-                        onPressed: _isLoading ? null : _signInWithGoogle,
-                        icon: Image.asset(
-                          'assets/icons/google_g.png',
-                          height: 24,
-                          width: 24,
-                        ),
-                        label: Text(
-                          'Pokračovať s Google',
-                          style: GoogleFonts.inter(
-                            fontSize: 12.8, // Reduced by 20% (16 * 0.8)
-                            fontWeight: FontWeight.w500,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: Colors.grey.withValues(alpha: 0.3)),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
                       ),
                     ),
 

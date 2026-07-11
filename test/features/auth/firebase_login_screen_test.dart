@@ -15,7 +15,7 @@ void main() {
     GoogleFonts.config.allowRuntimeFetching = false;
   });
 
-  testWidgets('FirebaseLoginScreen renders email, password and Google button',
+  testWidgets('FirebaseLoginScreen renders email and password fields',
       (tester) async {
     addTearDown(() => resetTestView(tester));
     final backend = FakeAuthBackend();
@@ -36,7 +36,7 @@ void main() {
 
     expect(find.byType(TextField), findsAtLeast(2));
     expect(find.text('Prihlásiť sa'), findsOneWidget);
-    expect(find.text('Pokračovať s Google'), findsOneWidget);
+    expect(find.text('Pokračovať s Google'), findsNothing);
     expectNoLayoutOverflow(tester);
   });
 

@@ -42,8 +42,6 @@ class MockAuthRepository implements AuthRepository {
   @override
   Future<UserModel?> signUp(String email, String password) async => null;
   @override
-  Future<UserModel?> signInWithGoogle() async => null;
-  @override
   Future<void> signOut() async {}
   @override
   Future<void> deleteAccount() async {}
@@ -126,7 +124,7 @@ void main() {
   final mockAnalytics = MockFirebaseAnalytics();
 
   group('AppRouter Redirect Tests', () {
-    testWidgets('Stays on /splash when auth is loading', (tester) async {
+    testWidgets('Stays on /login when auth is loading', (tester) async {
       tester.view.physicalSize = const Size(1000, 2000);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
@@ -174,7 +172,7 @@ void main() {
       final router = container.read(routerProvider);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 10));
-      expect(router.state.uri.path, '/splash');
+      expect(router.state.uri.path, '/login');
 
       await tester.pumpWidget(const SizedBox.shrink());
       // Let any delayed flutter_animate timers fire to avoid timersPending at teardown.

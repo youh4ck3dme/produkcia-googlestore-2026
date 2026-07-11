@@ -22,7 +22,7 @@ import 'package:bizagent/features/invoices/providers/invoices_provider.dart';
 import 'package:bizagent/features/settings/models/user_settings_model.dart';
 import 'package:bizagent/features/settings/providers/settings_provider.dart';
 import 'package:bizagent/features/notifications/services/notification_service.dart';
-import 'package:bizagent/features/splash/screens/splash_screen.dart';
+import 'package:bizagent/features/auth/screens/firebase_login_screen.dart';
 import 'package:bizagent/features/tools/services/monitoring_service.dart';
 import 'package:bizagent/features/limits/usage_limiter.dart' show sharedPrefsProvider;
 
@@ -54,7 +54,7 @@ void main() {
       );
     });
 
-    testWidgets('Complete User Journey: Splash → Onboarding → Login → Dashboard',
+    testWidgets('Complete User Journey: Login → Onboarding → Dashboard',
         (WidgetTester tester) async {
       tester.view.physicalSize = const Size(1200, 2400);
       tester.view.devicePixelRatio = 1.0;
@@ -69,8 +69,8 @@ void main() {
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
-      expect(find.byType(SplashScreen), findsOneWidget);
-      await tester.pump(const Duration(seconds: 2));
+      expect(find.byType(FirebaseLoginScreen), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 500));
       await pumpFrames(tester, count: 10);
       expect(find.byType(BizAgentApp), findsOneWidget);
       expect(tester.takeException(), isNull);

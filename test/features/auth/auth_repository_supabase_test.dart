@@ -52,22 +52,6 @@ void main() {
       );
     });
 
-    test('signInWithGoogle on web triggers OAuth redirect flow', () async {
-      // kIsWeb is false in VM tests — verify native path instead below.
-      backend.googleNativeResult = testUser;
-      final user = await repository.signInWithGoogle();
-      expect(backend.googleNativeCalled, isTrue);
-      expect(user, testUser);
-    });
-
-    test('signInWithGoogle returns null when user cancels', () async {
-      backend.googleNativeResult = null;
-
-      final user = await repository.signInWithGoogle();
-
-      expect(user, isNull);
-    });
-
     test('signOut delegates to backend', () async {
       await repository.signOut();
       expect(backend.signOutCalled, isTrue);

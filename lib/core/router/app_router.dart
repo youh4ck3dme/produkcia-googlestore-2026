@@ -5,7 +5,7 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import '../../features/dashboard/screens/dashboard_screen.dart';
 
 import '../../core/services/initialization_service.dart';
-import '../../features/splash/screens/splash_screen.dart';
+
 import '../../features/invoices/screens/invoices_screen.dart';
 import '../../features/expenses/screens/expenses_screen.dart';
 import '../../features/expenses/screens/expense_analytics_screen.dart';
@@ -52,22 +52,19 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: '/splash',
+    initialLocation: '/login',
     observers: [
       FirebaseAnalyticsObserver(analytics: analytics),
     ],
     redirect: (context, state) {
       final path = state.uri.path;
 
-      // 1. Loading states
-      if (authState.isLoading || onboardingState.isLoading) {
-        return path == '/splash' ? null : '/splash';
-      }
-
-      // 1b. Initialization (Force Splash)
-      // This ensures the splash screen runs its course even if auth loads fast.
-      if (!init.isCompleted) {
-        return path == '/splash' ? null : '/splash';
+      // 1. Loading / initialization — drž sa login/onboarding, žiadny splash
+      if (authState.isLoading ||
+          onboardingState.isLoading ||
+          !init.isCompleted) {
+        if (path == '/login' || path == '/onboarding') return null;
+        return '/login';
       }
 
       // 2. Auth error
@@ -90,7 +87,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       // 5. Already Logged In
-      if (path == '/login' || path == '/splash' || path == '/onboarding') {
+      if (path == '/login' || path == '/onboarding') {
         return '/dashboard';
       }
 
@@ -102,10 +99,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      GoRoute(
-        path: '/splash',
-        builder: (context, state) => const SplashScreen(),
-      ),
       GoRoute(
         path: '/login',
         builder: (context, state) => const FirebaseLoginScreen(),

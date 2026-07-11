@@ -37,10 +37,10 @@ class BankCsvParserService {
     }
 
     final delimiter = _detectDelimiter(normalized);
-    final rows = const CsvToListConverter(
-      shouldParseNumbers: false,
-      eol: '\n',
-    ).convert(normalized, fieldDelimiter: delimiter);
+    final rows = CsvDecoder(
+      fieldDelimiter: delimiter,
+      dynamicTyping: false,
+    ).convert(normalized);
 
     if (rows.isEmpty) {
       return const BankCsvParseResult(
@@ -82,6 +82,12 @@ class BankCsvParserService {
               : _at(row, map['currency']))
           .toUpperCase();
 
+      final message = _at(row, map['message']);
+      var variableSymbol = _digitsOnly(_at(row, map['variableSymbol']));
+      if (variableSymbol.isEmpty) {
+        variableSymbol = _extractVsFromText(message) ?? '';
+      }
+
       final tx = BankTx(
         id: '${date.toIso8601String()}_${amount}_${_at(row, map['counterpartyName'])}',
         date: date,
@@ -89,8 +95,8 @@ class BankCsvParserService {
         currency: currency,
         counterpartyName: _at(row, map['counterpartyName']),
         counterpartyIban: _normalizeIban(_at(row, map['counterpartyIban'])),
-        variableSymbol: _digitsOnly(_at(row, map['variableSymbol'])),
-        message: _at(row, map['message']),
+        variableSymbol: variableSymbol,
+        message: message,
         reference: _at(row, map['reference']),
       );
 
@@ -145,9 +151,9 @@ class BankCsvParserService {
           hits(p.counterpartyNameHeaders);
     }
 
-    final all = BankCsvProfile.all;
-    all.sort((a, b) => score(b).compareTo(score(a)));
-    return all.first;
+    final ranked = List<BankCsvProfile>.of(BankCsvProfile.all)
+      ..sort((a, b) => score(b).compareTo(score(a)));
+    return ranked.first;
   }
 
   Map<String, int?> _buildHeaderIndexMap(
@@ -155,17 +161,39 @@ class BankCsvParserService {
     int? findIndex(List<String> candidates) {
       final norms = headers.map(_normKey).toList();
       for (final c in candidates) {
-        final idx = norms.indexOf(_normKey(c));
-        if (idx >= 0) return idx;
+        final key = _normKey(c);
+        final exact = norms.indexOf(key);
+        if (exact >= 0) return exact;
+        final partial = norms.indexWhere(
+          (h) => h.contains(key) || key.contains(h),
+        );
+        if (partial >= 0) return partial;
       }
       return null;
     }
 
-    // special: some banks export debit/credit separately; keep hook
-    final debitIdx = findIndex(
-        const ['debit', 'na ťarchu', 'na tarchu', 'výdavok', 'vydavok']);
-    final creditIdx =
-        findIndex(const ['credit', 'v prospech', 'príjem', 'prijem']);
+    // SK banky často exportujú debet/kredit v samostatných stĺpcoch
+    final debitIdx = findIndex(const [
+      'debit',
+      'na ťarchu',
+      'na tarchu',
+      'na tarchu účtu',
+      'na tarchu uctu',
+      'výdavok',
+      'vydavok',
+      'odchádzajúca platba',
+      'odchadzajuca platba',
+    ]);
+    final creditIdx = findIndex(const [
+      'credit',
+      'v prospech',
+      'v prospech účtu',
+      'v prospech uctu',
+      'príjem',
+      'prijem',
+      'prichádzajúca platba',
+      'prichadzajuca platba',
+    ]);
 
     return {
       'date': findIndex(p.dateHeaders),
@@ -214,6 +242,27 @@ class BankCsvParserService {
 
   String _digitsOnly(String s) => s.replaceAll(RegExp(r'[^0-9]'), '');
 
+  /// VS z poznámky platby (SK formát /VS123456/ alebo „VS: 123456“).
+  String? _extractVsFromText(String text) {
+    if (text.trim().isEmpty) return null;
+    final patterns = <RegExp>[
+      RegExp(r'[/\\]VS[/\\]?(\d{1,10})', caseSensitive: false),
+      RegExp(r'\bVS[:\s]*(\d{4,10})\b', caseSensitive: false),
+      RegExp(
+        r'variabiln[ýy]\s*symbol[:\s]*(\d{1,10})',
+        caseSensitive: false,
+      ),
+    ];
+    for (final pattern in patterns) {
+      final match = pattern.firstMatch(text);
+      if (match != null && match.groupCount >= 1) {
+        final vs = match.group(1);
+        if (vs != null && vs.isNotEmpty) return vs;
+      }
+    }
+    return null;
+  }
+
   String _normalizeIban(String s) => s.replaceAll(' ', '').toUpperCase();
 
   double? _parseAmountPreferSigned(String s,
@@ -257,8 +306,13 @@ class BankCsvParserService {
   }
 
   DateTime? _parseDate(String s) {
-    final x = s.trim();
+    var x = s.trim();
     if (x.isEmpty) return null;
+
+    // SLSP/Tatra export: "12.01.2026 10:30"
+    if (RegExp(r'\d{1,2}[\.\/\-]\d{1,2}[\.\/\-]\d{4}\s+\d').hasMatch(x)) {
+      x = x.split(RegExp(r'\s+')).first;
+    }
 
     // Try ISO first
     final iso = DateTime.tryParse(x);

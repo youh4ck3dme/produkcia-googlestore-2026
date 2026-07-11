@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../auth/providers/auth_repository.dart';
 import '../../../shared/widgets/biz_buttons.dart';
 import '../../../shared/widgets/biz_card.dart';
 import '../../../shared/widgets/biz_empty_state.dart';
@@ -17,13 +18,15 @@ class BankImportScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final st = ref.watch(bankImportProvider);
-    // For now, we'll use a hardcoded user ID - in real app this would come from auth
-    final invoicesAsync = ref.watch(invoiceLikeRepoProvider('test-user'));
+    final user = ref.watch(authStateProvider).value ??
+        ref.read(authRepositoryProvider).currentUser;
+    final invoicesAsync =
+        ref.watch(invoiceLikeRepoProvider(user?.id ?? ''));
     final ctrl = ref.read(bankImportProvider.notifier);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Bank CSV Import'),
+        title: const Text('Import bankového výpisu'),
         actions: [
           IconButton(
             tooltip: 'Clear',
@@ -35,7 +38,7 @@ class BankImportScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const BizSectionHeader(title: '1) Paste bank CSV'),
+          const BizSectionHeader(title: '1) Vložte CSV z banky'),
           BizCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -43,7 +46,7 @@ class BankImportScreen extends ConsumerWidget {
                 DropdownButtonFormField<BankCsvProfile>(
                   initialValue: st.profile,
                   decoration: const InputDecoration(
-                    labelText: 'Profile',
+                    labelText: 'Banka / formát',
                     prefixIcon: Icon(Icons.account_balance),
                   ),
                   items: BankCsvProfile.all
@@ -61,15 +64,15 @@ class BankImportScreen extends ConsumerWidget {
                   initialValue: st.csvText,
                   onChanged: ctrl.setCsvText,
                   decoration: const InputDecoration(
-                    labelText: 'CSV text',
-                    hintText: 'Paste CSV here (including header row)...',
+                    labelText: 'CSV výpis',
+                    hintText: 'Vložte CSV vrátane hlavičky (oddeľovač ; alebo ,)...',
                     alignLabelWithHint: true,
                     prefixIcon: Icon(Icons.paste),
                   ),
                 ),
                 const SizedBox(height: 12),
                 BizPrimaryButton(
-                  label: st.isLoading ? 'Parsing...' : 'Parse CSV',
+                  label: st.isLoading ? 'Spracovávam...' : 'Spracovať CSV',
                   icon: Icons.play_arrow,
                   isLoading: st.isLoading,
                   onPressed: st.csvText.trim().isEmpty ? null : ctrl.parseNow,
@@ -91,30 +94,31 @@ class BankImportScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 16),
-          const BizSectionHeader(title: '2) Preview transactions'),
+          const BizSectionHeader(title: '2) Náhľad transakcií'),
           if (st.txs.isEmpty)
             BizEmptyState(
-              title: 'No transactions yet',
-              body: 'Parse a CSV to see transactions here.',
-              ctaLabel: 'Parse',
+              title: 'Zatiaľ žiadne transakcie',
+              body: 'Spracujte CSV výpis, aby sa tu zobrazili pohyby na účte.',
+              ctaLabel: 'Spracovať',
               onCta: st.csvText.trim().isEmpty ? null : ctrl.parseNow,
               imageAsset: 'assets/images/empty_state_generic.png',
             )
           else
             BizCard(child: BankTxTable(txs: st.txs)),
           const SizedBox(height: 16),
-          const BizSectionHeader(title: '3) Auto-match invoices'),
+          const BizSectionHeader(title: '3) Párovanie s faktúrami'),
           BizCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                    'Repo invoices: ${(invoicesAsync.value ?? const []).length}'),
+                    'Faktúry v systéme: ${(invoicesAsync.value ?? const []).length}'),
                 const SizedBox(height: 8),
-                const Text('MVP: match by VS + amount + counterparty name.'),
+                const Text(
+                    'Automatické párovanie podľa VS, sumy a názvu protistrany.'),
                 const SizedBox(height: 12),
                 BizPrimaryButton(
-                  label: 'Auto-match (from repo)',
+                  label: 'Spárovať s faktúrami',
                   icon: Icons.auto_awesome,
                   onPressed: (st.txs.isEmpty || invoicesAsync.isLoading)
                       ? null
@@ -127,7 +131,7 @@ class BankImportScreen extends ConsumerWidget {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                                 content: Text(
-                                    'Matched: $best / ${matches.length} (invoices: ${invoices.length})')),
+                                    'Spárované: $best / ${matches.length} (faktúry: ${invoices.length})')),
                           );
                         },
                 ),

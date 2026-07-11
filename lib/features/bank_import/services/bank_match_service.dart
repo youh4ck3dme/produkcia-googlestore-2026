@@ -50,8 +50,10 @@ class BankMatchService {
     double score = 0;
     final reasons = <String>[];
 
-    // 1) VS exact
-    final txVs = _digits(tx.variableSymbol ?? '');
+    // 1) VS exact (stĺpec alebo extrahované z poznámky)
+    final txVs = _digits(tx.variableSymbol ?? '') != ''
+        ? _digits(tx.variableSymbol ?? '')
+        : _digits(_extractVsFromMessage(tx.message) ?? '');
     final invVs = _digits(inv.variableSymbol);
     if (txVs.isNotEmpty && invVs.isNotEmpty && txVs == invVs) {
       score += 0.65;
@@ -92,6 +94,18 @@ class BankMatchService {
   }
 
   String _digits(String s) => s.replaceAll(RegExp(r'[^0-9]'), '');
+
+  String? _extractVsFromMessage(String message) {
+    final patterns = <RegExp>[
+      RegExp(r'[/\\]VS[/\\]?(\d{1,10})', caseSensitive: false),
+      RegExp(r'\bVS[:\s]*(\d{4,10})\b', caseSensitive: false),
+    ];
+    for (final pattern in patterns) {
+      final match = pattern.firstMatch(message);
+      if (match != null) return match.group(1);
+    }
+    return null;
+  }
 
   double _tokenScore(String a, String b) {
     final ta = _tokens(a);

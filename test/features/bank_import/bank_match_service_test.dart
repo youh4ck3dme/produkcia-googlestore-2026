@@ -35,4 +35,34 @@ void main() {
     expect(res.first.invoice?.id, 'inv1');
     expect(res.first.confidence, greaterThan(0.8));
   });
+
+  test('matches invoice when VS is only in payment message', () {
+    const invoices = [
+      InvoiceLike(
+        id: 'inv2',
+        number: '2026-0002',
+        variableSymbol: '998877',
+        total: 250.50,
+        clientName: 'Klient ABC',
+      ),
+    ];
+
+    final txs = [
+      BankTx(
+        id: 'tx_msg_vs',
+        date: DateTime(2026, 2, 16),
+        amount: 250.50,
+        currency: 'EUR',
+        counterpartyName: 'Klient ABC',
+        message: '/VS998877/ Faktúra',
+        reference: 'SLSP-1',
+      ),
+    ];
+
+    const svc = BankMatchService();
+    final res = svc.match(txs: txs, invoices: invoices);
+
+    expect(res.first.invoice?.id, 'inv2');
+    expect(res.first.confidence, greaterThan(0.8));
+  });
 }

@@ -56,6 +56,7 @@ jobs:
       - name: Build Flutter web (release)
         run: |
           flutter build web --release \
+            --no-wasm-dry-run \
             --dart-define-from-file=dart_defines/supabase.ci.json \
             --base-href "/"
 

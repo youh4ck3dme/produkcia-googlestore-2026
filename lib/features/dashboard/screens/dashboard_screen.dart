@@ -26,7 +26,6 @@ import '../../../shared/widgets/biz_widgets.dart';
 import '../../../shared/widgets/notification_bell.dart';
 import '../../../shared/widgets/biz_glass_appbar.dart';
 import '../../../core/config/play_release_scope.dart';
-import '../../../core/config/product_copy.dart';
 import '../../billing/subscription_guard.dart';
 import '../../billing/paywall_flow.dart';
 
@@ -68,7 +67,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Future<void> _checkAndShowTutorial() async {
     if (!PlayReleaseScope.showCoachMarkTutorials) return;
 
-    final user = ref.read(authStateProvider).valueOrNull;
+    final user = ref.read(authStateProvider).value;
     if (user == null) return;
 
     // Show tutorial if user is Anonymous (Demo) OR if it's a fresh install check
@@ -94,7 +93,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = ref.watch(authStateProvider).valueOrNull;
+    final user = ref.watch(authStateProvider).value;
     final invoicesAsync = ref.watch(invoicesProvider);
     final expensesAsync = ref.watch(expensesProvider);
     final revenueAsync = ref.watch(revenueMetricsProvider);
@@ -121,14 +120,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   onFinish: () {},
                 );
               },
-              tooltip: 'Zobraziť tutoriál',
+              tooltip: context.t(AppStr.dashboardShowTutorial),
             ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
               ref.read(authControllerProvider.notifier).signOut();
             },
-            tooltip: 'Odhlásiť sa',
+            tooltip: context.t(AppStr.dashboardSignOut),
           ),
         ],
       ),
@@ -158,13 +157,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Ahoj, ${user?.displayName ?? 'Používateľ'}!',
+                        context.t(AppStr.dashboardGreeting, params: {
+                          'name': user?.displayName ??
+                              context.t(AppStr.dashboardGreetingFallback),
+                        }),
                         style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
                       ).animate().fade().moveY(begin: 10, duration: 400.ms),
                       const SizedBox(height: 4),
-                      Text(ProductCopy.dashboardGreetingHint,
+                      Text(context.t(AppStr.dashboardGreetingHint),
                           style: Theme.of(context).textTheme.bodySmall).animate().fade(delay: 100.ms),
                       const SizedBox(height: 24),
 
@@ -226,9 +228,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           spacing: 16,
                           runSpacing: 16,
                           children: [
-                            SizedBox(width: 250, child: _buildActionTile(context, title: context.t(AppStr.invoiceTitle), subtitle: 'Nová faktúra pre klienta', icon: Icons.add_circle_outline, color: BizTheme.slovakBlue, onTap: _openCreateInvoice, widgetKey: _invoiceKey)),
-                            SizedBox(width: 250, child: _buildActionTile(context, title: 'Pridať výdavok', subtitle: 'Evidencia nákladov', icon: Icons.shopping_bag_outlined, color: BizTheme.nationalRed, onTap: () => context.push('/create-expense'))),
-                            SizedBox(width: 250, child: _buildActionTile(context, title: 'Export pre účtovníka', subtitle: 'Zostava faktúr a výdavkov', icon: Icons.download, color: BizTheme.gray800, onTap: _openExport)),
+                            SizedBox(width: 250, child: _buildActionTile(context, title: context.t(AppStr.invoiceTitle), subtitle: context.t(AppStr.dashboardNewInvoiceSubtitle), icon: Icons.add_circle_outline, color: BizTheme.slovakBlue, onTap: _openCreateInvoice, widgetKey: _invoiceKey)),
+                            SizedBox(width: 250, child: _buildActionTile(context, title: context.t(AppStr.dashboardAddExpense), subtitle: context.t(AppStr.dashboardExpenseSubtitle), icon: Icons.shopping_bag_outlined, color: BizTheme.nationalRed, onTap: () => context.push('/create-expense'))),
+                            SizedBox(width: 250, child: _buildActionTile(context, title: context.t(AppStr.dashboardExportAccountant), subtitle: context.t(AppStr.dashboardExportSubtitle), icon: Icons.download, color: BizTheme.gray800, onTap: _openExport)),
                             if (PlayReleaseScope.showMagicScanQuickAction)
                               SizedBox(width: 300, child: _buildActionTile(context, title: context.t(AppStr.magicScan), subtitle: context.t(AppStr.magicScanSubtitle), icon: Icons.auto_awesome, color: BizTheme.blueDark, onTap: () => context.push('/ai-tools'), widgetKey: _scanKey)),
                           ],
@@ -239,7 +241,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             _buildActionTile(
                               context,
                               title: context.t(AppStr.invoiceTitle),
-                              subtitle: 'Nová faktúra pre klienta',
+                              subtitle: context.t(AppStr.dashboardNewInvoiceSubtitle),
                               icon: Icons.add_circle_outline,
                               color: BizTheme.slovakBlue, // Use theme color
                               onTap: _openCreateInvoice,
@@ -247,16 +249,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             ),
                             _buildActionTile(
                               context,
-                              title: 'Pridať výdavok',
-                              subtitle: 'Evidencia nákladov',
+                              title: context.t(AppStr.dashboardAddExpense),
+                              subtitle: context.t(AppStr.dashboardExpenseSubtitle),
                               icon: Icons.shopping_bag_outlined,
                               color: BizTheme.nationalRed,
                               onTap: () => context.push('/create-expense'),
                             ),
                             _buildActionTile(
                               context,
-                              title: 'Export pre účtovníka',
-                              subtitle: 'Zostava faktúr a výdavkov',
+                              title: context.t(AppStr.dashboardExportAccountant),
+                              subtitle: context.t(AppStr.dashboardExportSubtitle),
                               icon: Icons.download,
                               color: BizTheme.gray800,
                               onTap: _openExport,
@@ -276,7 +278,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
                       const SizedBox(height: 32),
                       // Recent Invoices
-                      const BizSectionHeader(title: 'Posledné faktúry').animate().fade(delay: 900.ms),
+                      BizSectionHeader(title: context.t(AppStr.dashboardRecentInvoices)).animate().fade(delay: 900.ms),
                       const SizedBox(height: 16),
                       if (invoicesAsync.value != null)
                          ...invoicesAsync.value!.take(5).map((invoice) => 
@@ -285,7 +287,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               subtitle: invoice.number,
                               amount: invoice.totalAmount,
                               date: invoice.dateDue, 
-                              status: invoice.status.toSlovak(),
+                              status: invoice.status.label(context),
                               statusColor: invoice.status.color(context),
                               onTap: () => context.push('/invoices/detail', extra: invoice),
                             ).animate().fade().slideY(begin: 0.2)
@@ -330,7 +332,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Máte $overdueCount faktúr po lehote splatnosti!',
+                    context.t(AppStr.dashboardOverdueAlert,
+                        params: {'count': '$overdueCount'}),
                     style: const TextStyle(
                       color: BizTheme.nationalRed,
                       fontWeight: FontWeight.bold,
@@ -363,42 +366,45 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           childAspectRatio: 1.5,
           children: [
             BizStatsCard(
-              title: 'Príjmy (Celkovo)',
+              title: context.t(AppStr.dashboardRevenueTotal),
               metric: NumberFormat.currency(symbol: '€').format(revenue.totalRevenue),
               color: BizTheme.slovakBlue,
               icon: Icons.account_balance_wallet_outlined,
             ),
             BizStatsCard(
-              title: 'Čistý Zisk',
+              title: context.t(AppStr.dashboardNetProfit),
               metric: NumberFormat.currency(symbol: '€').format(profit.profit),
               color: BizTheme.blueLight,
               icon: Icons.savings_outlined,
-              trend: 'Marža: ${(profit.profitMargin * 100).toStringAsFixed(1)}%',
+              trend: context.t(AppStr.dashboardMargin, params: {
+                'percent': (profit.profitMargin * 100).toStringAsFixed(1),
+              }),
               isPositive: profit.profit > 0,
             ),
             BizStatsCard(
-              title: 'Neuhradené',
+              title: context.t(AppStr.dashboardUnpaid),
               metric: NumberFormat.currency(symbol: '€').format(revenue.unpaidAmount),
               color: BizTheme.nationalRed,
               icon: Icons.pending_actions_outlined,
-              trend: '${revenue.overdueCount} po lehote',
+              trend: context.t(AppStr.dashboardOverdueCount,
+                  params: {'count': '${revenue.overdueCount}'}),
               isPositive: false,
             ),
             BizStatsCard(
-              title: 'Výdavky',
+              title: context.t(AppStr.dashboardExpensesCard),
               metric: NumberFormat.currency(symbol: '€').format(totalExpenses),
               color: BizTheme.accentRed,
               icon: Icons.shopping_cart_outlined,
               isPositive: false,
             ),
             BizStatsCard(
-              title: 'Tento mesiac',
+              title: context.t(AppStr.dashboardThisMonth),
               metric: NumberFormat.currency(symbol: '€').format(revenue.thisMonthRevenue),
               color: BizTheme.gray500,
               icon: Icons.calendar_today_outlined,
             ),
             BizStatsCard(
-              title: 'Priemerná faktúra',
+              title: context.t(AppStr.dashboardAvgInvoice),
               metric: NumberFormat.currency(symbol: '€').format(revenue.averageInvoiceValue),
               color: BizTheme.gray800,
               icon: Icons.bar_chart_outlined,
@@ -410,7 +416,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         // Pie Chart
         if (revenue.totalRevenue > 0 || totalExpenses > 0)
           BizChartContainer(
-            title: 'Pomer Príjmy vs Výdavky',
+            title: context.t(AppStr.dashboardIncomeVsExpenses),
             height: 250,
             chart: Column(
               children: [
@@ -497,11 +503,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Pýtaj sa BizBota',
+                      context.t(AppStr.dashboardAskBizBot),
                       style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     Text(
-                      'AI analýza tvojich financií v reálnom čase.',
+                      context.t(AppStr.dashboardBizBotSubtitle),
                       style: theme.textTheme.bodySmall,
                     ),
                   ],

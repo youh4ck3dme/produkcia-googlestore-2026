@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/config/play_release_scope.dart';
+import '../../core/i18n/app_strings.dart';
+import '../../core/i18n/l10n.dart';
 import '../../core/ui/biz_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
@@ -65,42 +67,41 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
     );
   }
 
-  List<NavigationDestination> _destinations() {
-    final all = [
-      const NavigationDestination(
-        icon: Icon(Icons.dashboard_outlined),
-        selectedIcon: Icon(Icons.dashboard),
-        label: 'Prehľad',
+  List<NavigationDestination> _destinations(BuildContext context) {
+    return [
+      NavigationDestination(
+        icon: const Icon(Icons.dashboard_outlined),
+        selectedIcon: const Icon(Icons.dashboard),
+        label: context.t(AppStr.navDashboard),
       ),
-      const NavigationDestination(
-        icon: Icon(Icons.receipt_long_outlined),
-        selectedIcon: Icon(Icons.receipt_long),
-        label: 'Faktúry',
+      NavigationDestination(
+        icon: const Icon(Icons.receipt_long_outlined),
+        selectedIcon: const Icon(Icons.receipt_long),
+        label: context.t(AppStr.navInvoices),
       ),
-      const NavigationDestination(
-        icon: Icon(Icons.attach_money),
-        selectedIcon: Icon(Icons.attach_money),
-        label: 'Výdavky',
+      NavigationDestination(
+        icon: const Icon(Icons.attach_money),
+        selectedIcon: const Icon(Icons.attach_money),
+        label: context.t(AppStr.navExpenses),
       ),
       if (PlayReleaseScope.showAssistantNav)
         PlayReleaseScope.showAiToolsNav
-            ? const NavigationDestination(
-                icon: Icon(Icons.auto_awesome_outlined),
-                selectedIcon: Icon(Icons.auto_awesome),
-                label: 'AI Tools',
+            ? NavigationDestination(
+                icon: const Icon(Icons.auto_awesome_outlined),
+                selectedIcon: const Icon(Icons.auto_awesome),
+                label: context.t(AppStr.navAiTools),
               )
-            : const NavigationDestination(
-                icon: Icon(Icons.smart_toy_outlined),
-                selectedIcon: Icon(Icons.smart_toy),
-                label: 'Asistent',
+            : NavigationDestination(
+                icon: const Icon(Icons.smart_toy_outlined),
+                selectedIcon: const Icon(Icons.smart_toy),
+                label: context.t(AppStr.navAssistant),
               ),
-      const NavigationDestination(
-        icon: Icon(Icons.settings_outlined),
-        selectedIcon: Icon(Icons.settings),
-        label: 'Nastavenia',
+      NavigationDestination(
+        icon: const Icon(Icons.settings_outlined),
+        selectedIcon: const Icon(Icons.settings),
+        label: context.t(AppStr.navSettings),
       ),
     ];
-    return all;
   }
 
   @override
@@ -150,7 +151,7 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
     final isTablet = width >= 600 && width < 1240;
     final isMobile = width < 600;
 
-    final destinations = _destinations();
+    final destinations = _destinations(context);
     final selectedNavIndex = _navIndexFromShell(widget.navigationShell.currentIndex);
 
     if (isMobile) {

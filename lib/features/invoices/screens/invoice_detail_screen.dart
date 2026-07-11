@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:printing/printing.dart';
+import '../../../core/i18n/app_strings.dart';
+import '../../../core/i18n/l10n.dart';
 import '../../../core/services/pdf_service.dart';
 import '../../settings/providers/settings_provider.dart';
 import '../models/invoice_model.dart';
@@ -27,18 +29,18 @@ class InvoiceDetailScreen extends ConsumerWidget {
               invoice.status == InvoiceStatus.overdue)
             IconButton(
               icon: const Icon(Icons.check_circle_outline, color: Colors.green),
-              tooltip: 'Označiť ako uhradenú',
+              tooltip: context.t(AppStr.invoiceMarkPaid),
               onPressed: () {
                 ref
                     .read(invoicesControllerProvider.notifier)
                     .updateStatus(invoice.id, InvoiceStatus.paid);
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    content: Text('Faktúra bola označená ako uhradená')));
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text(context.t(AppStr.invoiceMarkedPaidToast))));
               },
             ),
           PopupMenuButton<InvoiceStatus>(
             icon: const Icon(Icons.edit_note),
-            tooltip: 'Zmeniť stav',
+            tooltip: context.t(AppStr.invoiceChangeStatus),
             onSelected: (status) {
               ref
                   .read(invoicesControllerProvider.notifier)
@@ -52,7 +54,7 @@ class InvoiceDetailScreen extends ConsumerWidget {
                     Icon(Icons.circle,
                         color: _getStatusColor(status), size: 12),
                     const SizedBox(width: 10),
-                    Text(_getStatusLabel(status)),
+                    Text(status.label(context)),
                   ],
                 ),
               );
@@ -60,7 +62,7 @@ class InvoiceDetailScreen extends ConsumerWidget {
           ),
           IconButton(
             icon: const Icon(Icons.visibility),
-            tooltip: 'Náhľad PDF',
+            tooltip: context.t(AppStr.invoicePdfPreview),
             onPressed: () {
               context.push('/invoices/preview', extra: invoice);
             },
@@ -79,17 +81,20 @@ class InvoiceDetailScreen extends ConsumerWidget {
           ),
           IconButton(
             icon: const Icon(Icons.qr_code_2),
-            tooltip: 'Zdieľať platobné údaje',
+            tooltip: context.t(AppStr.invoiceSharePayment),
             onPressed: () {
               ref.read(analyticsServiceProvider).logQrShared();
               final amount = NumberFormat.currency(symbol: '€')
                   .format(invoice.totalAmount);
               // ignore: deprecated_member_use
               Share.share(
-                'Prosím o úhradu faktúry ${invoice.number} v sume $amount. '
-                'Variabilný symbol: ${invoice.variableSymbol}. '
-                'Môžete použiť PAY by square QR kód v prílohe faktúry.',
-                subject: 'Podklady k platbe - ${invoice.number}',
+                context.t(AppStr.invoiceShareBody, params: {
+                  'number': invoice.number,
+                  'amount': amount,
+                  'vs': invoice.variableSymbol ?? '',
+                }),
+                subject: context.t(AppStr.invoiceShareSubject,
+                    params: {'number': invoice.number}),
               );
             },
           ),
@@ -99,12 +104,12 @@ class InvoiceDetailScreen extends ConsumerWidget {
               showDialog(
                 context: context,
                 builder: (c) => AlertDialog(
-                  title: const Text('Zmazať faktúru?'),
-                  content: const Text('Táto akcia je nevratná.'),
+                  title: Text(context.t(AppStr.invoiceDeleteTitle)),
+                  content: Text(context.t(AppStr.invoiceDeleteBody)),
                   actions: [
                     TextButton(
                         onPressed: () => Navigator.pop(c),
-                        child: const Text('Zrušiť')),
+                        child: Text(context.t(AppStr.cancel))),
                     TextButton(
                       onPressed: () {
                         ref
@@ -113,8 +118,8 @@ class InvoiceDetailScreen extends ConsumerWidget {
                         Navigator.pop(c); // Close dialog
                         Navigator.pop(context); // Close screen
                       },
-                      child: const Text('Zmazať',
-                          style: TextStyle(color: Colors.red)),
+                      child: Text(context.t(AppStr.invoiceDeleteConfirm),
+                          style: const TextStyle(color: Colors.red)),
                     ),
                   ],
                 ),
@@ -132,11 +137,11 @@ class InvoiceDetailScreen extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Stav faktúry:',
-                    style: TextStyle(color: Colors.grey)),
+                Text(context.t(AppStr.invoiceStatusLabel),
+                    style: const TextStyle(color: Colors.grey)),
                 Chip(
                   label: Text(
-                    _getStatusLabel(invoice.status).toUpperCase(),
+                    invoice.status.label(context).toUpperCase(),
                     style: const TextStyle(
                         color: Colors.white,
                         fontSize: 10,
@@ -172,25 +177,27 @@ class InvoiceDetailScreen extends ConsumerWidget {
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
-                      const Row(
+                      Row(
                         children: [
-                          Icon(Icons.verified, color: Colors.green),
-                          SizedBox(width: 12),
-                          Text('Informácie o úhrade',
-                              style: TextStyle(
+                          const Icon(Icons.verified, color: Colors.green),
+                          const SizedBox(width: 12),
+                          Text(context.t(AppStr.invoicePaymentInfo),
+                              style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color: Colors.green)),
                         ],
                       ),
                       const Divider(),
                       _buildPaymentRow(
-                          'Dátum úhrady',
+                          context.t(AppStr.invoicePaymentDate),
                           invoice.paymentDate != null
                               ? DateFormat('dd.MM.yyyy')
                                   .format(invoice.paymentDate!)
-                              : 'Neuvedený'),
+                              : context.t(AppStr.invoicePaymentDateUnknown)),
                       _buildPaymentRow(
-                          'Spôsob úhrady', invoice.paymentMethod ?? 'Prevodom'),
+                          context.t(AppStr.invoicePaymentMethod),
+                          invoice.paymentMethod ??
+                              context.t(AppStr.invoicePaymentMethodTransfer)),
                     ],
                   ),
                 ),
@@ -203,14 +210,14 @@ class InvoiceDetailScreen extends ConsumerWidget {
               children: [
                 Expanded(
                   child: _DateCard(
-                      label: 'Vystavené',
+                      label: context.t(AppStr.invoiceIssued),
                       date: invoice.dateIssued,
                       icon: Icons.calendar_today),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: _DateCard(
-                      label: 'Splatné',
+                      label: context.t(AppStr.invoiceDue),
                       date: invoice.dateDue,
                       icon: Icons.event,
                       isDue: true),
@@ -220,8 +227,8 @@ class InvoiceDetailScreen extends ConsumerWidget {
             const SizedBox(height: 24),
 
             // Items
-            const Text('Položky',
-                style: TextStyle(fontSize: 14.4, fontWeight: FontWeight.bold)), // Reduced by 20% (18 * 0.8)
+            Text(context.t(AppStr.invoiceItems),
+                style: const TextStyle(fontSize: 14.4, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Card(
               child: ListView.separated(
@@ -262,7 +269,8 @@ class InvoiceDetailScreen extends ConsumerWidget {
                       variableSymbol: invoice.variableSymbol ?? '',
                       recipientName: settings.companyName,
                       dateDue: invoice.dateDue,
-                      note: 'Faktúra ${invoice.number}',
+                      note: context.t(AppStr.invoiceNotePrefix,
+                          params: {'number': invoice.number}),
                     ),
                     const SizedBox(height: 16),
                   ],
@@ -276,7 +284,7 @@ class InvoiceDetailScreen extends ConsumerWidget {
             Align(
               alignment: Alignment.centerRight,
               child: Text(
-                'Spolu: ${NumberFormat.currency(symbol: '€').format(invoice.totalAmount)}',
+                '${context.t(AppStr.invoiceTotalLabel)} ${NumberFormat.currency(symbol: '€').format(invoice.totalAmount)}',
                 style: Theme.of(context)
                     .textTheme
                     .headlineSmall
@@ -317,20 +325,6 @@ class InvoiceDetailScreen extends ConsumerWidget {
     }
   }
 
-  String _getStatusLabel(InvoiceStatus status) {
-    switch (status) {
-      case InvoiceStatus.draft:
-        return 'Návrh';
-      case InvoiceStatus.sent:
-        return 'Odoslaná';
-      case InvoiceStatus.paid:
-        return 'Uhradená';
-      case InvoiceStatus.overdue:
-        return 'Po splatnosti';
-      case InvoiceStatus.cancelled:
-        return 'Zrušená';
-    }
-  }
 }
 
 class _DateCard extends StatelessWidget {

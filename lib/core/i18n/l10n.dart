@@ -19,11 +19,16 @@ class L10n extends InheritedWidget {
     return result!;
   }
 
-  String t(AppStr key) {
-    switch (locale) {
-      case AppLocale.sk:
-        return AppStringsSK.values[key] ?? key.name;
+  String t(AppStr key, {Map<String, String>? params}) {
+    var value = switch (locale) {
+      AppLocale.sk => AppStringsSK.values[key] ?? key.name,
+    };
+    if (params != null) {
+      for (final entry in params.entries) {
+        value = value.replaceAll('{${entry.key}}', entry.value);
+      }
     }
+    return value;
   }
 
   @override
@@ -31,5 +36,6 @@ class L10n extends InheritedWidget {
 }
 
 extension L10nX on BuildContext {
-  String t(AppStr key) => L10n.of(this).t(key);
+  String t(AppStr key, {Map<String, String>? params}) =>
+      L10n.of(this).t(key, params: params);
 }

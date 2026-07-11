@@ -1,6 +1,8 @@
 // lib/features/bank_import/widgets/bank_tx_table.dart
 import 'package:flutter/material.dart';
 
+import '../../../core/i18n/app_strings.dart';
+import '../../../core/i18n/l10n.dart';
 import '../models/bank_tx.dart';
 
 class BankTxTable extends StatelessWidget {
@@ -13,13 +15,13 @@ class BankTxTable extends StatelessWidget {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: DataTable(
-        columns: const [
-          DataColumn(label: Text('Date')),
-          DataColumn(label: Text('Amount')),
-          DataColumn(label: Text('CCY')),
-          DataColumn(label: Text('VS')),
-          DataColumn(label: Text('Counterparty')),
-          DataColumn(label: Text('Message')),
+        columns: [
+          DataColumn(label: Text(context.t(AppStr.bankColDate))),
+          DataColumn(label: Text(context.t(AppStr.bankColAmount))),
+          DataColumn(label: Text(context.t(AppStr.bankColCurrency))),
+          DataColumn(label: Text(context.t(AppStr.bankColVs))),
+          DataColumn(label: Text(context.t(AppStr.bankColCounterparty))),
+          DataColumn(label: Text(context.t(AppStr.bankColMessage))),
         ],
         rows: txs.take(200).map((t) {
           return DataRow(cells: [

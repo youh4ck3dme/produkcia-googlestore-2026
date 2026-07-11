@@ -2,6 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/i18n/app_strings.dart';
+import '../../../core/i18n/l10n.dart';
 import '../../auth/providers/auth_repository.dart';
 import '../../../shared/widgets/biz_buttons.dart';
 import '../../../shared/widgets/biz_card.dart';
@@ -26,10 +28,10 @@ class BankImportScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Import bankového výpisu'),
+        title: Text(context.t(AppStr.bankImportTitle)),
         actions: [
           IconButton(
-            tooltip: 'Clear',
+            tooltip: context.t(AppStr.bankImportClear),
             onPressed: ctrl.clear,
             icon: const Icon(Icons.delete_outline),
           ),
@@ -38,16 +40,16 @@ class BankImportScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const BizSectionHeader(title: '1) Vložte CSV z banky'),
+          BizSectionHeader(title: context.t(AppStr.bankImportStep1)),
           BizCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 DropdownButtonFormField<BankCsvProfile>(
                   initialValue: st.profile,
-                  decoration: const InputDecoration(
-                    labelText: 'Banka / formát',
-                    prefixIcon: Icon(Icons.account_balance),
+                  decoration: InputDecoration(
+                    labelText: context.t(AppStr.bankImportBankFormat),
+                    prefixIcon: const Icon(Icons.account_balance),
                   ),
                   items: BankCsvProfile.all
                       .map((p) =>
@@ -63,16 +65,18 @@ class BankImportScreen extends ConsumerWidget {
                   maxLines: 14,
                   initialValue: st.csvText,
                   onChanged: ctrl.setCsvText,
-                  decoration: const InputDecoration(
-                    labelText: 'CSV výpis',
-                    hintText: 'Vložte CSV vrátane hlavičky (oddeľovač ; alebo ,)...',
+                  decoration: InputDecoration(
+                    labelText: context.t(AppStr.bankImportCsvLabel),
+                    hintText: context.t(AppStr.bankImportCsvHint),
                     alignLabelWithHint: true,
-                    prefixIcon: Icon(Icons.paste),
+                    prefixIcon: const Icon(Icons.paste),
                   ),
                 ),
                 const SizedBox(height: 12),
                 BizPrimaryButton(
-                  label: st.isLoading ? 'Spracovávam...' : 'Spracovať CSV',
+                  label: st.isLoading
+                      ? context.t(AppStr.bankImportProcessing)
+                      : context.t(AppStr.bankImportProcessCsv),
                   icon: Icons.play_arrow,
                   isLoading: st.isLoading,
                   onPressed: st.csvText.trim().isEmpty ? null : ctrl.parseNow,
@@ -94,31 +98,33 @@ class BankImportScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 16),
-          const BizSectionHeader(title: '2) Náhľad transakcií'),
+          BizSectionHeader(title: context.t(AppStr.bankImportStep2)),
           if (st.txs.isEmpty)
             BizEmptyState(
-              title: 'Zatiaľ žiadne transakcie',
-              body: 'Spracujte CSV výpis, aby sa tu zobrazili pohyby na účte.',
-              ctaLabel: 'Spracovať',
+              title: context.t(AppStr.bankImportNoTransactions),
+              body: context.t(AppStr.bankImportNoTransactionsBody),
+              ctaLabel: context.t(AppStr.bankImportProcessCta),
               onCta: st.csvText.trim().isEmpty ? null : ctrl.parseNow,
               imageAsset: 'assets/images/empty_state_generic.png',
             )
           else
             BizCard(child: BankTxTable(txs: st.txs)),
           const SizedBox(height: 16),
-          const BizSectionHeader(title: '3) Párovanie s faktúrami'),
+          BizSectionHeader(title: context.t(AppStr.bankImportStep3)),
           BizCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                    'Faktúry v systéme: ${(invoicesAsync.value ?? const []).length}'),
+                Text(context.t(AppStr.bankImportInvoicesInSystem,
+                    params: {
+                      'count':
+                          '${(invoicesAsync.value ?? const []).length}',
+                    })),
                 const SizedBox(height: 8),
-                const Text(
-                    'Automatické párovanie podľa VS, sumy a názvu protistrany.'),
+                Text(context.t(AppStr.bankImportMatchDescription)),
                 const SizedBox(height: 12),
                 BizPrimaryButton(
-                  label: 'Spárovať s faktúrami',
+                  label: context.t(AppStr.bankImportMatchButton),
                   icon: Icons.auto_awesome,
                   onPressed: (st.txs.isEmpty || invoicesAsync.isLoading)
                       ? null
@@ -130,8 +136,15 @@ class BankImportScreen extends ConsumerWidget {
                               matches.where((m) => m.invoice != null).length;
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                                content: Text(
-                                    'Spárované: $best / ${matches.length} (faktúry: ${invoices.length})')),
+                              content: Text(context.t(
+                                AppStr.bankImportMatchResult,
+                                params: {
+                                  'matched': '$best',
+                                  'total': '${matches.length}',
+                                  'invoices': '${invoices.length}',
+                                },
+                              )),
+                            ),
                           );
                         },
                 ),

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../core/i18n/app_strings.dart';
+import '../../../core/i18n/l10n.dart';
 import '../../../core/ui/biz_theme.dart';
 import '../../../core/services/tax_calculation_service.dart';
 import '../../../core/models/soft_delete_model.dart';
@@ -6,6 +8,22 @@ import '../../../core/models/soft_delete_model.dart';
 enum InvoiceStatus { draft, sent, paid, overdue, cancelled }
 
 extension InvoiceStatusX on InvoiceStatus {
+  String label(BuildContext context) {
+    switch (this) {
+      case InvoiceStatus.draft:
+        return context.t(AppStr.invoiceStatusDraft);
+      case InvoiceStatus.sent:
+        return context.t(AppStr.invoiceStatusSent);
+      case InvoiceStatus.paid:
+        return context.t(AppStr.invoiceStatusPaid);
+      case InvoiceStatus.overdue:
+        return context.t(AppStr.invoiceStatusOverdue);
+      case InvoiceStatus.cancelled:
+        return context.t(AppStr.invoiceStatusCancelled);
+    }
+  }
+
+  /// Backward-compatible alias; prefer [label] when [BuildContext] is available.
   String toSlovak() {
     switch (this) {
       case InvoiceStatus.draft:
@@ -13,7 +31,7 @@ extension InvoiceStatusX on InvoiceStatus {
       case InvoiceStatus.sent:
         return 'Odoslaná';
       case InvoiceStatus.paid:
-        return 'Zaplatená';
+        return 'Uhradená';
       case InvoiceStatus.overdue:
         return 'Po splatnosti';
       case InvoiceStatus.cancelled:

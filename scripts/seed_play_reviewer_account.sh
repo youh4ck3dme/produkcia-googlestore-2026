@@ -113,14 +113,17 @@ ensure_auth_user() {
   fi
 
   user_id=$(curl -sS \
-    "$SUPABASE_URL/auth/v1/admin/users?email=$(url_encode_email)" \
+    "$SUPABASE_URL/auth/v1/admin/users?page=1&per_page=200" \
     -H "apikey: $SERVICE_ROLE" \
     -H "Authorization: Bearer $SERVICE_ROLE" | python3 -c "
-import json, sys
+import json, os, sys
+target = os.environ.get('PLAY_REVIEWER_EMAIL', '').lower()
 data = json.load(sys.stdin)
-users = data.get('users') or []
-print(users[0]['id'] if users else '')
-")
+for u in data.get('users') or []:
+    if (u.get('email') or '').lower() == target:
+        print(u['id'])
+        break
+" PLAY_REVIEWER_EMAIL="$PLAY_REVIEWER_EMAIL")
 
   if [[ -z "$user_id" ]]; then
     echo "ERROR: admin create HTTP $http, user not found" >&2

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bizagent/core/config/play_release_scope.dart';
+import 'package:bizagent/core/i18n/l10n.dart';
 import 'package:bizagent/features/invoices/screens/create_invoice_screen.dart';
 import 'package:bizagent/features/auth/providers/auth_repository.dart';
 import 'package:bizagent/features/settings/providers/settings_provider.dart';
@@ -45,7 +46,10 @@ void main() {
         icoAtlasServiceProvider.overrideWithValue(FakeIcoAtlasService()),
       ],
       child: const MaterialApp(
-        home: CreateInvoiceScreen(),
+        home: L10n(
+          locale: AppLocale.sk,
+          child: CreateInvoiceScreen(),
+        ),
       ),
     );
   }

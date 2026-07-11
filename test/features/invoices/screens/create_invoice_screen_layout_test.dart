@@ -1,4 +1,5 @@
 import 'package:bizagent/core/config/play_release_scope.dart';
+import 'package:bizagent/core/i18n/l10n.dart';
 import 'package:bizagent/core/models/ico_lookup_result.dart';
 import 'package:bizagent/core/services/icoatlas_service.dart';
 import 'package:bizagent/core/ui/biz_theme.dart';
@@ -50,7 +51,10 @@ Widget createInvoiceTestApp() {
     ],
     child: MaterialApp(
       theme: BizTheme.light(),
-      home: const CreateInvoiceScreen(),
+      home: const L10n(
+        locale: AppLocale.sk,
+        child: CreateInvoiceScreen(),
+      ),
     ),
   );
 }

@@ -7,6 +7,7 @@ import 'package:bizagent/features/auth/providers/auth_repository.dart';
 import 'package:bizagent/features/settings/models/user_settings_model.dart';
 import 'package:bizagent/features/settings/providers/settings_provider.dart';
 import 'package:bizagent/features/settings/providers/settings_repository.dart';
+import 'package:bizagent/core/i18n/l10n.dart';
 import 'package:bizagent/features/settings/screens/settings_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
@@ -73,10 +74,13 @@ void main() {
               .overrideWithValue(FakeSettingsRepository()),
           authStateProvider.overrideWith((ref) => Stream.value(
               const UserModel(id: 'test-user', email: 'test@example.com'))),
-          themeProvider.overrideWith((ref) => ThemeNotifier()), // Default theme
+          themeProvider.overrideWith(() => ThemeNotifier()), // Default theme
         ],
-        child: const MaterialApp(
-          home: SettingsScreen(),
+        child: MaterialApp(
+          home: L10n(
+            locale: AppLocale.sk,
+            child: const SettingsScreen(),
+          ),
         ),
       ),
     );

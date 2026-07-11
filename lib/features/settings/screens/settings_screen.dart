@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/config/play_release_scope.dart';
+import '../../../core/i18n/app_strings.dart';
+import '../../../core/i18n/l10n.dart';
 import '../../../core/providers/theme_provider.dart';
 import '../../../core/services/tutorial_service.dart';
 import '../providers/settings_provider.dart';
@@ -80,14 +82,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     await ref.read(settingsControllerProvider.notifier).updateSettings(updated);
     if (mounted) {
-      BizSnackbar.showSuccess(context, 'Nastavenia úspešne uložené');
+      BizSnackbar.showSuccess(context, context.t(AppStr.settingsSavedToast));
     }
   }
 
   Future<void> _lookupCompany() async {
     final ico = _icoController.text.trim();
     if (ico.isEmpty) {
-      BizSnackbar.showInfo(context, 'Zadajte IČO');
+      BizSnackbar.showInfo(context, context.t(AppStr.settingsEnterIco));
       return;
     }
 
@@ -98,7 +100,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
       if (mounted) {
         if (company.name.isEmpty) {
-          BizSnackbar.showError(context, 'Firma sa nenašla');
+          BizSnackbar.showError(context, context.t(AppStr.settingsCompanyNotFound));
           return;
         }
 
@@ -111,11 +113,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         if (company.isVatPayer) {
           await ref.read(settingsControllerProvider.notifier).updateVatPayer(true);
         }
-        BizSnackbar.showSuccess(context, 'Našli sme: ${company.name}');
+        BizSnackbar.showSuccess(context, context.t(AppStr.settingsCompanyFound,
+            params: {'name': company.name}));
       }
     } catch (e) {
       if (mounted) {
-        BizSnackbar.showError(context, 'Chyba pri hľadaní: $e');
+        BizSnackbar.showError(context, context.t(AppStr.settingsLookupError,
+            params: {'error': '$e'}));
       }
     } finally {
       if (mounted) setState(() => _isLookingUp = false);
@@ -128,7 +132,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Nastavenia'),
+        title: Text(context.t(AppStr.settingsTitle)),
         actions: [
           if (PlayReleaseScope.showCoachMarkTutorials)
             BizTutorialButton(
@@ -149,16 +153,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              _buildSectionTitle('Firma', key: _sectionKey),
+              _buildSectionTitle(context.t(AppStr.settingsSectionCompany),
+                  key: _sectionKey),
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Obchodné meno'),
-                validator: (v) => v!.isEmpty ? 'Povinné' : null,
+                decoration:
+                    InputDecoration(labelText: context.t(AppStr.settingsCompanyName)),
+                validator: (v) =>
+                    v!.isEmpty ? context.t(AppStr.settingsRequired) : null,
               ),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _addressController,
-                decoration: const InputDecoration(labelText: 'Adresa sídla'),
+                decoration: InputDecoration(
+                    labelText: context.t(AppStr.settingsCompanyAddress)),
                 maxLines: 2,
               ),
               const SizedBox(height: 16),
@@ -168,7 +176,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     child: TextFormField(
                       controller: _icoController,
                       decoration: InputDecoration(
-                        labelText: 'IČO',
+                        labelText: context.t(AppStr.icoLabel),
                         suffixIcon: _isLookingUp
                             ? const Padding(
                                 padding: EdgeInsets.all(12.0),
@@ -181,7 +189,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               )
                             : IconButton(
                                 icon: const Icon(Icons.search),
-                                tooltip: 'Vyhľadať firmu (Automaticky)',
+                                tooltip: context.t(AppStr.settingsLookupTooltip),
                                 onPressed: _lookupCompany,
                               ),
                       ),
@@ -191,7 +199,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   Expanded(
                     child: TextFormField(
                       controller: _dicController,
-                      decoration: const InputDecoration(labelText: 'DIČ'),
+                      decoration:
+                          InputDecoration(labelText: context.t(AppStr.dicLabel)),
                     ),
                   ),
                 ],
@@ -199,11 +208,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               const SizedBox(height: 8),
               TextFormField(
                 controller: _icDphController,
-                decoration: const InputDecoration(labelText: 'IČ DPH'),
+                decoration:
+                    InputDecoration(labelText: context.t(AppStr.icdphLabel)),
               ),
               const SizedBox(height: 16),
               SwitchListTile(
-                title: const Text('Platca DPH'),
+                title: Text(context.t(AppStr.settingsVatPayer)),
                 value: settings.isVatPayer,
                 onChanged: (val) {
                   ref
@@ -212,55 +222,60 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 },
               ),
               const Divider(height: 32),
-              _buildSectionTitle('Bankové údaje'),
+              _buildSectionTitle(context.t(AppStr.settingsSectionBank)),
               TextFormField(
                 controller: _ibanController,
-                decoration: const InputDecoration(labelText: 'IBAN'),
+                decoration:
+                    InputDecoration(labelText: context.t(AppStr.ibanLabel)),
               ),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _swiftController,
-                decoration: const InputDecoration(labelText: 'SWIFT / BIC'),
+                decoration:
+                    InputDecoration(labelText: context.t(AppStr.settingsSwift)),
               ),
               const Divider(height: 32),
-              _buildSectionTitle('Aplikácia'),
+              _buildSectionTitle(context.t(AppStr.settingsSectionApp)),
               ListTile(
-                title: const Text('Téma aplikácie'),
+                title: Text(context.t(AppStr.settingsTheme)),
                 trailing: const Icon(Icons.brightness_6),
-                subtitle: Text(ref.watch(themeProvider).name.toUpperCase()),
+                subtitle: Text(_themeLabel(context, ref.watch(themeProvider))),
                 onTap: () {
                   showDialog(
                     context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Vyberte tému'),
+                    builder: (dialogContext) => AlertDialog(
+                      title: Text(dialogContext.t(AppStr.settingsThemeSelect)),
                       content: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           ListTile(
-                            title: const Text('Systémová'),
+                            title: Text(
+                                dialogContext.t(AppStr.settingsThemeSystem)),
                             onTap: () {
                               ref
                                   .read(themeProvider.notifier)
                                   .setTheme(ThemeMode.system);
-                              Navigator.pop(context);
+                              Navigator.pop(dialogContext);
                             },
                           ),
                           ListTile(
-                            title: const Text('Svetlá'),
+                            title: Text(
+                                dialogContext.t(AppStr.settingsThemeLight)),
                             onTap: () {
                               ref
                                   .read(themeProvider.notifier)
                                   .setTheme(ThemeMode.light);
-                              Navigator.pop(context);
+                              Navigator.pop(dialogContext);
                             },
                           ),
                           ListTile(
-                            title: const Text('Tmavá'),
+                            title:
+                                Text(dialogContext.t(AppStr.settingsThemeDark)),
                             onTap: () {
                               ref
                                   .read(themeProvider.notifier)
                                   .setTheme(ThemeMode.dark);
-                              Navigator.pop(context);
+                              Navigator.pop(dialogContext);
                             },
                           ),
                         ],
@@ -270,16 +285,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 },
               ),
               ListTile(
-                title: const Text('Jazyk'),
-                trailing: const Text('Slovenčina'),
+                title: Text(context.t(AppStr.settingsLanguage)),
+                trailing: Text(context.t(AppStr.settingsLanguageSk)),
                 onTap: () {},
               ),
               const Divider(height: 32),
-              _buildSectionTitle('Export'),
+              _buildSectionTitle(context.t(AppStr.settingsSectionExport)),
               ListTile(
                 leading: const Icon(Icons.archive_outlined),
-                title: const Text('Export pre účtovníčku'),
-                subtitle: const Text('PDF, CSV a fotky výdavkov'),
+                title: Text(context.t(AppStr.exportForAccountantTitle)),
+                subtitle: Text(context.t(AppStr.settingsExportSubtitle)),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () async {
                   if (await PaywallFlow.ensureAccess(
@@ -292,24 +307,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 },
               ),
               const Divider(height: 32),
-              _buildSectionTitle('Správa dát'),
+              _buildSectionTitle(context.t(AppStr.settingsSectionData)),
               ListTile(
                 leading: const Icon(Icons.delete_outline),
-                title: const Text('Kôš (obnovenie zmazaných položiek)'),
+                title: Text(context.t(AppStr.settingsTrash)),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => context.push('/settings/trash'),
               ),
               const Divider(height: 32),
-              _buildSectionTitle('Právne dokumenty'),
+              _buildSectionTitle(context.t(AppStr.settingsSectionLegal)),
               ListTile(
                 leading: const Icon(Icons.description_outlined),
-                title: const Text('Obchodné podmienky'),
+                title: Text(context.t(AppStr.settingsTerms)),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => context.push('/legal/terms'),
               ),
               ListTile(
                 leading: const Icon(Icons.privacy_tip_outlined),
-                title: const Text('Ochrana osobných údajov (GDPR)'),
+                title: Text(context.t(AppStr.settingsPrivacy)),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => context.push('/legal/privacy'),
               ),
@@ -318,10 +333,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 onPressed: _save,
                 style:
                     ElevatedButton.styleFrom(padding: const EdgeInsets.all(16)),
-                child: const Text('Uložiť zmeny'),
+                child: Text(context.t(AppStr.settingsSaveChanges)),
               ),
               const Divider(height: 32),
-              _buildSectionTitle('Odstránenie účtu'),
+              _buildSectionTitle(context.t(AppStr.settingsSectionDeleteAccount)),
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -332,9 +347,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Zmazanie účtu je trvalé a nevratné. Všetky vaše dáta (faktúry, výdavky, nastavenia) budú odstránené.',
-                      style: TextStyle(fontSize: 13, color: Colors.red),
+                    Text(
+                      context.t(AppStr.settingsDeleteAccountWarning),
+                      style: const TextStyle(fontSize: 13, color: Colors.red),
                     ),
                     const SizedBox(height: 12),
                     SizedBox(
@@ -342,7 +357,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       child: OutlinedButton.icon(
                         onPressed: () => _confirmDeleteAccount(),
                         icon: const Icon(Icons.delete_forever, color: Colors.red),
-                        label: const Text('Zmazať účet a všetky dáta'),
+                        label: Text(context.t(AppStr.settingsDeleteAccountButton)),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.red,
                           side: const BorderSide(color: Colors.red),
@@ -357,7 +372,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               TextButton(
                 onPressed: () => _confirmReset(),
                 style: TextButton.styleFrom(foregroundColor: Colors.red),
-                child: const Text('Resetovať aplikáciu (Smazať všetky dáta)'),
+                child: Text(context.t(AppStr.settingsResetApp)),
               ),
             ],
           ),
@@ -371,10 +386,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               children: [
                 const Icon(Icons.error_outline, size: 48, color: Colors.red),
                 const SizedBox(height: 16),
-                const Text(
-                  'Nepodarilo sa načítať nastavenia',
+                Text(
+                  context.t(AppStr.settingsLoadError),
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -386,7 +401,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 FilledButton.icon(
                   onPressed: () => ref.invalidate(settingsProvider),
                   icon: const Icon(Icons.refresh),
-                  label: const Text('Skúsiť znova'),
+                  label: Text(context.t(AppStr.retry)),
                 ),
               ],
             ),
@@ -399,18 +414,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _confirmReset() async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Naozaj resetovať?'),
-        content: const Text(
-            'Týmto nenávratne vymažete všetky faktúry, výdavky a nastavenia firmy. Aplikácia bude ako po prvej inštalácii.'),
+      builder: (dialogContext) => AlertDialog(
+        title: Text(dialogContext.t(AppStr.settingsResetTitle)),
+        content: Text(dialogContext.t(AppStr.settingsResetBody)),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Zrušiť')),
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: Text(dialogContext.t(AppStr.cancel))),
           TextButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(dialogContext, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Vymazať všetko'),
+            child: Text(dialogContext.t(AppStr.settingsResetConfirm)),
           ),
         ],
       ),
@@ -420,27 +434,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       await ref.read(localPersistenceServiceProvider).clearAll();
       // Restart app or invalidate providers
       if (!mounted) return;
-      BizSnackbar.showSuccess(context, 'Dáta boli vymazané. Reštartujte aplikáciu.');
+      BizSnackbar.showSuccess(context, context.t(AppStr.settingsResetDone));
     }
   }
 
   Future<void> _confirmDeleteAccount() async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Zmazať účet?'),
-        content: const Text(
-          'Táto akcia je NEVRATNÁ. Váš účet a všetky súvisiace dáta (faktúry, výdavky, nastavenia) budú trvalo zmazané.\n\nAk používate Google prihlásenie, budete sa musieť znova prihlásiť pre potvrdenie.',
-        ),
+      builder: (dialogContext) => AlertDialog(
+        title: Text(dialogContext.t(AppStr.settingsDeleteAccountTitle)),
+        content: Text(dialogContext.t(AppStr.settingsDeleteAccountBody)),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Zrušiť'),
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(dialogContext.t(AppStr.cancel)),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(dialogContext, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Áno, zmazať účet'),
+            child: Text(dialogContext.t(AppStr.settingsDeleteAccountConfirm)),
           ),
         ],
       ),
@@ -451,15 +463,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     try {
       await ref.read(authRepositoryProvider).deleteAccount();
       if (!mounted) return;
-      BizSnackbar.showSuccess(context, 'Účet bol úspešne zmazaný.');
+      BizSnackbar.showSuccess(
+          context, context.t(AppStr.settingsDeleteAccountSuccess));
       // Router redirect will handle navigation to login
     } on AuthException catch (e) {
       if (!mounted) return;
-      BizSnackbar.showError(context, 'Chyba pri mazaní účtu: ${e.message}');
+      BizSnackbar.showError(context, context.t(AppStr.settingsDeleteAccountError,
+          params: {'message': e.message}));
     } catch (e) {
       if (!mounted) return;
-      BizSnackbar.showError(context, 'Neočakávaná chyba: $e');
+      BizSnackbar.showError(context, context.t(AppStr.settingsDeleteAccountUnexpected,
+          params: {'error': '$e'}));
     }
+  }
+
+  String _themeLabel(BuildContext context, ThemeMode mode) {
+    return switch (mode) {
+      ThemeMode.system => context.t(AppStr.settingsThemeSystem),
+      ThemeMode.light => context.t(AppStr.settingsThemeLight),
+      ThemeMode.dark => context.t(AppStr.settingsThemeDark),
+    };
   }
 
   Widget _buildSectionTitle(String title, {Key? key}) {

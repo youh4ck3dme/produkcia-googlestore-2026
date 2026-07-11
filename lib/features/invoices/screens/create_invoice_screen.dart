@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../models/invoice_model.dart';
 import '../../../core/config/play_release_scope.dart';
+import '../../../core/i18n/app_strings.dart';
+import '../../../core/i18n/l10n.dart';
 import '../../../core/ui/biz_theme.dart';
 import '../../settings/providers/settings_provider.dart';
 import '../../../shared/utils/biz_snackbar.dart';
@@ -168,7 +170,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
 
   void _addItem(bool isVatPayer) {
     if (_itemDescController.text.isEmpty || _itemPriceController.text.isEmpty) {
-      BizSnackbar.showError(context, 'Vyplňte popis a cenu');
+      BizSnackbar.showError(context, context.t(AppStr.createInvoiceAddItemError));
       return;
     }
 
@@ -190,7 +192,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       _itemVatRate = TaxCalculationService.defaultVatRateForPayer(isVatPayer);
     });
 
-    BizSnackbar.showInfo(context, 'Položka pridaná: $itemDesc');
+    BizSnackbar.showInfo(context, context.t(AppStr.createInvoiceItemAdded,
+        params: {'item': itemDesc}));
   }
 
   void _removeItem(int index) {
@@ -208,7 +211,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   Future<void> _saveInvoice() async {
     if (!_formKey.currentState!.validate()) return;
     if (_items.isEmpty) {
-      BizSnackbar.showError(context, 'Pridajte aspoň jednu položku');
+      BizSnackbar.showError(context, context.t(AppStr.createInvoiceMinOneItem));
       return;
     }
 
@@ -255,12 +258,14 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       ref.read(analyticsServiceProvider).logInvoiceCreated(invoice.totalAmount);
 
       if (mounted) {
-        BizSnackbar.showSuccess(context, 'Faktúra $number úspešne vytvorená!');
+        BizSnackbar.showSuccess(context, context.t(AppStr.createInvoiceCreatedToast,
+            params: {'number': number}));
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
-        BizSnackbar.showError(context, 'Chyba pri ukladaní: $e');
+        BizSnackbar.showError(context, context.t(AppStr.createInvoiceSaveError,
+            params: {'error': '$e'}));
       }
     }
   }
@@ -298,7 +303,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     
       BizSnackbar.showSuccess(
       context,
-      'Formulár predvyplnený',
+      context.t(AppStr.createInvoiceFormPrefilled),
     );
     
     // Tu by sa dal pridať ScaffoldMessenger pre Undo akciu, 
@@ -326,7 +331,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       _previousStates = null;
     });
     
-    BizSnackbar.showInfo(context, 'Zmeny vrátené späť');
+    BizSnackbar.showInfo(context, context.t(AppStr.createInvoiceUndoDone));
   }
 
   InputDecoration _fieldDecoration(
@@ -352,7 +357,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
 
     return InputDecoration(
       labelText: label,
-      helperText: isAiFilled ? 'Predvyplnené' : helperText,
+      helperText:
+          isAiFilled ? context.t(AppStr.createInvoiceAiPrefilled) : helperText,
       helperStyle: isAiFilled
           ? const TextStyle(color: BizTheme.slovakBlue, fontSize: 10)
           : null,
@@ -418,21 +424,21 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           ? BizTheme.darkSurface
           : BizTheme.gray50,
       appBar: AppBar(
-        title: const Text('Nová faktúra'),
+        title: Text(context.t(AppStr.createInvoiceTitle)),
         actions: [
           if (PlayReleaseScope.showInvoiceAiFeatures) ...[
             if (_previousStates != null)
               IconButton(
                 onPressed: _undoMagicFill,
                 icon: const Icon(Icons.undo),
-                tooltip: 'Vrátiť zmeny',
+                tooltip: context.t(AppStr.createInvoiceUndo),
               ),
             Padding(
               padding: const EdgeInsets.only(right: 8.0),
               child: IconButton(
                 onPressed: _applyMagicFill,
                 icon: const Icon(Icons.auto_awesome, size: 20),
-                tooltip: 'AI Vyplniť',
+                tooltip: context.t(AppStr.createInvoiceAiFill),
                 style: IconButton.styleFrom(
                   backgroundColor: BizTheme.slovakBlue.withValues(alpha: 0.1),
                 ),
@@ -463,7 +469,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Spolu',
+                      context.t(AppStr.summaryTotal),
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: BizTheme.gray500,
                         fontWeight: FontWeight.w500,
@@ -480,7 +486,10 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     ),
                     if (isVatPayer)
                       Text(
-                        'DPH: ${NumberFormat.currency(symbol: '€').format(_totalVat)}',
+                        context.t(AppStr.createInvoiceVatSummary, params: {
+                          'amount':
+                              NumberFormat.currency(symbol: '€').format(_totalVat),
+                        }),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodySmall?.copyWith(
@@ -493,7 +502,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
               const SizedBox(width: 12),
               FilledButton(
                 onPressed: _saveInvoice,
-                child: const Text('Uložiť'),
+                child: Text(context.t(AppStr.save)),
               ),
             ],
           ),
@@ -509,7 +518,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSectionHeader(context, 'Odberateľ'),
+                  _buildSectionHeader(
+                      context, context.t(AppStr.createInvoiceClientSection)),
                   const SizedBox(height: _fieldGap),
                     Autocomplete<Map<String, dynamic>>(
                       optionsBuilder: (TextEditingValue textEditingValue) async {
@@ -553,8 +563,12 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                           onChanged: (value) {
                             _clientNameController.text = value;
                           },
-                          decoration: _fieldDecoration('Názov firmy / Meno', fieldKey: 'name'),
-                          validator: (v) => v!.isEmpty ? 'Povinné pole' : null,
+                          decoration: _fieldDecoration(
+                              context.t(AppStr.createInvoiceClientName),
+                              fieldKey: 'name'),
+                          validator: (v) => v!.isEmpty
+                              ? context.t(AppStr.createInvoiceRequiredField)
+                              : null,
                         );
                       },
                     ),
@@ -562,7 +576,9 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                       const SizedBox(height: _fieldGap),
                       TextFormField(
                         controller: _clientAddressController,
-                        decoration: _fieldDecoration('Sídlo / Adresa', fieldKey: 'address'),
+                        decoration: _fieldDecoration(
+                            context.t(AppStr.createInvoiceClientAddress),
+                            fieldKey: 'address'),
                         maxLines: 2,
                       ),
                       const SizedBox(height: _fieldGap),
@@ -572,14 +588,16 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                           Expanded(
                             child: TextFormField(
                               controller: _clientIcoController,
-                              decoration: _fieldDecoration('IČO', fieldKey: 'ico'),
+                              decoration: _fieldDecoration(
+                                  context.t(AppStr.icoLabel), fieldKey: 'ico'),
                             ),
                           ),
                           const SizedBox(width: _fieldGap),
                           Expanded(
                             child: TextFormField(
                               controller: _clientDicController,
-                              decoration: _fieldDecoration('DIČ', fieldKey: 'dic'),
+                              decoration: _fieldDecoration(
+                                  context.t(AppStr.dicLabel), fieldKey: 'dic'),
                             ),
                           ),
                         ],
@@ -591,7 +609,9 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                       const SizedBox(height: _fieldGap),
                       TextFormField(
                         controller: _clientIcDphController,
-                        decoration: _fieldDecoration('IČ DPH (nepovinné)', fieldKey: 'icDph'),
+                        decoration: _fieldDecoration(
+                            context.t(AppStr.createInvoiceIcDphOptional),
+                            fieldKey: 'icDph'),
                       ),
                     ] else
                       Padding(
@@ -600,7 +620,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                           onTap: () => setState(() => _isDetailsExpanded = true),
                           child: Row(
                             children: [
-                              Text('Zobraziť fakturačné detaily', 
+                              Text(context.t(AppStr.createInvoiceShowDetails), 
                                 style: theme.textTheme.labelLarge?.copyWith(
                                   color: BizTheme.slovakBlue,
                                   fontWeight: FontWeight.bold,
@@ -620,14 +640,15 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSectionHeader(context, 'Detaily faktúry'),
+                  _buildSectionHeader(
+                      context, context.t(AppStr.createInvoiceDetailsSection)),
                   const SizedBox(height: _fieldGap),
                     TextFormField(
                       controller: _numberController,
                       onChanged: (_) => _autoInvoiceNumber = false,
                       decoration: _fieldDecoration(
-                        'Číslo faktúry',
-                        helperText: 'Generuje sa automaticky (napr. 2026/001)',
+                        context.t(AppStr.invoiceNumber),
+                        helperText: context.t(AppStr.invoiceNumberHelper),
                       ),
                     ),
                     const SizedBox(height: _fieldGap),
@@ -639,7 +660,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                             onTap: () => _pickDate(context, true),
                             borderRadius: BorderRadius.circular(BizTheme.inputRadius),
                             child: InputDecorator(
-                              decoration: _fieldDecoration('Dátum vystavenia'),
+                              decoration: _fieldDecoration(
+                                  context.t(AppStr.createInvoiceIssueDate)),
                               child: Text(DateFormat('dd.MM.yyyy').format(_dateIssued), style: theme.textTheme.bodyMedium),
                             ),
                           ),
@@ -650,7 +672,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                             onTap: () => _pickDate(context, false),
                             borderRadius: BorderRadius.circular(BizTheme.inputRadius),
                             child: InputDecorator(
-                              decoration: _fieldDecoration('Dátum splatnosti'),
+                              decoration: _fieldDecoration(
+                                  context.t(AppStr.createInvoiceDueDate)),
                               child: Text(DateFormat('dd.MM.yyyy').format(_dateDue), style: theme.textTheme.bodyMedium),
                             ),
                           ),
@@ -667,14 +690,22 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildSectionHeader(context, 'Stav faktúry'),
+                  _buildSectionHeader(
+                      context, context.t(AppStr.createInvoiceStatusSection)),
                   DropdownButton<InvoiceStatus>(
                     value: _selectedStatus,
                     underline: const SizedBox(),
                     borderRadius: BorderRadius.circular(BizTheme.radiusMd),
-                    items: const [
-                      DropdownMenuItem(value: InvoiceStatus.draft, child: Text('Návrh')),
-                      DropdownMenuItem(value: InvoiceStatus.sent, child: Text('Odoslaná')),
+                    items: [
+                      DropdownMenuItem(
+                        value: InvoiceStatus.draft,
+                        child: Text(
+                            InvoiceStatus.draft.label(context)),
+                      ),
+                      DropdownMenuItem(
+                        value: InvoiceStatus.sent,
+                        child: Text(InvoiceStatus.sent.label(context)),
+                      ),
                     ],
                     onChanged: (val) => setState(() => _selectedStatus = val!),
                   ),
@@ -688,7 +719,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSectionHeader(context, 'Položky'),
+                  _buildSectionHeader(context, context.t(AppStr.invoiceItems)),
                   const SizedBox(height: _fieldGap),
                     ..._items.asMap().entries.map((entry) {
                       final idx = entry.key;
@@ -738,7 +769,9 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                                   ),
                                 ),
                                 Text(
-                                  'bez DPH: ${item.subtotal.toStringAsFixed(2)} €',
+                                  context.t(AppStr.createInvoiceExclVat, params: {
+                                    'amount': item.subtotal.toStringAsFixed(2),
+                                  }),
                                   style: theme.textTheme.labelSmall?.copyWith(
                                     color: BizTheme.gray500,
                                   ),
@@ -771,11 +804,11 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                       child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(child: TextFormField(controller: _itemDescController, decoration: _fieldDecoration('Popis'))),
+                        Expanded(child: TextFormField(controller: _itemDescController, decoration: _fieldDecoration(context.t(AppStr.createInvoiceItemDesc)))),
                         const SizedBox(width: 8),
-                        SizedBox(width: 56, child: TextFormField(controller: _itemQtyController, decoration: _fieldDecoration('Ks'), keyboardType: TextInputType.number)),
+                        SizedBox(width: 56, child: TextFormField(controller: _itemQtyController, decoration: _fieldDecoration(context.t(AppStr.createInvoiceItemQty)), keyboardType: TextInputType.number)),
                         const SizedBox(width: 8),
-                        SizedBox(width: 88, child: TextFormField(controller: _itemPriceController, decoration: _fieldDecoration('Cena/ks'), keyboardType: TextInputType.number)),
+                        SizedBox(width: 88, child: TextFormField(controller: _itemPriceController, decoration: _fieldDecoration(context.t(AppStr.createInvoiceItemPrice)), keyboardType: TextInputType.number)),
                         const SizedBox(width: 8),
                         if (isVatPayer)
                           DropdownButton<double>(
@@ -818,13 +851,17 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
 
   Widget _buildRiskBadge() {
     if (_isLookingUp) {
-      return const Padding(
-        padding: EdgeInsets.only(top: 8.0),
+      return Padding(
+        padding: const EdgeInsets.only(top: 8.0),
         child: Row(
           children: [
-            SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2)),
-            SizedBox(width: 8),
-            Text('Overujem firmu...', style: TextStyle(fontSize: 9.6, color: Colors.grey)), // Reduced by 20% (12 * 0.8)
+            const SizedBox(
+                width: 12,
+                height: 12,
+                child: CircularProgressIndicator(strokeWidth: 2)),
+            const SizedBox(width: 8),
+            Text(context.t(AppStr.createInvoiceLookingUp),
+                style: const TextStyle(fontSize: 9.6, color: Colors.grey)),
           ],
         ),
       );
@@ -863,7 +900,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     const Icon(Icons.auto_awesome, color: BizTheme.slovakBlue, size: 14),
                     const SizedBox(width: 6),
                     Text(
-                      'AI VERDIKT',
+                      context.t(AppStr.createInvoiceAiVerdict),
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: BizTheme.slovakBlue,
                         fontWeight: FontWeight.bold,
@@ -908,7 +945,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
               ),
               const SizedBox(width: 4),
               Text(
-                'RIZIKO: $risk',
+                context.t(AppStr.createInvoiceRiskLabel, params: {'risk': risk}),
                 style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold),
               ),
               if (_lookupResult!.confidence != null) ...[

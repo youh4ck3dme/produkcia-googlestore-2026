@@ -23,10 +23,13 @@ enabled = true
 port = 54323
 
 [auth]
-site_url = "http://localhost:57300"
+site_url = "https://bizagent.sk"
 additional_redirect_urls = [
-  "http://localhost:57300/**",
+  "https://bizagent.sk",
+  "https://bizagent.sk/**",
+  "http://localhost:**",
   "http://localhost:**/**",
+  "http://127.0.0.1:**",
   "http://127.0.0.1:**/**",
 ]
 enable_signup = true

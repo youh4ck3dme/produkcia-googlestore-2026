@@ -38,6 +38,7 @@ class SupabaseConfig {
       publishableKey: publishableKey,
       authOptions: FlutterAuthClientOptions(
         authFlowType: authFlowType,
+        detectSessionInUri: true,
       ),
     );
     _initialized = true;

@@ -44,10 +44,11 @@ class GoogleAuthService {
     }
 
     if (kIsWeb) {
+      // Web: rovnaké okno (_self) — externalApplication rozbije PKCE callback.
       await _client.auth.signInWithOAuth(
         OAuthProvider.google,
         redirectTo: _webRedirectTo,
-        authScreenLaunchMode: LaunchMode.externalApplication,
+        authScreenLaunchMode: LaunchMode.platformDefault,
       );
       return _client.auth.currentUser == null
           ? null

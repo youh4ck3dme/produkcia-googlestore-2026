@@ -152,11 +152,127 @@ class InvoicesRepository {
     );
   }
 
-  Future<void> deleteInvoice(String userId, String invoiceId) async {
+  Future<void> softDeleteInvoice(
+    String userId,
+    String invoiceId, {
+    String? reason,
+  }) async {
+    final invoked = await _invokeDeleteInvoice(
+      invoiceId: invoiceId,
+      mode: 'soft',
+      reason: reason,
+    );
+
+    if (!invoked) {
+      await _softDeleteInvoiceFallback(userId, invoiceId, reason: reason);
+    }
+
+    await _markInvoiceSoftDeletedLocally(invoiceId, reason: reason);
+  }
+
+  Future<void> permanentDeleteInvoice(String userId, String invoiceId) async {
+    final invoked = await _invokeDeleteInvoice(
+      invoiceId: invoiceId,
+      mode: 'permanent',
+    );
+
+    if (!invoked) {
+      await _store?.delete(
+        _table,
+        eq: {'id': invoiceId, 'user_id': userId},
+      );
+      await _store?.delete(
+        'trash_items',
+        eq: {
+          'id': invoiceId,
+          'user_id': userId,
+          'collection': 'soft_deleted_invoices',
+        },
+      );
+    }
+
     await _persistence.deleteInvoice(invoiceId);
-    await _store?.delete(
+  }
+
+  Future<void> deleteInvoice(String userId, String invoiceId) async {
+    await softDeleteInvoice(userId, invoiceId);
+  }
+
+  Future<bool> _invokeDeleteInvoice({
+    required String invoiceId,
+    required String mode,
+    String? reason,
+  }) async {
+    if (!SupabaseConfig.isReady) return false;
+
+    final body = <String, dynamic>{
+      'invoiceId': invoiceId,
+      'mode': mode,
+      if (reason != null) 'reason': reason,
+    };
+
+    final res = await SupabaseConfig.client.functions.invoke(
+      'delete-invoice',
+      body: body,
+    );
+
+    final data = res.data;
+    if (data is Map && data['ok'] == true) return true;
+    if (data is Map && data['error'] != null) {
+      throw Exception(data['error']);
+    }
+    return false;
+  }
+
+  Future<void> _softDeleteInvoiceFallback(
+    String userId,
+    String invoiceId, {
+    String? reason,
+  }) async {
+    final store = _store;
+    if (store == null || !store.isAvailable) return;
+
+    final now = DateTime.now().toIso8601String();
+    var itemData = <String, dynamic>{};
+
+    final row = await store.selectMaybeSingle(
       _table,
+      columns: ['data'],
       eq: {'id': invoiceId, 'user_id': userId},
     );
+    if (row != null) {
+      itemData = Map<String, dynamic>.from(row['data'] as Map);
+    }
+
+    itemData['deletedAt'] = now;
+    if (reason != null) itemData['deleteReason'] = reason;
+
+    await store.upsert('trash_items', {
+      'id': invoiceId,
+      'user_id': userId,
+      'collection': 'soft_deleted_invoices',
+      'data': itemData,
+      'deleted_at': now,
+    });
+
+    await store.update(
+      _table,
+      {'is_deleted': true, 'updated_at': now},
+      eq: {'id': invoiceId, 'user_id': userId},
+    );
+  }
+
+  Future<void> _markInvoiceSoftDeletedLocally(
+    String invoiceId, {
+    String? reason,
+  }) async {
+    final localInvoices = _persistence.getInvoices();
+    final index = localInvoices.indexWhere((inv) => inv['id'] == invoiceId);
+    if (index == -1) return;
+
+    final updated = Map<String, dynamic>.from(localInvoices[index]);
+    updated['deletedAt'] = DateTime.now().toIso8601String();
+    if (reason != null) updated['deleteReason'] = reason;
+    await _persistence.saveInvoice(invoiceId, updated);
   }
 }

@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../auth/providers/auth_repository.dart';
 import '../models/invoice_model.dart';
 import 'invoices_repository.dart';
-import '../../../core/services/soft_delete_service.dart';
 import '../../../core/services/local_persistence_service.dart';
 import '../../../core/demo_mode/demo_mode_service.dart';
 
@@ -68,8 +67,8 @@ class InvoicesController extends StateNotifier<AsyncValue<void>> {
       });
     } else {
       state = await AsyncValue.guard(() => _ref
-          .read(softDeleteServiceProvider)
-          .softDeleteItem(SoftDeleteCollections.invoices, user.id, invoiceId, reason: reason));
+          .read(invoicesRepositoryProvider)
+          .softDeleteInvoice(user.id, invoiceId, reason: reason));
     }
   }
 
@@ -93,9 +92,9 @@ class InvoicesController extends StateNotifier<AsyncValue<void>> {
       });
     } else {
       state = await AsyncValue.guard(() async {
-        final service = _ref.read(softDeleteServiceProvider);
+        final repository = _ref.read(invoicesRepositoryProvider);
         for (final id in invoiceIds) {
-          await service.softDeleteItem(SoftDeleteCollections.invoices, user.id, id, reason: reason);
+          await repository.softDeleteInvoice(user.id, id, reason: reason);
         }
       });
     }

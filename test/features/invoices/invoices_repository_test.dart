@@ -72,11 +72,16 @@ void main() {
       expect(results.first.clientName, 'Updated Client Name');
     });
 
-    test('deleteInvoice odstráni z lokálnej cache', () async {
+    test('deleteInvoice soft-delete skryje faktúru z aktívneho zoznamu', () async {
       await repository.addInvoice(userId, dummyInvoice);
       await repository.deleteInvoice(userId, dummyInvoice.id);
 
-      expect(persistence.getInvoices(), isEmpty);
+      final results = await repository.getInvoices(userId);
+      expect(results, isEmpty);
+
+      final cached = persistence.getInvoices();
+      expect(cached.length, 1);
+      expect(cached.first['deletedAt'], isNotNull);
     });
 
     test('watchInvoices emituje lokálne dáta', () async {
@@ -143,12 +148,32 @@ void main() {
       expect(results.first.clientName, 'Remote Updated');
     });
 
-    test('deleteInvoice removes remote row', () async {
+    test('deleteInvoice soft-delete označí remote riadok ako zmazaný', () async {
       await repository.addInvoice(userId, dummyInvoice);
       await repository.deleteInvoice(userId, dummyInvoice.id);
 
       final rows = await store.select('invoices', eq: {'user_id': userId});
+      expect(rows.length, 1);
+      expect(rows.first['is_deleted'], isTrue);
+
+      final trash = await store.select(
+        'trash_items',
+        eq: {
+          'user_id': userId,
+          'collection': 'soft_deleted_invoices',
+          'id': dummyInvoice.id,
+        },
+      );
+      expect(trash.length, 1);
+    });
+
+    test('permanentDeleteInvoice odstráni remote riadok', () async {
+      await repository.addInvoice(userId, dummyInvoice);
+      await repository.permanentDeleteInvoice(userId, dummyInvoice.id);
+
+      final rows = await store.select('invoices', eq: {'user_id': userId});
       expect(rows, isEmpty);
+      expect(persistence.getInvoices(), isEmpty);
     });
 
     test('getInvoices falls back to local when store throws', () async {

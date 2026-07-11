@@ -4,6 +4,8 @@ import '../supabase/supabase_config.dart';
 import '../supabase/supabase_providers.dart';
 import '../supabase/supabase_table_store.dart';
 
+const _deleteInvoiceFunction = 'delete-invoice';
+
 /// Soft delete cez Supabase `trash_items` + `is_deleted` na faktúrach.
 class SoftDeleteService {
   SoftDeleteService(this._store);
@@ -198,16 +200,46 @@ class SoftDeleteService {
     String itemId,
   ) async {
     if (collection == SoftDeleteCollections.invoices) {
-      await store.delete(
-        _invoicesTable,
-        eq: {'id': itemId, 'user_id': userId},
+      final deleted = await _invokeInvoiceDelete(
+        itemId,
+        mode: 'permanent',
       );
+      if (!deleted) {
+        await store.delete(
+          _invoicesTable,
+          eq: {'id': itemId, 'user_id': userId},
+        );
+      }
     }
 
     await store.delete(
       _trashTable,
       eq: {'id': itemId, 'user_id': userId, 'collection': collection},
     );
+  }
+
+  Future<bool> _invokeInvoiceDelete(
+    String invoiceId, {
+    required String mode,
+    String? reason,
+  }) async {
+    if (!SupabaseConfig.isReady) return false;
+
+    final res = await SupabaseConfig.client.functions.invoke(
+      _deleteInvoiceFunction,
+      body: {
+        'invoiceId': invoiceId,
+        'mode': mode,
+        if (reason != null) 'reason': reason,
+      },
+    );
+
+    final data = res.data;
+    if (data is Map && data['ok'] == true) return true;
+    if (data is Map && data['error'] != null) {
+      throw Exception(data['error']);
+    }
+    return false;
   }
 }
 

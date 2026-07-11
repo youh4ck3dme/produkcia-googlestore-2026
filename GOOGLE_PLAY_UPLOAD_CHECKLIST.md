@@ -42,9 +42,23 @@
 - [ ] **App name:** `BizAgent - Faktúry a Výdavky`
 - [ ] **Short description:** `AI asistent pre slovenských podnikateľov. Faktúry, skenovanie bločkov a daňové prehľady.`
 - [ ] **Full description:** Skopíruj z [GOOGLE_PLAY_SUBMISSION.md](./docs/GOOGLE_PLAY_SUBMISSION.md#1-store-listing-záznam-v-obchode)
-- [ ] **App icon:** 512x512 PNG (`assets/icon/app_icon_1024.png` - zmenšiť)
-- [ ] **Feature graphic:** 1024x500 PNG (treba vytvoriť)
-- [ ] **Screenshots:** Nahraj screenshoty z Dashboardu, Faktúry a Skenovania
+- [ ] **App icon:** 512×512 PNG — `google_play_assets/icon/hi-res-icon-512.png`
+- [ ] **Feature graphic:** 1024×500 PNG — `google_play_assets/feature-graphic-1024x500.png`
+- [ ] **Screenshots (phone, 1080×1920):**
+  - `google_play_assets/screenshots/phone/01-dashboard.png`
+  - `google_play_assets/screenshots/phone/02-invoices.png`
+  - `google_play_assets/screenshots/phone/03-expenses-ocr.png`
+  - `google_play_assets/screenshots/phone/04-ai-tools.png`
+- [ ] **Overiť rozmery pred uploadom:**
+  ```bash
+  for f in google_play_assets/icon/hi-res-icon-512.png \
+           google_play_assets/feature-graphic-1024x500.png \
+           google_play_assets/screenshots/phone/*.png; do
+    sips -g pixelWidth -g pixelHeight "$f"
+  done
+  du -sh google_play_assets/   # cieľ: < 15 MB
+  ```
+- [ ] **Regenerovať assety (voliteľné):** `./scripts/export_google_play_assets.sh`
 - [ ] **Kategória:** Business / Finance
 - [ ] **Contact email:** Tvoj email
 

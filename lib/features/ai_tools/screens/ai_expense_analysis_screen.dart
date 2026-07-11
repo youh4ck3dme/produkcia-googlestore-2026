@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../core/i18n/app_strings.dart';
+import '../../../core/i18n/l10n.dart';
 import '../services/ai_tax_assistant_service.dart';
 import '../../../shared/widgets/biz_card.dart';
 import '../../../shared/widgets/biz_buttons.dart';
@@ -42,7 +44,7 @@ class _AiExpenseAnalysisScreenState extends ConsumerState<AiExpenseAnalysisScree
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('DPH Asistent')),
+      appBar: AppBar(title: Text(context.t(AppStr.aiVatAssistantTitle))),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -51,19 +53,24 @@ class _AiExpenseAnalysisScreenState extends ConsumerState<AiExpenseAnalysisScree
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Rýchla analýza daňovej uznateľnosti', style: Theme.of(context).textTheme.titleMedium),
+                  Text(
+                    context.t(AppStr.aiVatAnalysisTitle),
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: _expenseNameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Názov položky (napr. Obed s klientom)',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: context.t(AppStr.aiVatItemLabel),
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                   const SizedBox(height: 16),
                   BizPrimaryButton(
                     onPressed: _analyze,
-                    label: _isLoading ? 'Analyzujem...' : 'Skontrolovať',
+                    label: _isLoading
+                        ? context.t(AppStr.aiVatAnalyzing)
+                        : context.t(AppStr.aiVatCheck),
                     isLoading: _isLoading,
                   ),
                 ],
@@ -90,7 +97,9 @@ class _AiExpenseAnalysisScreenState extends ConsumerState<AiExpenseAnalysisScree
           ),
           const SizedBox(height: 16),
           Text(
-            result.isTaxDeductible ? 'Pravdepodobne daňovo uznateľné' : 'Rizikový výdavok',
+            result.isTaxDeductible
+                ? context.t(AppStr.aiVatDeductible)
+                : context.t(AppStr.aiVatRisky),
             style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),

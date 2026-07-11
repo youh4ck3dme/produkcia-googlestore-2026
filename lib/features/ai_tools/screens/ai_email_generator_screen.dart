@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bizagent/features/ai_tools/providers/ai_email_service.dart';
+
+import '../../../core/i18n/app_strings.dart';
+import '../../../core/i18n/l10n.dart';
 import '../../../core/ui/biz_theme.dart';
 
 class AiEmailGeneratorScreen extends ConsumerStatefulWidget {
@@ -28,6 +31,18 @@ class _AiEmailGeneratorScreenState
   late String _selectedType;
   String _selectedTone = 'formal';
 
+  static const _typeKeys = {
+    'reminder': AppStr.aiEmailTypeReminder,
+    'quote': AppStr.aiEmailTypeQuote,
+    'intro': AppStr.aiEmailTypeIntro,
+  };
+
+  static const _toneKeys = {
+    'formal': AppStr.aiEmailToneFormal,
+    'friendly': AppStr.aiEmailToneFriendly,
+    'urgent': AppStr.aiEmailToneUrgent,
+  };
+
   @override
   void initState() {
     super.initState();
@@ -42,24 +57,11 @@ class _AiEmailGeneratorScreenState
     super.dispose();
   }
 
-  final Map<String, String> _types = {
-    'reminder': 'Pripomienka platby',
-    'quote': 'Cenová ponuka',
-    'intro': 'Oslovenie klienta',
-  };
-
-  final Map<String, String> _tones = {
-    'formal': 'Formálny',
-    'friendly': 'Priateľský',
-    'urgent': 'Naliehavý',
-  };
-
   Future<void> _saveAsTemplate() async {
     if (_generatedEmail.isEmpty) return;
 
-    // Simulate saving
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Uložené medzi šablóny (Simulácia)')),
+      SnackBar(content: Text(context.t(AppStr.aiEmailSavedTemplate))),
     );
   }
 
@@ -87,7 +89,7 @@ class _AiEmailGeneratorScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('AI Generátor E-mailov')),
+      appBar: AppBar(title: Text(context.t(AppStr.aiEmailTitle))),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -100,14 +102,14 @@ class _AiEmailGeneratorScreenState
                   children: [
                     DropdownButtonFormField<String>(
                       initialValue: _selectedType,
-                      decoration: const InputDecoration(
-                        labelText: 'Typ e-mailu',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: context.t(AppStr.aiEmailTypeLabel),
+                        border: const OutlineInputBorder(),
                       ),
-                      items: _types.entries.map((e) {
+                      items: _typeKeys.entries.map((e) {
                         return DropdownMenuItem(
                           value: e.key,
-                          child: Text(e.value),
+                          child: Text(context.t(e.value)),
                         );
                       }).toList(),
                       onChanged: (v) => setState(() => _selectedType = v!),
@@ -115,14 +117,14 @@ class _AiEmailGeneratorScreenState
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
                       initialValue: _selectedTone,
-                      decoration: const InputDecoration(
-                        labelText: 'Tón komunikácie',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: context.t(AppStr.aiEmailToneLabel),
+                        border: const OutlineInputBorder(),
                       ),
-                      items: _tones.entries.map((e) {
+                      items: _toneKeys.entries.map((e) {
                         return DropdownMenuItem(
                           value: e.key,
-                          child: Text(e.value),
+                          child: Text(context.t(e.value)),
                         );
                       }).toList(),
                       onChanged: (v) => setState(() => _selectedTone = v!),
@@ -131,10 +133,10 @@ class _AiEmailGeneratorScreenState
                     TextField(
                       controller: _contextController,
                       maxLines: 3,
-                      decoration: const InputDecoration(
-                        labelText: 'Kontext / Detaily',
-                        hintText: 'Napr. Faktúra č. 2024001, splatná včera...',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: context.t(AppStr.aiEmailContextLabel),
+                        hintText: context.t(AppStr.aiEmailContextHint),
+                        border: const OutlineInputBorder(),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -150,7 +152,7 @@ class _AiEmailGeneratorScreenState
                                     CircularProgressIndicator(strokeWidth: 2),
                               )
                             : const Icon(Icons.auto_awesome),
-                        label: const Text('Generovať E-mail'),
+                        label: Text(context.t(AppStr.aiEmailGenerate)),
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.all(16),
                         ),
@@ -171,9 +173,9 @@ class _AiEmailGeneratorScreenState
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            'Výsledok:',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                          Text(
+                            context.t(AppStr.aiEmailResult),
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           IconButton(
                             icon: const Icon(Icons.copy),
@@ -181,8 +183,9 @@ class _AiEmailGeneratorScreenState
                               Clipboard.setData(
                                   ClipboardData(text: _generatedEmail));
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text('Skopírované do schránky')),
+                                SnackBar(
+                                  content: Text(context.t(AppStr.copyToClipboard)),
+                                ),
                               );
                             },
                           ),
@@ -196,7 +199,7 @@ class _AiEmailGeneratorScreenState
                         child: OutlinedButton.icon(
                           onPressed: _saveAsTemplate,
                           icon: const Icon(Icons.bookmark_border),
-                          label: const Text('Uložiť ako šablónu'),
+                          label: Text(context.t(AppStr.aiEmailSaveTemplate)),
                         ),
                       ),
                     ],

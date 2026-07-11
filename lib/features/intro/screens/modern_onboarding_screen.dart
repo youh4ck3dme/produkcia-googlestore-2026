@@ -3,9 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../../../core/i18n/app_strings.dart';
+import '../../../core/i18n/l10n.dart';
 import '../../../core/ui/biz_theme.dart';
 import '../../../core/config/play_release_scope.dart';
-import '../../../core/config/product_copy.dart';
 import '../providers/onboarding_provider.dart';
 import '../../../core/services/analytics_service.dart';
 
@@ -21,55 +22,55 @@ class _ModernOnboardingScreenState extends ConsumerState<ModernOnboardingScreen>
   int _currentPage = 0;
   String _selectedBusinessType = 'IT služby';
 
-  static final _legacySteps = [
+  static const _legacySteps = [
     ModernOnboardingStep(
-      title: 'Vitajte',
-      subtitle: 'AI Business Asistent pre SZČO a malé firmy',
+      titleKey: AppStr.onboardingLegacyWelcomeTitle,
+      subtitleKey: AppStr.onboardingLegacyWelcomeSubtitle,
       type: OnboardingStepType.welcome,
     ),
     ModernOnboardingStep(
-      title: 'Vytvorte faktúru za sekundy',
-      subtitle: 'AI vám pomôže s profesionálnymi faktúrami',
+      titleKey: AppStr.onboardingLegacyInvoiceTitle,
+      subtitleKey: AppStr.onboardingLegacyInvoiceSubtitle,
       type: OnboardingStepType.welcome,
     ),
     ModernOnboardingStep(
-      title: 'Sledujte výdavky inteligentne',
-      subtitle: 'AI analýza a automatické rozpočty',
+      titleKey: AppStr.onboardingLegacyExpensesTitle,
+      subtitleKey: AppStr.onboardingLegacyExpensesSubtitle,
       type: OnboardingStepType.welcome,
     ),
     ModernOnboardingStep(
-      title: 'Vyberte typ podnikania',
-      subtitle: 'Aby sme vám ukázali relevantné príklady',
+      titleKey: AppStr.onboardingLegacyBusinessTitle,
+      subtitleKey: AppStr.onboardingLegacyBusinessSubtitle,
       type: OnboardingStepType.businessType,
     ),
     ModernOnboardingStep(
-      title: 'Vaša ukážková faktúra',
-      subtitle: 'Takto jednoducho to funguje',
+      titleKey: AppStr.onboardingLegacyDemoTitle,
+      subtitleKey: AppStr.onboardingLegacyDemoSubtitle,
       type: OnboardingStepType.demo,
     ),
     ModernOnboardingStep(
-      title: 'Začnite používať',
-      subtitle: 'Objavte všetky možnosti AI asistenta',
+      titleKey: AppStr.onboardingLegacyFinishTitle,
+      subtitleKey: AppStr.onboardingLegacyFinishSubtitle,
       type: OnboardingStepType.finish,
     ),
   ];
 
   List<ModernOnboardingStep> get _steps {
     if (PlayReleaseScope.simplifiedOnboarding) {
-      return [
+      return const [
         ModernOnboardingStep(
-          title: ProductCopy.onboardingWelcomeTitle,
-          subtitle: ProductCopy.onboardingWelcomeSubtitle,
+          titleKey: AppStr.onboardingSimpleWelcomeTitle,
+          subtitleKey: AppStr.onboardingSimpleWelcomeSubtitle,
           type: OnboardingStepType.welcome,
         ),
         ModernOnboardingStep(
-          title: ProductCopy.onboardingHowTitle,
-          subtitle: ProductCopy.onboardingHowSubtitle,
+          titleKey: AppStr.onboardingSimpleHowTitle,
+          subtitleKey: AppStr.onboardingSimpleHowSubtitle,
           type: OnboardingStepType.welcome,
         ),
         ModernOnboardingStep(
-          title: ProductCopy.onboardingFinishTitle,
-          subtitle: ProductCopy.onboardingFinishSubtitle,
+          titleKey: AppStr.onboardingSimpleFinishTitle,
+          subtitleKey: AppStr.onboardingSimpleFinishSubtitle,
           type: OnboardingStepType.finish,
         ),
       ];
@@ -188,7 +189,7 @@ class _ModernOnboardingScreenState extends ConsumerState<ModernOnboardingScreen>
                           TextButton(
                             onPressed: _skipToDemo,
                             child: Text(
-                              'Preskočiť',
+                              context.t(AppStr.onboardingSkip),
                               style: TextStyle(color: Colors.grey[600], fontSize: 12.8), // Reduced by 20% (16 * 0.8)
                             ),
                           ),
@@ -208,7 +209,9 @@ class _ModernOnboardingScreenState extends ConsumerState<ModernOnboardingScreen>
                             elevation: 0,
                           ),
                           child: Text(
-                            _currentPage == _steps.length - 1 ? 'Začať používať' : 'Pokračovať',
+                            _currentPage == _steps.length - 1
+                                ? context.t(AppStr.onboardingStartUsing)
+                                : context.t(AppStr.onboardingContinue),
                             style: const TextStyle(fontSize: 12.8, fontWeight: FontWeight.w600), // Reduced by 20% (16 * 0.8)
                           ),
                         ),
@@ -246,7 +249,7 @@ class _OnboardingPage extends ConsumerWidget {
         children: [
           const Spacer(flex: 2),
           Text(
-            step.title,
+            context.t(step.titleKey),
             style: const TextStyle(
               fontSize: 25.6, // Reduced by 20% (32 * 0.8)
               fontWeight: FontWeight.w800,
@@ -257,7 +260,7 @@ class _OnboardingPage extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            step.subtitle,
+            context.t(step.subtitleKey),
             style: TextStyle(
               fontSize: 14.4, // Reduced by 20% (18 * 0.8)
               color: Colors.grey[600],
@@ -319,7 +322,7 @@ class _WelcomeContent extends StatelessWidget {
         ),
         const SizedBox(height: 32),
         Text(
-          'BizAgent používa umelú inteligenciu na automatizáciu vašich faktúr a sledovanie výdavkov.',
+          context.t(AppStr.onboardingWelcomeBody),
           style: TextStyle(
             fontSize: 12.8, // Reduced by 20% (16 * 0.8)
             color: Colors.grey[700],
@@ -363,28 +366,38 @@ class _BusinessTypeSelector extends StatefulWidget {
 }
 
 class _BusinessTypeSelectorState extends State<_BusinessTypeSelector> {
-  final List<Map<String, dynamic>> _businessTypes = [
-    {
-      'type': 'IT služby',
-      'icon': Icons.computer,
-      'description': 'Webové stránky, aplikácie, digitálne služby',
-    },
-    {
-      'type': 'Obchod',
-      'icon': Icons.store,
-      'description': 'Predaj tovaru, veľkoobchod, maloobchod',
-    },
-    {
-      'type': 'Remeslo',
-      'icon': Icons.build,
-      'description': 'Inštalatérstvo, elektrika, stavebníctvo',
-    },
-    {
-      'type': 'Iné',
-      'icon': Icons.business,
-      'description': 'Konzultácie, služby, voľná živnosť',
-    },
-  ];
+  static const _businessTypeIds = ['IT služby', 'Obchod', 'Remeslo', 'Iné'];
+
+  List<({String id, IconData icon, AppStr label, AppStr description})> _types(
+    BuildContext context,
+  ) {
+    return [
+      (
+        id: _businessTypeIds[0],
+        icon: Icons.computer,
+        label: AppStr.onboardingBizTypeIt,
+        description: AppStr.onboardingBizTypeItDesc,
+      ),
+      (
+        id: _businessTypeIds[1],
+        icon: Icons.store,
+        label: AppStr.onboardingBizTypeTrade,
+        description: AppStr.onboardingBizTypeTradeDesc,
+      ),
+      (
+        id: _businessTypeIds[2],
+        icon: Icons.build,
+        label: AppStr.onboardingBizTypeCraft,
+        description: AppStr.onboardingBizTypeCraftDesc,
+      ),
+      (
+        id: _businessTypeIds[3],
+        icon: Icons.business,
+        label: AppStr.onboardingBizTypeOther,
+        description: AppStr.onboardingBizTypeOtherDesc,
+      ),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -393,11 +406,11 @@ class _BusinessTypeSelectorState extends State<_BusinessTypeSelector> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          ..._businessTypes.map((type) {
-            final isSelected = type['type'] == widget.selectedType;
+          ..._types(context).map((type) {
+            final isSelected = type.id == widget.selectedType;
 
             return GestureDetector(
-              onTap: () => widget.onChanged(type['type']),
+              onTap: () => widget.onChanged(type.id),
               child: Container(
                 margin: const EdgeInsets.only(bottom: 16),
                 padding: const EdgeInsets.all(20),
@@ -418,7 +431,7 @@ class _BusinessTypeSelectorState extends State<_BusinessTypeSelector> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
-                        type['icon'] as IconData,
+                        type.icon,
                         color: isSelected ? Colors.white : Colors.grey[600],
                         size: 24,
                       ),
@@ -429,7 +442,7 @@ class _BusinessTypeSelectorState extends State<_BusinessTypeSelector> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            type['type'] as String,
+                            context.t(type.label),
                             style: TextStyle(
                               fontSize: 14.4, // Reduced by 20% (18 * 0.8)
                               fontWeight: FontWeight.w600,
@@ -438,7 +451,7 @@ class _BusinessTypeSelectorState extends State<_BusinessTypeSelector> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            type['description'] as String,
+                            context.t(type.description),
                             style: TextStyle(
                               fontSize: 11.2, // Reduced by 20% (14 * 0.8)
                               color: Colors.grey[600],
@@ -524,7 +537,7 @@ class _LoadingDemo extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           Text(
-            'Generujem ukážkovú faktúru...',
+            context.t(AppStr.onboardingDemoGenerating),
             style: TextStyle(
               fontSize: 12.8, // Reduced by 20% (16 * 0.8)
               color: Colors.grey[700],
@@ -568,7 +581,7 @@ class _ErrorDemo extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'Nepodarilo sa načítať demo',
+            context.t(AppStr.onboardingDemoError),
             style: TextStyle(
               fontSize: 14.4, // Reduced by 20% (18 * 0.8)
               fontWeight: FontWeight.w600,
@@ -577,7 +590,7 @@ class _ErrorDemo extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Použijeme predvolené údaje',
+            context.t(AppStr.onboardingDemoFallback),
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey[600],
@@ -586,7 +599,7 @@ class _ErrorDemo extends StatelessWidget {
           const SizedBox(height: 24),
           ElevatedButton(
             onPressed: onRetry,
-            child: const Text('Skúsiť znova'),
+            child: Text(context.t(AppStr.retry)),
           ),
         ],
       ),
@@ -636,9 +649,9 @@ class _InvoiceDemo extends StatelessWidget {
                   color: BizTheme.slovakBlue.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Text(
-                  'Návrh',
-                  style: TextStyle(
+                child: Text(
+                  context.t(AppStr.onboardingDraftBadge),
+                  style: const TextStyle(
                     fontSize: 9.6, // Reduced by 20% (12 * 0.8)
                     fontWeight: FontWeight.w600,
                     color: BizTheme.slovakBlue,
@@ -649,7 +662,7 @@ class _InvoiceDemo extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            invoiceData['clientName'] ?? 'Klient s.r.o.',
+            invoiceData['clientName'] ?? context.t(AppStr.onboardingClientDefault),
             style: const TextStyle(
               fontSize: 14.4, // Reduced by 20% (18 * 0.8)
               fontWeight: FontWeight.w600,
@@ -700,7 +713,9 @@ class _InvoiceDemo extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               Text(
-                'Spolu: ${NumberFormat.currency(symbol: '€').format(_calculateTotal(items))}',
+                context.t(AppStr.onboardingTotal, params: {
+                  'amount': NumberFormat.currency(symbol: '€').format(_calculateTotal(items)),
+                }),
                 style: const TextStyle(
                   fontSize: 14.4, // Reduced by 20% (18 * 0.8)
                   fontWeight: FontWeight.w800,
@@ -710,17 +725,17 @@ class _InvoiceDemo extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          const Row(
+          Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.auto_awesome,
                 size: 16,
                 color: BizTheme.slovakBlue,
               ),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Text(
-                'Vygenerované AI pre váš typ podnikania',
-                style: TextStyle(
+                context.t(AppStr.onboardingAiGenerated),
+                style: const TextStyle(
                   fontSize: 12,
                   color: BizTheme.slovakBlue,
                   fontWeight: FontWeight.w500,
@@ -746,10 +761,10 @@ class _FinishContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final features = [
-      {'icon': Icons.document_scanner, 'text': 'AI skenovanie bločkov'},
-      {'icon': Icons.notifications_active, 'text': 'Automatické pripomienky'},
-      {'icon': Icons.analytics, 'text': 'Daňové predpovede'},
-      {'icon': Icons.show_chart, 'text': 'Real-time prehľady'},
+      (icon: Icons.document_scanner, key: AppStr.onboardingFeatureScan),
+      (icon: Icons.notifications_active, key: AppStr.onboardingFeatureReminders),
+      (icon: Icons.analytics, key: AppStr.onboardingFeatureTaxPredict),
+      (icon: Icons.show_chart, key: AppStr.onboardingFeatureRealtime),
     ];
 
     return SingleChildScrollView(
@@ -771,7 +786,7 @@ class _FinishContent extends StatelessWidget {
           ),
           const SizedBox(height: 32),
           Text(
-            'Čo ešte môžete robiť s BizAgent?',
+            context.t(AppStr.onboardingFinishQuestion),
             style: TextStyle(
               fontSize: 12.8, // Reduced by 20% (16 * 0.8)
               color: Colors.grey[700],
@@ -791,7 +806,7 @@ class _FinishContent extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
-                    feature['icon'] as IconData,
+                    feature.icon,
                     color: BizTheme.slovakBlue,
                     size: 20,
                   ),
@@ -799,7 +814,7 @@ class _FinishContent extends StatelessWidget {
                 const SizedBox(width: 16),
                 Expanded(
                   child: Text(
-                    feature['text'] as String,
+                    context.t(feature.key),
                     style: const TextStyle(
                       fontSize: 12.8, // Reduced by 20% (16 * 0.8)
                       fontWeight: FontWeight.w500,
@@ -851,14 +866,14 @@ enum OnboardingStepType {
 }
 
 class ModernOnboardingStep {
-  final String title;
-  final String subtitle;
+  final AppStr titleKey;
+  final AppStr subtitleKey;
   final String? image;
   final OnboardingStepType type;
 
-  ModernOnboardingStep({
-    required this.title,
-    required this.subtitle,
+  const ModernOnboardingStep({
+    required this.titleKey,
+    required this.subtitleKey,
     this.image,
     required this.type,
   });

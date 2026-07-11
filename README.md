@@ -14,12 +14,36 @@ Hosting: Firebase (`gifted-mountain-476207-u4`) s vlastnou doménou `bizagent.sk
 
 ---
 
+## 🤖 Qwen Cloud AI Gateway (Hackathon Track)
+
+BizAgent používa **Qwen Cloud (Alibaba DashScope)** ako primárny AI provider cez Supabase Edge Function `generate-content`. Klient nikdy neobsahuje API kľúče — všetky prompty idú cez autentifikovaný gateway s fallback chainom:
+
+**Qwen Cloud → Mistral AI → Google Gemini**
+
+| Komponent | Cesta |
+|-----------|-------|
+| Edge Function gateway | `supabase/functions/generate-content/index.ts` |
+| Flutter AI klient | `lib/core/services/gemini_service.dart` |
+| BizBot | `lib/features/ai_tools/services/biz_bot_service.dart` |
+| GDPR consent | `lib/features/legal/widgets/ai_consent_dialog.dart` |
+
+**Hackathon submission:** [docs/HACKATHON_SUBMISSION.md](docs/HACKATHON_SUBMISSION.md) — architektúra, demo script (5 min), talking points.
+
+```bash
+# Nasadenie Qwen gateway
+supabase secrets set QWEN_API_KEY=sk-... QWEN_MODEL=qwen-plus AI_PRIMARY=qwen
+supabase functions deploy generate-content
+```
+
+---
+
 ## 📚 Dokumentácia
 
 * **[Google Play Submission Guide](docs/GOOGLE_PLAY_SUBMISSION.md):** Podrobný návod, ako vyplniť formuláre (Data Safety, App Access) v Play Console.
 * **[Privacy Policy Template](docs/PRIVACY_POLICY.md):** Pripravený text pre Zásady ochrany súkromia (potrebné pre Play Store).
 * **[Release Checklist](docs/RELEASE_CHECKLIST.md):** Finálny checklist pred publikovaním.
 * **[Demo Account Setup](docs/DEMO_ACCOUNT_SETUP.md):** Návod na vytvorenie demo účtu pre Google Play review.
+* **[Hackathon Submission (Qwen Cloud)](docs/HACKATHON_SUBMISSION.md):** Architektúra, demo script, kľúčové súbory.
 * **[Testovacia stratégia](docs/TESTING_STRATEGY.md):** Čo testovať a ako.
 * **[Testovanie (TESTING.md)](docs/TESTING.md):** Unit/widget testy, **Demo Mode & AI E2E testy**, golden a performance testy.
 * **[Špecifikácia AI Accountant](docs/AI_ACCOUNTANT_SPEC.md):** Architektúra a požiadavky pre modul AI účtovníka (predikcie, daňové odporúčania, anomálie, chat).
@@ -335,10 +359,12 @@ Súčasné overovanie IČO je napojené na Slovensko.Digital.
 * **QR kódy (PAY by square)** pre slovenské banky.
 * Automatické číslovanie a sledovanie splatnosti.
 
-### 🤖 AI Magic Scan
+### 🤖 AI (Qwen Cloud Gateway)
 
-* Skenovanie bločkov kamerou.
-* Vyčítanie sumy, dátumu a firmy cez Google ML Kit / Gemini.
+* **BizBot** — SK daňové a biznis poradenstvo cez Qwen Cloud.
+* **Autopilot výdavkov** — OCR (ML Kit) + AI kategorizácia a auto-commit.
+* **Generátory** — e-maily, upomienky, DPH asistent.
+* Multi-provider fallback: Qwen → Mistral → Gemini (Supabase Edge Function).
 
 ### 📊 Daňový Teplomer
 

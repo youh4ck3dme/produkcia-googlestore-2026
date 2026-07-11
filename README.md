@@ -33,7 +33,7 @@ Ak máš projekt ako **zip** (napr. `BizAgent_GooglePlay_Release.zip`):
 3. **Nainštaluj závislosti a spusti:**
 
    ```bash
-   cd /cesta/k/priečinku/s/pubspec.yaml
+   cd ~/Projects/02_Products/bizagent   # priečinok, kde leží pubspec.yaml
    flutter pub get
    flutter run -d chrome   # alebo -d android
    ```

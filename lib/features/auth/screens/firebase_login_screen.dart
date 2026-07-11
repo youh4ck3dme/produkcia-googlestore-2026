@@ -27,6 +27,20 @@ class _FirebaseLoginScreenState extends ConsumerState<FirebaseLoginScreen> {
     super.initState();
     // Force light status bar for consistent design
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
+    if (kIsWeb) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _showOAuthCallbackErrorIfAny());
+    }
+  }
+
+  void _showOAuthCallbackErrorIfAny() {
+    final params = Uri.base.queryParameters;
+    final error = params['error_description'] ?? params['error'];
+    if (error == null || error.isEmpty || !mounted) return;
+    _showError(
+      error.contains('access_denied')
+          ? 'Google prihlásenie bolo zrušené'
+          : Uri.decodeComponent(error.replaceAll('+', ' ')),
+    );
   }
 
   @override
@@ -45,12 +59,17 @@ class _FirebaseLoginScreenState extends ConsumerState<FirebaseLoginScreen> {
 
     setState(() => _isLoading = true);
     try {
-      await ref.read(authRepositoryProvider).signIn(
+      final user = await ref.read(authRepositoryProvider).signIn(
             _emailController.text.trim(),
             _passwordController.text,
           );
+      if (user == null && mounted) {
+        _showError('Prihlásenie zlyhalo — skontrolujte email a heslo');
+      }
     } on AuthException catch (e) {
       _showError(_getAuthErrorMessage(e));
+    } on StateError catch (e) {
+      _showError(e.message);
     } catch (e) {
       _showError('Došlo k chybe. Skúste znovu');
     } finally {

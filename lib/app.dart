@@ -5,6 +5,7 @@ import 'core/providers/theme_provider.dart';
 import 'core/router/app_router.dart';
 import 'core/config/play_release_scope.dart';
 import 'core/i18n/l10n.dart';
+import 'core/services/initialization_service.dart';
 import 'core/services/review_service.dart';
 import 'features/notifications/services/notification_service.dart';
 import 'features/notifications/services/notification_scheduler.dart';
@@ -28,6 +29,9 @@ class _BizAgentAppState extends ConsumerState<BizAgentApp> {
   }
 
   void _initializeServices() {
+    // Router redirect na /dashboard vyžaduje init.isCompleted == true.
+    ref.read(initializationServiceProvider.notifier).initializeApp();
+
     ref.read(reviewServiceProvider).monitorMilestones();
 
     if (!PlayReleaseScope.showBackgroundMonitoring) return;
@@ -45,7 +49,7 @@ class _BizAgentAppState extends ConsumerState<BizAgentApp> {
   @override
   Widget build(BuildContext context) {
     ref.listen(authStateProvider, (previous, next) {
-      if (next.valueOrNull == null && previous?.valueOrNull != null) {
+      if (next.value == null && previous?.value != null) {
         ref.read(localPersistenceServiceProvider).clearAll();
       }
     });

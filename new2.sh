@@ -1,0 +1,1 @@
+keytool -export -rfc -alias bizagent-upload -file upload_certificate.pem -keystore android/app/upload-keystore.jks

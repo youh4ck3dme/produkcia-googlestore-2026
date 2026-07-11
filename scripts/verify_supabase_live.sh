@@ -66,11 +66,43 @@ auth_sign_in() {
   http=$(echo "$resp" | tail -n1)
   body=$(echo "$resp" | sed '$d')
   if [[ "$http" != "200" ]]; then
-    echo "Auth failed for $user_email HTTP $http"
-    echo "$body"
+    echo "Auth failed for $user_email HTTP $http" >&2
+    echo "$body" >&2
     return 1
   fi
   echo "$body"
+}
+
+sync_test_user_password() {
+  local user_email=$1 user_password=$2
+  [[ -n "$SERVICE_KEY" ]] || return 1
+
+  local user_id http
+  user_id=$(curl -sS "$URL/auth/v1/admin/users?email=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$user_email'))")" \
+    -H "apikey: $SERVICE_KEY" \
+    -H "Authorization: Bearer $SERVICE_KEY" | python3 -c "
+import json,sys
+data=json.load(sys.stdin)
+users=data.get('users') or []
+print(users[0]['id'] if users else '')
+")
+
+  if [[ -z "$user_id" ]]; then
+    http=$(curl -sS -o /dev/null -w "%{http_code}" -X POST "$URL/auth/v1/admin/users" \
+      -H "apikey: $SERVICE_KEY" \
+      -H "Authorization: Bearer $SERVICE_KEY" \
+      -H "Content-Type: application/json" \
+      -d "{\"email\":\"$user_email\",\"password\":\"$user_password\",\"email_confirm\":true}")
+    [[ "$http" == "200" || "$http" == "201" ]]
+    return
+  fi
+
+  http=$(curl -sS -o /dev/null -w "%{http_code}" -X PUT "$URL/auth/v1/admin/users/$user_id" \
+    -H "apikey: $SERVICE_KEY" \
+    -H "Authorization: Bearer $SERVICE_KEY" \
+    -H "Content-Type: application/json" \
+    -d "{\"password\":\"$user_password\",\"email_confirm\":true}")
+  [[ "$http" == "200" ]]
 }
 
 ensure_user_b() {
@@ -106,7 +138,14 @@ print(users[0]['id'] if users else '')
 }
 
 echo "==> Auth sign-in ($EMAIL)"
-BODY_A=$(auth_sign_in "$EMAIL" "$PASSWORD")
+if [[ -n "$SERVICE_KEY" ]]; then
+  sync_test_user_password "$EMAIL" "$PASSWORD" || true
+fi
+if ! BODY_A=$(auth_sign_in "$EMAIL" "$PASSWORD"); then
+  echo "==> Re-sync CI test user password and retry auth"
+  sync_test_user_password "$EMAIL" "$PASSWORD"
+  BODY_A=$(auth_sign_in "$EMAIL" "$PASSWORD")
+fi
 ACCESS_TOKEN=$(echo "$BODY_A" | python3 -c "import json,sys; print(json.load(sys.stdin)['access_token'])")
 USER_ID=$(echo "$BODY_A" | python3 -c "import json,sys; print(json.load(sys.stdin)['user']['id'])")
 echo "Signed in as $USER_ID"

@@ -3,23 +3,23 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>542280140779-fnbgni0vvqb9dgpl6q4k64p6s91s6jdi.apps.googleusercontent.com</string>
+	<string>90348815049-lh9qppoqpadudei1sgp3di4450jbsin7.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.542280140779-fnbgni0vvqb9dgpl6q4k64p6s91s6jdi</string>
+	<string>com.googleusercontent.apps.90348815049-lh9qppoqpadudei1sgp3di4450jbsin7</string>
 	<key>ANDROID_CLIENT_ID</key>
-	<string>542280140779-ufndcfmo3kjv4p8jjj6pq2fretjhosue.apps.googleusercontent.com</string>
+	<string>90348815049-fus1nbf4491k33a2uean2mcehqb8pndo.apps.googleusercontent.com</string>
 	<key>API_KEY</key>
-	<string>AIzaSyCa8SnnqrxMkJPpKNcZ04v7hKBs-mLN3wM</string>
+	<string>AIzaSyDIcKfpjs0bidW7XSwVKRybBGrnmwjL0_0</string>
 	<key>GCM_SENDER_ID</key>
-	<string>542280140779</string>
+	<string>90348815049</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
 	<string>com.bizagent.bizagent</string>
 	<key>PROJECT_ID</key>
-	<string>bizagent-live-2026</string>
+	<string>gifted-mountain-476207-u4</string>
 	<key>STORAGE_BUCKET</key>
-	<string>bizagent-live-2026.firebasestorage.app</string>
+	<string>gifted-mountain-476207-u4.firebasestorage.app</string>
 	<key>IS_ADS_ENABLED</key>
 	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
@@ -31,6 +31,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:542280140779:ios:5536609225fab278373bae</string>
+	<string>1:90348815049:ios:a4b5f12ee73618f1d54318</string>
 </dict>
 </plist>

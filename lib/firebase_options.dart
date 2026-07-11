@@ -42,11 +42,12 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyCa8SnnqrxMkJPpKNcZ04v7hKBs-mLN3wM',
-    appId: '1:542280140779:ios:5536609225fab278373bae',
-    messagingSenderId: '542280140779',
-    projectId: 'bizagent-live-2026',
-    storageBucket: 'bizagent-live-2026.firebasestorage.app',
+    apiKey: 'AIzaSyDIcKfpjs0bidW7XSwVKRybBGrnmwjL0_0',
+    appId: '1:90348815049:ios:a4b5f12ee73618f1d54318',
+    messagingSenderId: '90348815049',
+    projectId: 'gifted-mountain-476207-u4',
+    storageBucket: 'gifted-mountain-476207-u4.firebasestorage.app',
+    iosBundleId: 'com.bizagent.bizagent',
   );
 
   static const FirebaseOptions web = FirebaseOptions(

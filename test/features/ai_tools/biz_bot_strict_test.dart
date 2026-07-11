@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:bizagent/core/i18n/l10n.dart';
 import 'package:bizagent/features/ai_tools/screens/biz_bot_screen.dart';
 import 'package:bizagent/features/ai_tools/services/biz_bot_service.dart';
 import 'package:bizagent/features/ai_tools/providers/bizbot_history_provider.dart';
@@ -52,14 +53,17 @@ void main() {
         authStateProvider.overrideWith((ref) => Stream.value(fakeUser)),
         bizBotHistoryRepositoryProvider.overrideWithValue(FakeBizBotHistoryRepository()),
         billingProvider.overrideWith(
-          (ref) => BillingService.forTest(
+          () => BillingService.forTest(
             const BillingState(entitlements: UserEntitlements(isPro: true)),
             testLimiter,
           ),
         ),
       ],
       child: const MaterialApp(
-        home: BizBotScreen(),
+        home: L10n(
+          locale: AppLocale.sk,
+          child: BizBotScreen(),
+        ),
       ),
     );
   }

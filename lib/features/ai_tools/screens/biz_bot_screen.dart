@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../core/i18n/app_strings.dart';
+import '../../../core/i18n/l10n.dart';
 import '../../../core/supabase/supabase_config.dart';
 import '../services/biz_bot_service.dart';
 import '../../../core/ui/biz_theme.dart';
@@ -8,6 +10,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../auth/providers/auth_repository.dart';
 import '../models/bizbot_message.dart';
 import '../providers/bizbot_history_provider.dart';
+import '../../billing/billing_service.dart';
 import '../../billing/subscription_guard.dart';
 import '../../billing/paywall_flow.dart';
 
@@ -31,7 +34,7 @@ class _BizBotScreenState extends ConsumerState<BizBotScreen> {
 
     // Scroll to bottom when Firestore stream updates.
     _messagesSub = ref.listenManual<AsyncValue<List<BizBotMessage>>>(bizBotMessagesProvider, (_, next) {
-      final msgs = next.valueOrNull;
+      final msgs = next.value;
       if (msgs == null) return;
       if (msgs.length == _lastMessageCount) return;
       _lastMessageCount = msgs.length;
@@ -63,10 +66,10 @@ class _BizBotScreenState extends ConsumerState<BizBotScreen> {
     final text = _controller.text.trim();
     if (text.isEmpty || _isLoading) return;
 
-    final user = ref.read(authStateProvider).valueOrNull;
+    final user = ref.read(authStateProvider).value;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Na chat je potrebné byť prihlásený.')),
+        SnackBar(content: Text(context.t(AppStr.bizBotAuthRequired))),
       );
       return;
     }
@@ -93,15 +96,16 @@ class _BizBotScreenState extends ConsumerState<BizBotScreen> {
     try {
       final response = await ref.read(bizBotServiceProvider).ask(question);
       await repo.addMessage(uid: uid, text: response, isUser: false);
+      await ref.read(billingProvider.notifier).recordAiRequest();
     } catch (e) {
       final lower = e.toString().toLowerCase();
-      String errorMessage = 'AI je dočasne nedostupné. Skúste to o chvíľu znova.';
+      String errorMessage = context.t(AppStr.bizBotErrorGeneric);
       if (e.toString().contains('API kľúč') || lower.contains('permission')) {
-        errorMessage = 'Chyba API kľúča AI služby. Kontaktujte podporu.';
+        errorMessage = context.t(AppStr.bizBotErrorApiKey);
       } else if (lower.contains('quota') || lower.contains('resource-exhausted')) {
-        errorMessage = 'Dosiahli ste denný limit bezplatných dopytov. Skúste neskôr.';
+        errorMessage = context.t(AppStr.bizBotErrorQuota);
       } else if (lower.contains('network') || lower.contains('clientexception') || lower.contains('unavailable')) {
-        errorMessage = 'Sieťová chyba. Skontrolujte pripojenie na internet.';
+        errorMessage = context.t(AppStr.bizBotErrorNetwork);
       }
 
       await repo.addMessage(uid: uid, text: errorMessage, isUser: false);
@@ -109,9 +113,9 @@ class _BizBotScreenState extends ConsumerState<BizBotScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('AI dočasne nedostupné.'),
+            content: Text(context.t(AppStr.bizBotUnavailable)),
             action: SnackBarAction(
-              label: 'Skúsiť znova',
+              label: context.t(AppStr.retry),
               onPressed: () => _askAndStore(uid, question),
             ),
           ),
@@ -141,8 +145,8 @@ class _BizBotScreenState extends ConsumerState<BizBotScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('BizBot', style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold)),
-                const Text('AI Asistent', style: TextStyle(fontSize: 12, color: Colors.green)),
+                Text(context.t(AppStr.bizBotTitle), style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text(context.t(AppStr.bizBotSubtitle), style: const TextStyle(fontSize: 12, color: Colors.green)),
               ],
             ),
           ],
@@ -151,7 +155,7 @@ class _BizBotScreenState extends ConsumerState<BizBotScreen> {
           IconButton(
             icon: const Icon(Icons.delete_sweep_outlined),
             onPressed: () async {
-              final user = ref.read(authStateProvider).valueOrNull;
+              final user = ref.read(authStateProvider).value;
               if (user == null) return;
               await ref.read(bizBotHistoryRepositoryProvider).clearThread(user.id);
             },
@@ -165,9 +169,9 @@ class _BizBotScreenState extends ConsumerState<BizBotScreen> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             color: Colors.amber.withValues(alpha: 0.1),
-            child: const Text(
-              'ℹ️ Odpovede AI sú iba informatívne a nenahrádzajú účtovné, daňové ani právne poradenstvo.',
-              style: TextStyle(fontSize: 11, color: Colors.black54),
+            child: Text(
+              context.t(AppStr.bizBotDisclaimer),
+              style: const TextStyle(fontSize: 11, color: Colors.black54),
               textAlign: TextAlign.center,
             ),
           ),
@@ -177,7 +181,7 @@ class _BizBotScreenState extends ConsumerState<BizBotScreen> {
               loading: () => _buildMessagesList(const <BizBotMessage>[]),
               error: (e, _) => _buildMessagesList(
                 const <BizBotMessage>[],
-                errorText: 'Nepodarilo sa načítať históriu chatu.',
+                errorText: context.t(AppStr.bizBotHistoryError),
               ),
             ),
           ),
@@ -197,7 +201,7 @@ class _BizBotScreenState extends ConsumerState<BizBotScreen> {
         ? <BizBotMessage>[
             BizBotMessage(
               id: 'welcome',
-              text: 'Ahoj! Som tvoj BizAgent asistent. Ako ti môžem dnes pomôcť s tvojím podnikaním?',
+              text: context.t(AppStr.bizBotWelcome),
               isUser: false,
               createdAt: DateTime.fromMillisecondsSinceEpoch(0),
             ),
@@ -279,12 +283,13 @@ class _BizBotScreenState extends ConsumerState<BizBotScreen> {
             padding: const EdgeInsets.only(left: 4, top: 2),
             child: GestureDetector(
               onTap: () => _reportMessage(msg),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.flag_outlined, size: 14, color: Colors.grey),
-                  SizedBox(width: 4),
-                  Text('Nahlásiť', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                  const Icon(Icons.flag_outlined, size: 14, color: Colors.grey),
+                  const SizedBox(width: 4),
+                  Text(context.t(AppStr.bizBotReport),
+                      style: const TextStyle(fontSize: 11, color: Colors.grey)),
                 ],
               ),
             ),
@@ -297,22 +302,22 @@ class _BizBotScreenState extends ConsumerState<BizBotScreen> {
   }
 
   Future<void> _reportMessage(BizBotMessage msg) async {
-    final user = ref.read(authStateProvider).valueOrNull;
+    final user = ref.read(authStateProvider).value;
     if (user == null) return;
 
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Nahlásiť odpoveď AI'),
-        content: const Text('Chcete nahlásiť túto odpoveď ako nesprávnu alebo nevhodnú?'),
+      builder: (dialogContext) => AlertDialog(
+        title: Text(dialogContext.t(AppStr.bizBotReportTitle)),
+        content: Text(dialogContext.t(AppStr.bizBotReportBody)),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Zrušiť'),
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(dialogContext.t(AppStr.cancel)),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Nahlásiť'),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(dialogContext.t(AppStr.bizBotReport)),
           ),
         ],
       ),
@@ -330,13 +335,13 @@ class _BizBotScreenState extends ConsumerState<BizBotScreen> {
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Ďakujeme za nahlásenie. Budeme sa tým zaoberať.')),
+          SnackBar(content: Text(context.t(AppStr.bizBotReportThanks))),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Nepodarilo sa odoslať nahlásenie.')),
+          SnackBar(content: Text(context.t(AppStr.bizBotReportFailed))),
         );
       }
     }
@@ -371,7 +376,7 @@ class _BizBotScreenState extends ConsumerState<BizBotScreen> {
                   onSubmitted: (_) => _sendMessage(),
                   style: const TextStyle(fontSize: 15),
                   decoration: InputDecoration(
-                    hintText: 'Opýtaj sa na účtovníctvo...',
+                    hintText: context.t(AppStr.bizBotInputHint),
                     hintStyle: TextStyle(color: Colors.grey[500]),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),

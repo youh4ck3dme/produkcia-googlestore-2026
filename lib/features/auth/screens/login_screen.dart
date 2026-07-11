@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../shared/widgets/biz_fullscreen_loader.dart';
 import '../providers/auth_provider.dart';
+import '../../../core/i18n/app_strings.dart';
+import '../../../core/i18n/l10n.dart';
 import '../../../core/ui/biz_theme.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -65,7 +67,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       const SizedBox(height: 32),
                       Text(
-                        _isLogin ? 'Vitajte späť' : 'Vytvoriť účet',
+                        _isLogin
+                            ? context.t(AppStr.authWelcomeBack)
+                            : context.t(AppStr.authCreateAccount),
                         textAlign: TextAlign.center,
                         style: GoogleFonts.outfit(
                           fontSize: 28,
@@ -80,7 +84,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         keyboardType: TextInputType.emailAddress,
                         autofillHints: const [AutofillHints.email],
                         decoration: InputDecoration(
-                          labelText: 'Email',
+                          labelText: context.t(AppStr.authEmail),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -88,7 +92,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                         validator: (value) {
                           if (value == null || !value.contains('@')) {
-                            return 'Zadajte platný email';
+                            return context.t(AppStr.authInvalidEmail);
                           }
                           return null;
                         },
@@ -101,7 +105,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         obscureText: true,
                         autofillHints: const [AutofillHints.password],
                         decoration: InputDecoration(
-                          labelText: 'Heslo',
+                          labelText: context.t(AppStr.authPassword),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -109,7 +113,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                         validator: (value) {
                           if (value == null || value.length < 6) {
-                            return 'Heslo musí mať aspoň 6 znakov';
+                            return context.t(AppStr.authPasswordMinLength);
                           }
                           return null;
                         },
@@ -130,7 +134,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                         ),
                         child: Text(
-                          _isLogin ? 'Prihlásiť sa' : 'Registrovať',
+                          _isLogin
+                              ? context.t(AppStr.authSignIn)
+                              : context.t(AppStr.authSignUp),
                           style: const TextStyle(fontSize: 16),
                         ),
                       ),
@@ -172,8 +178,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               },
                         child: Text(
                           _isLogin
-                              ? 'Nemáte účet? Registrujte sa'
-                              : 'Už máte účet? Prihláste sa',
+                              ? context.t(AppStr.authNoAccount)
+                              : context.t(AppStr.authHasAccount),
                         ),
                       ),
                     ],
@@ -183,7 +189,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
           ),
           if (authState.isLoading)
-            const BizFullscreenLoader(label: 'Spracovávam...'),
+            BizFullscreenLoader(label: context.t(AppStr.authProcessing)),
         ],
       ),
     );

@@ -105,7 +105,7 @@ class _CategorySelectorState extends State<CategorySelector> {
                   ),
                 ),
                 Text(
-                  category.displayName,
+                  category.label(context),
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -287,7 +287,7 @@ class _CategorySelectorState extends State<CategorySelector> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    category.displayName,
+                    category.label(context),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 11,

@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show AuthException;
+import '../../../core/i18n/app_strings.dart';
+import '../../../core/i18n/l10n.dart';
 import '../../../core/supabase/supabase_config.dart';
 import '../../../core/ui/biz_theme.dart';
 import '../providers/auth_repository.dart';
@@ -38,7 +40,7 @@ class _FirebaseLoginScreenState extends ConsumerState<FirebaseLoginScreen> {
     if (error == null || error.isEmpty || !mounted) return;
     _showError(
       error.contains('access_denied')
-          ? 'Google prihlásenie bolo zrušené'
+          ? context.t(AppStr.authGoogleCancelled)
           : Uri.decodeComponent(error.replaceAll('+', ' ')),
     );
   }
@@ -53,7 +55,7 @@ class _FirebaseLoginScreenState extends ConsumerState<FirebaseLoginScreen> {
 
   Future<void> _signInWithEmail() async {
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      _showError('Vyplňte všetky polia');
+      _showError(context.t(AppStr.authFillAllFields));
       return;
     }
 
@@ -64,14 +66,14 @@ class _FirebaseLoginScreenState extends ConsumerState<FirebaseLoginScreen> {
             _passwordController.text,
           );
       if (user == null && mounted) {
-        _showError('Prihlásenie zlyhalo — skontrolujte email a heslo');
+        _showError(context.t(AppStr.authSignInFailed));
       }
     } on AuthException catch (e) {
       _showError(_getAuthErrorMessage(e));
     } on StateError catch (e) {
       _showError(e.message);
     } catch (e) {
-      _showError('Došlo k chybe. Skúste znovu');
+      _showError(context.t(AppStr.authErrorGeneric));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -83,7 +85,7 @@ class _FirebaseLoginScreenState extends ConsumerState<FirebaseLoginScreen> {
 
   Future<void> _signInWithGoogle() async {
     if (!_googleSignInAvailable) {
-      _showError('Google prihlásenie nie je nakonfigurované');
+      _showError(context.t(AppStr.authGoogleNotConfigured));
       return;
     }
 
@@ -93,7 +95,7 @@ class _FirebaseLoginScreenState extends ConsumerState<FirebaseLoginScreen> {
     } on AuthException catch (e) {
       _showError(_getAuthErrorMessage(e));
     } catch (e) {
-      _showError('Google prihlásenie zlyhalo. Skúste znova.');
+      _showError(context.t(AppStr.authGoogleFailed));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -101,17 +103,17 @@ class _FirebaseLoginScreenState extends ConsumerState<FirebaseLoginScreen> {
 
   Future<void> _signUpWithEmail() async {
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      _showError('Vyplňte všetky polia');
+      _showError(context.t(AppStr.authFillAllFields));
       return;
     }
 
     if (_passwordController.text != _confirmPasswordController.text) {
-      _showError('Heslá sa nezhodujú');
+      _showError(context.t(AppStr.authPasswordMismatch));
       return;
     }
 
     if (_passwordController.text.length < 6) {
-      _showError('Heslo musí mať aspoň 6 znakov');
+      _showError(context.t(AppStr.authPasswordMinLength));
       return;
     }
 
@@ -124,7 +126,7 @@ class _FirebaseLoginScreenState extends ConsumerState<FirebaseLoginScreen> {
     } on AuthException catch (e) {
       _showError(_getAuthErrorMessage(e));
     } catch (e) {
-      _showError('Došlo k chybe. Skúste znovu');
+      _showError(context.t(AppStr.authErrorGeneric));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -142,27 +144,27 @@ class _FirebaseLoginScreenState extends ConsumerState<FirebaseLoginScreen> {
   String _getAuthErrorMessage(AuthException e) {
     final msg = e.message.toLowerCase();
     if (msg.contains('invalid login') || msg.contains('invalid credentials')) {
-      return 'Nesprávny email alebo heslo';
+      return context.t(AppStr.authWrongCredentials);
     }
     if (msg.contains('already registered') || msg.contains('already exists')) {
-      return 'Tento email je už registrovaný';
+      return context.t(AppStr.authEmailRegistered);
     }
     if (msg.contains('password') && msg.contains('weak')) {
-      return 'Heslo je príliš slabé';
+      return context.t(AppStr.authWeakPassword);
     }
     if (msg.contains('password') && (msg.contains('least') || msg.contains('6'))) {
-      return 'Heslo musí mať aspoň 6 znakov';
+      return context.t(AppStr.authPasswordMinLength);
     }
     if (msg.contains('email') && msg.contains('valid')) {
-      return 'Neplatný email';
+      return context.t(AppStr.authInvalidEmail);
     }
     if (msg.contains('confirm') || msg.contains('not confirmed')) {
-      return 'Potvrďte email kliknutím na odkaz v doručenej pošte';
+      return context.t(AppStr.authConfirmEmail);
     }
     if (msg.contains('rate') || msg.contains('too many')) {
-      return 'Príliš veľa pokusov. Skúste neskôr';
+      return context.t(AppStr.authRateLimited);
     }
-    return e.message.isNotEmpty ? e.message : 'Došlo k chybe. Skúste znovu';
+    return e.message.isNotEmpty ? e.message : context.t(AppStr.authErrorGeneric);
   }
 
   @override
@@ -238,8 +240,8 @@ class _FirebaseLoginScreenState extends ConsumerState<FirebaseLoginScreen> {
                     // Subtitle
                     Text(
                       _isSignIn
-                          ? 'Vitajte späť!\nPrihláste sa do svojho účtu'
-                          : 'Začnite svoju\npodnikateľskú cestu',
+                          ? context.t(AppStr.authSignInSubtitle)
+                          : context.t(AppStr.authSignUpSubtitle),
                       textAlign: TextAlign.center,
                       style: GoogleFonts.inter(
                         fontSize: 12.8, // Reduced by 20% (16 * 0.8)
@@ -256,7 +258,7 @@ class _FirebaseLoginScreenState extends ConsumerState<FirebaseLoginScreen> {
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
                       decoration: InputDecoration(
-                        labelText: 'Email',
+                        labelText: context.t(AppStr.authEmail),
                         prefixIcon: const Icon(Icons.email_outlined),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -273,7 +275,7 @@ class _FirebaseLoginScreenState extends ConsumerState<FirebaseLoginScreen> {
                       controller: _passwordController,
                       obscureText: true,
                       decoration: InputDecoration(
-                        labelText: 'Heslo',
+                        labelText: context.t(AppStr.authPassword),
                         prefixIcon: const Icon(Icons.lock_outlined),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -290,7 +292,7 @@ class _FirebaseLoginScreenState extends ConsumerState<FirebaseLoginScreen> {
                         controller: _confirmPasswordController,
                         obscureText: true,
                         decoration: InputDecoration(
-                          labelText: 'Potvrďte heslo',
+                          labelText: context.t(AppStr.authConfirmPassword),
                           prefixIcon: const Icon(Icons.lock_reset_outlined),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -330,7 +332,7 @@ class _FirebaseLoginScreenState extends ConsumerState<FirebaseLoginScreen> {
                             ),
                           ),
                           label: Text(
-                            'Prihlásiť sa cez Google',
+                            context.t(AppStr.authGoogleSignIn),
                             style: GoogleFonts.inter(
                               fontSize: 12.8,
                               fontWeight: FontWeight.w600,
@@ -349,7 +351,7 @@ class _FirebaseLoginScreenState extends ConsumerState<FirebaseLoginScreen> {
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 12),
                             child: Text(
-                              'alebo emailom',
+                              context.t(AppStr.authOrEmail),
                               style: GoogleFonts.inter(
                                 fontSize: 11,
                                 color: const Color(0xFF9CA3AF),
@@ -391,7 +393,9 @@ class _FirebaseLoginScreenState extends ConsumerState<FirebaseLoginScreen> {
                                 ),
                               )
                             : Text(
-                                _isSignIn ? 'Prihlásiť sa' : 'Vytvoriť účet',
+                                _isSignIn
+                                    ? context.t(AppStr.authSignIn)
+                                    : context.t(AppStr.authCreateAccount),
                                 style: GoogleFonts.inter(
                                   fontSize: 12.8, // Reduced by 20% (16 * 0.8)
                                   fontWeight: FontWeight.w600,
@@ -407,8 +411,8 @@ class _FirebaseLoginScreenState extends ConsumerState<FirebaseLoginScreen> {
                       onPressed: () => setState(() => _isSignIn = !_isSignIn),
                       child: Text(
                         _isSignIn
-                            ? 'Nemáte účet? Vytvorte si ho'
-                            : 'Už máte účet? Prihláste sa',
+                            ? context.t(AppStr.authNoAccountCreate)
+                            : context.t(AppStr.authHasAccountSignIn),
                         style: GoogleFonts.inter(
                           color: BizTheme.slovakBlue,
                           fontWeight: FontWeight.w500,
@@ -420,7 +424,7 @@ class _FirebaseLoginScreenState extends ConsumerState<FirebaseLoginScreen> {
 
                     // Terms
                     Text(
-                      'Používaním aplikácie súhlasíte s našimi podmienkami používania.',
+                      context.t(AppStr.authTermsAgree),
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.grey.withValues(alpha: 0.6),
@@ -457,7 +461,7 @@ class _FirebaseLoginScreenState extends ConsumerState<FirebaseLoginScreen> {
                   const Icon(Icons.star_rounded, color: Colors.white, size: 16),
                   const SizedBox(width: 4),
                   Text(
-                    "7 Dní Zdarma",
+                    context.t(AppStr.authFreeTrialBadge),
                     style: GoogleFonts.inter(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,

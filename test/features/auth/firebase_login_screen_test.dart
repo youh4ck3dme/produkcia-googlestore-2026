@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:bizagent/core/i18n/l10n.dart';
 import 'package:bizagent/core/ui/biz_theme.dart';
 import 'package:bizagent/features/auth/providers/auth_repository.dart';
 import 'package:bizagent/features/auth/screens/firebase_login_screen.dart';
@@ -28,7 +29,10 @@ void main() {
         ],
         child: MaterialApp(
           theme: BizTheme.light(),
-          home: const FirebaseLoginScreen(),
+          home: const L10n(
+            locale: AppLocale.sk,
+            child: FirebaseLoginScreen(),
+          ),
         ),
       ),
       physicalSize: const Size(390, 844),
@@ -52,7 +56,10 @@ void main() {
         ],
         child: MaterialApp(
           theme: BizTheme.light(),
-          home: const FirebaseLoginScreen(),
+          home: const L10n(
+            locale: AppLocale.sk,
+            child: FirebaseLoginScreen(),
+          ),
         ),
       ),
       physicalSize: const Size(390, 844),

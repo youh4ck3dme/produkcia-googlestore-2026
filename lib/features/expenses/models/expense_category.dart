@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/i18n/app_strings.dart';
+import '../../../core/i18n/l10n.dart';
+
 /// Kategórie výdavkov pre BizAgent
 /// Obsahuje 30+ kategórií prispôsobených pre slovenský trh
 enum ExpenseCategory {
@@ -60,9 +63,53 @@ enum ExpenseCategory {
   other, // Ostatné
 }
 
+const _l10nKeys = <ExpenseCategory, AppStr>{
+  ExpenseCategory.fuel: AppStr.expenseCatFuel,
+  ExpenseCategory.parking: AppStr.expenseCatParking,
+  ExpenseCategory.carMaintenance: AppStr.expenseCatCarMaintenance,
+  ExpenseCategory.carWash: AppStr.expenseCatCarWash,
+  ExpenseCategory.toll: AppStr.expenseCatToll,
+  ExpenseCategory.taxi: AppStr.expenseCatTaxi,
+  ExpenseCategory.officeSupplies: AppStr.expenseCatOfficeSupplies,
+  ExpenseCategory.software: AppStr.expenseCatSoftware,
+  ExpenseCategory.equipment: AppStr.expenseCatEquipment,
+  ExpenseCategory.furniture: AppStr.expenseCatFurniture,
+  ExpenseCategory.phone: AppStr.expenseCatPhone,
+  ExpenseCategory.internet: AppStr.expenseCatInternet,
+  ExpenseCategory.postage: AppStr.expenseCatPostage,
+  ExpenseCategory.accommodation: AppStr.expenseCatAccommodation,
+  ExpenseCategory.meals: AppStr.expenseCatMeals,
+  ExpenseCategory.flights: AppStr.expenseCatFlights,
+  ExpenseCategory.trainTickets: AppStr.expenseCatTrainTickets,
+  ExpenseCategory.publicTransport: AppStr.expenseCatPublicTransport,
+  ExpenseCategory.healthInsurance: AppStr.expenseCatHealthInsurance,
+  ExpenseCategory.carInsurance: AppStr.expenseCatCarInsurance,
+  ExpenseCategory.liabilityInsurance: AppStr.expenseCatLiabilityInsurance,
+  ExpenseCategory.accounting: AppStr.expenseCatAccounting,
+  ExpenseCategory.legal: AppStr.expenseCatLegal,
+  ExpenseCategory.marketing: AppStr.expenseCatMarketing,
+  ExpenseCategory.consulting: AppStr.expenseCatConsulting,
+  ExpenseCategory.rent: AppStr.expenseCatRent,
+  ExpenseCategory.electricity: AppStr.expenseCatElectricity,
+  ExpenseCategory.water: AppStr.expenseCatWater,
+  ExpenseCategory.heating: AppStr.expenseCatHeating,
+  ExpenseCategory.training: AppStr.expenseCatTraining,
+  ExpenseCategory.books: AppStr.expenseCatBooks,
+  ExpenseCategory.courses: AppStr.expenseCatCourses,
+  ExpenseCategory.clientMeals: AppStr.expenseCatClientMeals,
+  ExpenseCategory.gifts: AppStr.expenseCatGifts,
+  ExpenseCategory.bankFees: AppStr.expenseCatBankFees,
+  ExpenseCategory.other: AppStr.expenseCatOther,
+};
+
 /// Extension pre ExpenseCategory s helper metódami
 extension ExpenseCategoryExtension on ExpenseCategory {
-  /// Slovenský názov kategórie
+  AppStr get l10nKey => _l10nKeys[this]!;
+
+  /// Lokalizovaný názov kategórie (preferovať v UI).
+  String label(BuildContext context) => context.t(l10nKey);
+
+  /// Slovenský názov kategórie (pre služby bez BuildContext).
   String get displayName {
     switch (this) {
       // Doprava

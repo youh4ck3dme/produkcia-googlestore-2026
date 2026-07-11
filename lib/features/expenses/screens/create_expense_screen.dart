@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import '../../../core/config/play_release_scope.dart';
+import '../../../core/i18n/app_strings.dart';
+import '../../../core/i18n/l10n.dart';
 import '../../../core/services/ocr_service.dart';
 import '../../../core/services/expense_autopilot_service.dart';
 
@@ -87,8 +89,8 @@ class _CreateExpenseScreenState extends ConsumerState<CreateExpenseScreen> {
     BizSnackbar.showInfo(
       context,
       PlayReleaseScope.showExpenseAiBranding
-          ? 'Autopilot spracúva bloček (AI)...'
-          : 'Autopilot spracúva bloček...',
+          ? context.t(AppStr.expenseAutopilotProcessingAi)
+          : context.t(AppStr.expenseAutopilotProcessing),
     );
 
     final autopilot = ref.read(expenseAutopilotServiceProvider);
@@ -102,7 +104,7 @@ class _CreateExpenseScreenState extends ConsumerState<CreateExpenseScreen> {
     final expense = pipeline.expense;
     if (expense == null) {
       _prefillFromOcr(ocrResult);
-      BizSnackbar.showError(context, 'Autopilot nedokázal spracovať bloček');
+      BizSnackbar.showError(context, context.t(AppStr.expenseAutopilotFailed));
       return;
     }
 
@@ -114,7 +116,9 @@ class _CreateExpenseScreenState extends ConsumerState<CreateExpenseScreen> {
           );
       BizSnackbar.showSuccess(
         context,
-        'Autopilot uložil výdavok (${expense.amount.toStringAsFixed(2)} €)',
+        context.t(AppStr.expenseAutopilotSaved, params: {
+          'amount': expense.amount.toStringAsFixed(2),
+        }),
       );
       Navigator.pop(context);
       return;
@@ -133,7 +137,9 @@ class _CreateExpenseScreenState extends ConsumerState<CreateExpenseScreen> {
 
     BizSnackbar.showInfo(
       context,
-      'Výdavok čaká na vaše potvrdenie (${pipeline.reviewReasons.join(', ')})',
+      context.t(AppStr.expenseAwaitingConfirm, params: {
+        'reasons': pipeline.reviewReasons.join(', '),
+      }),
     );
   }
 
@@ -298,12 +304,13 @@ class _CreateExpenseScreenState extends ConsumerState<CreateExpenseScreen> {
 
       if (mounted) {
         // Show success snackbar instead of dialog for better flow
-        BizSnackbar.showSuccess(context, 'Výdavok úspešne pridaný!');
+        BizSnackbar.showSuccess(context, context.t(AppStr.expenseAddedToast));
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
-        BizSnackbar.showError(context, 'Chyba: $e');
+        BizSnackbar.showError(context, context.t(AppStr.expenseError,
+            params: {'error': '$e'}));
       }
     } finally {
       if (mounted) {
@@ -318,7 +325,7 @@ class _CreateExpenseScreenState extends ConsumerState<CreateExpenseScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Nový výdavok'),
+        title: Text(context.t(AppStr.expenseCreateTitle)),
         actions: [
           IconButton(
             onPressed: _isSaving ? null : _saveExpense,
@@ -383,8 +390,8 @@ class _CreateExpenseScreenState extends ConsumerState<CreateExpenseScreen> {
                         onPressed: _scanReceipt,
                         icon: const Icon(Icons.refresh,
                             color: Colors.white, size: 16),
-                        label: const Text('Preskenovať',
-                            style: TextStyle(color: Colors.white)),
+                        label: Text(context.t(AppStr.expenseRescan),
+                            style: const TextStyle(color: Colors.white)),
                         style: TextButton.styleFrom(
                           backgroundColor: Colors.white.withValues(alpha: 0.2),
                         ),
@@ -409,15 +416,15 @@ class _CreateExpenseScreenState extends ConsumerState<CreateExpenseScreen> {
                             ),
                           ],
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.auto_awesome,
+                            const Icon(Icons.auto_awesome,
                                 color: Colors.amber, size: 14),
-                            SizedBox(width: 6),
+                            const SizedBox(width: 6),
                             Text(
-                              'Gemini AI',
-                              style: TextStyle(
+                              context.t(AppStr.expenseGeminiAi),
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 12,
@@ -437,7 +444,7 @@ class _CreateExpenseScreenState extends ConsumerState<CreateExpenseScreen> {
                 child: ElevatedButton.icon(
                   onPressed: null,
                   icon: const Icon(Icons.camera_alt),
-                  label: const Text('OCR skenovanie je dostupné v Android aplikácii.'),
+                  label: Text(context.t(AppStr.expenseOcrAndroidOnly)),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 24),
                     shape: RoundedRectangleBorder(
@@ -455,8 +462,8 @@ class _CreateExpenseScreenState extends ConsumerState<CreateExpenseScreen> {
                   icon: const Icon(Icons.camera_alt),
                   label: Text(
                     PlayReleaseScope.showExpenseAiBranding
-                        ? 'Skenovať bloček (AI)'
-                        : 'Skenovať bloček',
+                        ? context.t(AppStr.expenseScanAi)
+                        : context.t(AppStr.expenseScan),
                   ),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 24),
@@ -476,7 +483,7 @@ class _CreateExpenseScreenState extends ConsumerState<CreateExpenseScreen> {
             TextFormField(
               controller: _vendorController,
               decoration: InputDecoration(
-                labelText: 'Obchod / Dodávateľ',
+                labelText: context.t(AppStr.expenseVendor),
                 prefixIcon: const Icon(Icons.store_outlined),
                 border:
                     OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -486,7 +493,8 @@ class _CreateExpenseScreenState extends ConsumerState<CreateExpenseScreen> {
                     ? const Color(0xFFF0FDF4) // Green tint if populated
                     : Colors.white,
               ),
-              validator: (v) => v!.isEmpty ? 'Povinné pole' : null,
+              validator: (v) =>
+                  v!.isEmpty ? context.t(AppStr.expenseRequired) : null,
             ),
             const SizedBox(height: 16),
 
@@ -496,7 +504,7 @@ class _CreateExpenseScreenState extends ConsumerState<CreateExpenseScreen> {
                   child: TextFormField(
                     controller: _amountController,
                     decoration: InputDecoration(
-                      labelText: 'Suma (€)',
+                      labelText: context.t(AppStr.expenseAmount),
                       prefixIcon: const Icon(Icons.euro),
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12)),
@@ -509,9 +517,11 @@ class _CreateExpenseScreenState extends ConsumerState<CreateExpenseScreen> {
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true),
                     validator: (v) {
-                      if (v == null || v.isEmpty) return 'Povinné pole';
+                      if (v == null || v.isEmpty) {
+                        return context.t(AppStr.expenseRequired);
+                      }
                       if (double.tryParse(v.replaceAll(',', '.')) == null) {
-                        return 'Neplatná suma';
+                        return context.t(AppStr.expenseInvalidAmount);
                       }
                       return null;
                     },
@@ -521,7 +531,7 @@ class _CreateExpenseScreenState extends ConsumerState<CreateExpenseScreen> {
                 Expanded(
                   child: InputDecorator(
                     decoration: InputDecoration(
-                      labelText: 'Dátum',
+                      labelText: context.t(AppStr.expenseDate),
                       prefixIcon: const Icon(Icons.calendar_today_outlined),
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12)),
@@ -579,8 +589,8 @@ class _CreateExpenseScreenState extends ConsumerState<CreateExpenseScreen> {
                           ? Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('Kategória',
-                                    style: TextStyle(
+                                Text(context.t(AppStr.expenseCategory),
+                                    style: const TextStyle(
                                         fontSize: 12, color: Colors.grey)),
                                 const SizedBox(height: 4),
                                 Row(
@@ -592,7 +602,7 @@ class _CreateExpenseScreenState extends ConsumerState<CreateExpenseScreen> {
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
-                                      _selectedCategory!.displayName,
+                                      _selectedCategory!.label(context),
                                       style: const TextStyle(
                                           fontWeight: FontWeight.w600,
                                           fontSize: 16),
@@ -633,8 +643,8 @@ class _CreateExpenseScreenState extends ConsumerState<CreateExpenseScreen> {
                                 ),
                               ],
                             )
-                          : const Text('Vybrať kategóriu',
-                              style: TextStyle(
+                          : Text(context.t(AppStr.expenseSelectCategory),
+                              style: const TextStyle(
                                   fontSize: 16, color: Colors.black54)),
                     ),
                     const Icon(Icons.arrow_forward_ios,
@@ -648,7 +658,7 @@ class _CreateExpenseScreenState extends ConsumerState<CreateExpenseScreen> {
             TextFormField(
               controller: _descController,
               decoration: InputDecoration(
-                labelText: 'Popis / Text bločku',
+                labelText: context.t(AppStr.expenseDescription),
                 alignLabelWithHint: true,
                 border:
                     OutlineInputBorder(borderRadius: BorderRadius.circular(12)),

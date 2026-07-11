@@ -10,6 +10,7 @@ class FakeAuthBackend implements AuthBackend {
     this.authStream,
   });
 
+  @override
   bool isAvailable;
   UserModel? currentUserValue;
   Stream<UserModel?>? authStream;

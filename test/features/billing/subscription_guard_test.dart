@@ -49,7 +49,7 @@ void main() {
 
       test('true for pro', () {
         final guard = guardFor(
-          BillingState(entitlements: const UserEntitlements(isPro: true)),
+          const BillingState(entitlements: UserEntitlements(isPro: true)),
         );
         expect(guard.canWatchCompanies, isTrue);
       });
@@ -108,8 +108,8 @@ void main() {
     group('canAccess — trial (PRO / starter)', () {
       test('createInvoice and export allowed for starter plan', () {
         final guard = guardFor(
-          BillingState(
-            entitlements: const UserEntitlements(
+          const BillingState(
+            entitlements: UserEntitlements(
               isPro: true,
               activePlanId: BizConfig.productOneTimeStarter,
             ),
@@ -137,8 +137,8 @@ void main() {
     group('canAccess — paid subscription', () {
       test('pro unlocks premium features regardless of usage counters', () {
         final guard = guardFor(
-          BillingState(
-            entitlements: const UserEntitlements(
+          const BillingState(
+            entitlements: UserEntitlements(
               isPro: true,
               activePlanId: BizConfig.productProYearly,
               invoiceCount: 99,
@@ -153,8 +153,8 @@ void main() {
 
       test('business unlocks all features', () {
         final guard = guardFor(
-          BillingState(
-            entitlements: const UserEntitlements(
+          const BillingState(
+            entitlements: UserEntitlements(
               isBusiness: true,
               isPro: true,
               activePlanId: BizConfig.productBusinessMonthly,

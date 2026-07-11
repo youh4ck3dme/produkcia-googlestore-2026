@@ -76,7 +76,7 @@ class _UnavailableSupabaseTableStore implements SupabaseTableStore {
     String? orderColumn,
     bool ascending = false,
   }) =>
-      Stream<List<Map<String, dynamic>>>.empty();
+      const Stream<List<Map<String, dynamic>>>.empty();
 
   @override
   Future<void> update(

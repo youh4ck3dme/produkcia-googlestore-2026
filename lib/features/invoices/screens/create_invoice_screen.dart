@@ -444,7 +444,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         padding: const EdgeInsets.all(BizTheme.spacingMd),
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
-          border: Border(top: BorderSide(color: BizTheme.gray200)),
+          border: const Border(top: BorderSide(color: BizTheme.gray200)),
           boxShadow: [
             BoxShadow(
               color: BizTheme.slovakBlue.withValues(alpha: 0.06),
@@ -755,8 +755,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                       );
                     }),
                     if (_items.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: _fieldGap),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: _fieldGap),
                         child: Divider(color: BizTheme.gray200, height: 1),
                       ),
                     // Add Item Row

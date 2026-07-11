@@ -13,7 +13,7 @@ class BillingState {
   final bool isLoading;
   final String? errorMessage;
 
-  BillingState({
+  const BillingState({
     required this.entitlements,
     this.products = const [],
     this.isLoading = false,

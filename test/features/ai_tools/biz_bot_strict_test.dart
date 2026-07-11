@@ -53,7 +53,7 @@ void main() {
         bizBotHistoryRepositoryProvider.overrideWithValue(FakeBizBotHistoryRepository()),
         billingProvider.overrideWith(
           (ref) => BillingService.forTest(
-            BillingState(entitlements: UserEntitlements(isPro: true)),
+            const BillingState(entitlements: UserEntitlements(isPro: true)),
             testLimiter,
           ),
         ),

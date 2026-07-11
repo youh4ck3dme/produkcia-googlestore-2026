@@ -18,7 +18,6 @@ import 'package:bizagent/features/auth/providers/auth_repository.dart';
 import 'package:bizagent/features/expenses/providers/expenses_repository.dart';
 import 'package:bizagent/features/expenses/screens/create_expense_screen.dart';
 import 'package:bizagent/features/expenses/services/categorization_service.dart';
-import 'package:mocktail/mocktail.dart';
 
 import 'package:bizagent/core/supabase/supabase_storage_client.dart';
 

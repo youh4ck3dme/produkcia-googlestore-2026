@@ -45,7 +45,7 @@ void main() {
   }
 
   BillingState freeAtInvoiceLimit() {
-    return BillingState(
+    return const BillingState(
       entitlements: UserEntitlements(
         invoiceCount: 3,
         aiRequestsCount: 0,
@@ -54,7 +54,7 @@ void main() {
   }
 
   BillingState proUser() {
-    return BillingState(
+    return const BillingState(
       entitlements: UserEntitlements(isPro: true),
     );
   }

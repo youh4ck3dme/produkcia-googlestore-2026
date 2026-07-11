@@ -18,6 +18,7 @@ build/
 dart_defines/supabase.json
 supabase/.temp/
 .supabase_test_password
+.play_reviewer_password
 functions/.env
 functions/.env.*
 **/.env.backup

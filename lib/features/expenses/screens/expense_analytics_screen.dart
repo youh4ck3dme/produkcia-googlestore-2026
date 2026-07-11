@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import '../../../core/i18n/app_strings.dart';
+import '../../../core/i18n/l10n.dart';
 import '../models/expense_model.dart';
 import '../models/expense_category.dart';
 import '../providers/expenses_provider.dart';
@@ -26,7 +28,7 @@ class _ExpenseAnalyticsScreenState
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Analýza výdavkov'),
+        title: Text(context.t(AppStr.expenseAnalyticsTitle)),
         actions: [
           // Toggle Time Period
           Padding(
@@ -40,9 +42,9 @@ class _ExpenseAnalyticsScreenState
                   _showWeekly = index == 0;
                 });
               },
-              children: const [
-                Text('7 dní'),
-                Text('Mesiac'),
+              children: [
+                Text(context.t(AppStr.expenseAnalytics7Days)),
+                Text(context.t(AppStr.expenseAnalyticsMonth)),
               ],
             ),
           ),
@@ -58,15 +60,15 @@ class _ExpenseAnalyticsScreenState
 
   Widget _buildContent(List<ExpenseModel> allExpenses) {
     if (allExpenses.isEmpty) {
-      return const Center(
-        child: Text('Žiadne výdavky na analýzu'),
+      return Center(
+        child: Text(context.t(AppStr.expenseAnalyticsNoData)),
       );
     }
 
     final filteredExpenses = _filterExpensesByPeriod(allExpenses);
     if (filteredExpenses.isEmpty) {
-      return const Center(
-        child: Text('Žiadne výdavky vo vybranom období'),
+      return Center(
+        child: Text(context.t(AppStr.expenseAnalyticsNoDataPeriod)),
       );
     }
 
@@ -405,8 +407,12 @@ class _ExpenseAnalyticsScreenState
               } else {
                 return Padding(
                   padding: const EdgeInsets.only(top: 8),
-                  child: Text('${value.toInt() + 1}. týž.',
-                      style: const TextStyle(fontSize: 10)),
+                  child: Text(
+                    context.t(AppStr.expenseAnalyticsWeekLabel, params: {
+                      'week': '${value.toInt() + 1}',
+                    }),
+                    style: const TextStyle(fontSize: 10),
+                  ),
                 );
               }
             },

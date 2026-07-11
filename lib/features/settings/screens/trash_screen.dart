@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+
+import '../../../core/i18n/app_strings.dart';
+import '../../../core/i18n/l10n.dart';
 import '../../../core/services/soft_delete_service.dart';
 import '../../auth/providers/auth_repository.dart';
 import '../../../shared/utils/biz_snackbar.dart';
@@ -23,7 +26,7 @@ class _TrashScreenState extends ConsumerState<TrashScreen> {
   }
 
   Future<void> _loadTrashItems() async {
-    final user = ref.read(authStateProvider).valueOrNull;
+    final user = ref.read(authStateProvider).value;
     if (user == null) return;
     final userId = user.id;
 
@@ -50,18 +53,21 @@ class _TrashScreenState extends ConsumerState<TrashScreen> {
   }
 
   Future<void> _restoreItem(String collection, String itemId) async {
-    final user = ref.read(authStateProvider).valueOrNull;
+    final user = ref.read(authStateProvider).value;
     if (user == null) return;
     final userId = user.id;
 
     try {
       await ref.read(softDeleteServiceProvider).restoreItem(collection, userId, itemId);
       if (!mounted) return;
-      BizSnackbar.showSuccess(context, 'Položka bola obnovená');
+      BizSnackbar.showSuccess(context, context.t(AppStr.trashItemRestored));
       _loadTrashItems(); // Refresh list
     } catch (e) {
       if (!mounted) return;
-      BizSnackbar.showError(context, 'Chyba pri obnovovaní: $e');
+      BizSnackbar.showError(
+        context,
+        context.t(AppStr.trashRestoreError, params: {'error': '$e'}),
+      );
     }
   }
 
@@ -69,17 +75,17 @@ class _TrashScreenState extends ConsumerState<TrashScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Nenávratne vymazať?'),
-        content: const Text('Táto akcia sa nedá vrátiť späť. Položka bude natrvalo vymazaná.'),
+        title: Text(context.t(AppStr.trashPermanentDeleteTitle)),
+        content: Text(context.t(AppStr.trashPermanentDeleteBody)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Zrušiť'),
+            child: Text(context.t(AppStr.cancel)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Vymazať natrvalo'),
+            child: Text(context.t(AppStr.trashPermanentDeleteConfirm)),
           ),
         ],
       ),
@@ -87,18 +93,21 @@ class _TrashScreenState extends ConsumerState<TrashScreen> {
 
     if (confirmed != true) return;
 
-    final user = ref.read(authStateProvider).valueOrNull;
+    final user = ref.read(authStateProvider).value;
     if (user == null) return;
     final userId = user.id;
 
     try {
       await ref.read(softDeleteServiceProvider).permanentDeleteItem(collection, userId, itemId);
       if (!mounted) return;
-      BizSnackbar.showSuccess(context, 'Položka bola natrvalo vymazaná');
+      BizSnackbar.showSuccess(context, context.t(AppStr.trashItemDeleted));
       _loadTrashItems(); // Refresh list
     } catch (e) {
       if (!mounted) return;
-      BizSnackbar.showError(context, 'Chyba pri mazaní: $e');
+      BizSnackbar.showError(
+        context,
+        context.t(AppStr.trashDeleteError, params: {'error': '$e'}),
+      );
     }
   }
 
@@ -106,17 +115,17 @@ class _TrashScreenState extends ConsumerState<TrashScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Vyprázdniť kôš?'),
-        content: const Text('Všetky položky v koši budú natrvalo vymazané. Túto akciu nie je možné vrátiť späť.'),
+        title: Text(context.t(AppStr.trashEmptyAllTitle)),
+        content: Text(context.t(AppStr.trashEmptyAllBody)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Zrušiť'),
+            child: Text(context.t(AppStr.cancel)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Vyprázdniť kôš'),
+            child: Text(context.t(AppStr.trashEmptyAllConfirm)),
           ),
         ],
       ),
@@ -124,7 +133,7 @@ class _TrashScreenState extends ConsumerState<TrashScreen> {
 
     if (confirmed != true) return;
 
-    final user = ref.read(authStateProvider).valueOrNull;
+    final user = ref.read(authStateProvider).value;
     if (user == null) return;
     final userId = user.id;
 
@@ -142,31 +151,41 @@ class _TrashScreenState extends ConsumerState<TrashScreen> {
       }
 
       if (!mounted) return;
-      BizSnackbar.showSuccess(context, 'Kôš bol vyprázdnený');
+      BizSnackbar.showSuccess(context, context.t(AppStr.trashEmptied));
       _loadTrashItems();
     } catch (e) {
       if (!mounted) return;
-      BizSnackbar.showError(context, 'Chyba pri vyprázdňovaní koša: $e');
+      BizSnackbar.showError(
+        context,
+        context.t(AppStr.trashEmptyError, params: {'error': '$e'}),
+      );
       setState(() => _isLoading = false);
     }
   }
 
-  String _getItemTitle(Map<String, dynamic> item, String collection) {
+  String _getItemTitle(
+    BuildContext context,
+    Map<String, dynamic> item,
+    String collection,
+  ) {
     final data = item['data'] as Map<String, dynamic>;
 
     switch (collection) {
       case SoftDeleteCollections.invoices:
-        return 'Faktúra ${data['number'] ?? 'bez čísla'} - ${data['clientName'] ?? 'bez klienta'}';
+        return context.t(AppStr.trashInvoiceItem, params: {
+          'number': '${data['number'] ?? 'bez čísla'}',
+          'client': '${data['clientName'] ?? 'bez klienta'}',
+        });
       case SoftDeleteCollections.bizBotConversations:
-        return data['title'] ?? 'Bez názvu';
+        return data['title'] ?? context.t(AppStr.trashNoTitle);
       case SoftDeleteCollections.notepadItems:
-        return data['title'] ?? 'Bez názvu';
+        return data['title'] ?? context.t(AppStr.trashNoTitle);
       default:
-        return 'Neznáma položka';
+        return context.t(AppStr.trashUnknownItem);
     }
   }
 
-  String _getItemSubtitle(Map<String, dynamic> item, String collection) {
+  String _getItemSubtitle(BuildContext context, Map<String, dynamic> item) {
     final data = item['data'] as Map<String, dynamic>;
     final deletedAt = data['deletedAt'];
 
@@ -182,7 +201,13 @@ class _TrashScreenState extends ConsumerState<TrashScreen> {
     final daysLeft = 7 - DateTime.now().difference(deleteTime).inDays;
     final timeStr = DateFormat('dd.MM.yyyy HH:mm', 'sk').format(deleteTime);
 
-    return 'Vymazané $timeStr • ${daysLeft > 0 ? '$daysLeft dní' : 'menej ako 1 deň'} na obnovenie';
+    if (daysLeft > 0) {
+      return context.t(AppStr.trashDeletedSubtitle, params: {
+        'time': timeStr,
+        'days': '$daysLeft',
+      });
+    }
+    return context.t(AppStr.trashDeletedLessThanDay, params: {'time': timeStr});
   }
 
   IconData _getItemIcon(String collection) {
@@ -204,12 +229,12 @@ class _TrashScreenState extends ConsumerState<TrashScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Kôš ($totalItems)'),
+        title: Text(context.t(AppStr.trashTitle, params: {'count': '$totalItems'})),
         actions: [
           if (totalItems > 0)
             IconButton(
               icon: const Icon(Icons.delete_forever),
-              tooltip: 'Vyprázdniť kôš',
+              tooltip: context.t(AppStr.trashEmptyTooltip),
               onPressed: _emptyTrash,
             ),
         ],
@@ -234,12 +259,12 @@ class _TrashScreenState extends ConsumerState<TrashScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Kôš je prázdny',
+            context.t(AppStr.trashEmptyTitle),
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: 8),
           Text(
-            'Zmazané položky sa zobrazia tu na 7 dní',
+            context.t(AppStr.trashEmptyBody),
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Colors.grey[600],
                 ),
@@ -262,7 +287,7 @@ class _TrashScreenState extends ConsumerState<TrashScreen> {
             Padding(
               padding: const EdgeInsets.all(16),
               child: Text(
-                _getCollectionTitle(collection),
+                _getCollectionTitle(context, collection),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -308,19 +333,19 @@ class _TrashScreenState extends ConsumerState<TrashScreen> {
             color: Theme.of(context).colorScheme.primary,
           ),
         ),
-        title: Text(_getItemTitle(item, collection)),
-        subtitle: Text(_getItemSubtitle(item, collection)),
+        title: Text(_getItemTitle(context, item, collection)),
+        subtitle: Text(_getItemSubtitle(context, item)),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
               icon: const Icon(Icons.restore),
-              tooltip: 'Obnoviť',
+              tooltip: context.t(AppStr.trashRestoreTooltip),
               onPressed: () => _restoreItem(collection, itemId),
             ),
             IconButton(
               icon: const Icon(Icons.delete_forever),
-              tooltip: 'Vymazať natrvalo',
+              tooltip: context.t(AppStr.trashPermanentDeleteTooltip),
               onPressed: () => _permanentDeleteItem(collection, itemId),
             ),
           ],
@@ -329,16 +354,16 @@ class _TrashScreenState extends ConsumerState<TrashScreen> {
     );
   }
 
-  String _getCollectionTitle(String collection) {
+  String _getCollectionTitle(BuildContext context, String collection) {
     switch (collection) {
       case SoftDeleteCollections.invoices:
-        return 'Faktúry';
+        return context.t(AppStr.trashCollectionInvoices);
       case SoftDeleteCollections.bizBotConversations:
-        return 'Rozhovory s BizBot';
+        return context.t(AppStr.trashCollectionBizBot);
       case SoftDeleteCollections.notepadItems:
-        return 'Poznámky a bloky';
+        return context.t(AppStr.trashCollectionNotepad);
       default:
-        return 'Iné položky';
+        return context.t(AppStr.trashCollectionOther);
     }
   }
 }

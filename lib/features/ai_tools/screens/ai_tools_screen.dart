@@ -3,6 +3,9 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+
+import '../../../core/i18n/app_strings.dart';
+import '../../../core/i18n/l10n.dart';
 import '../../../core/services/ocr_service.dart';
 import '../../../core/ui/biz_theme.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -86,13 +89,13 @@ class _AiToolsScreenState extends ConsumerState<AiToolsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'AI Nástroje',
-                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        Text(
+                          context.t(AppStr.aiToolsHubTitle),
+                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Využite silu AI pre vaše podnikanie',
+                          context.t(AppStr.aiToolsHubSubtitle),
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ],
@@ -113,8 +116,8 @@ class _AiToolsScreenState extends ConsumerState<AiToolsScreen> {
 
             _buildToolCard(
               context,
-              title: 'BizBot AI Asistent',
-              subtitle: 'Váš inteligentný parťák pre biznis, dane a poradenstvo.',
+              title: context.t(AppStr.bizBotTitle),
+              subtitle: context.t(AppStr.bizBotSubtitle),
               icon: Icons.smart_toy,
               color: BizTheme.slovakBlue,
               onTap: () => context.go('/ai-tools/biz-bot'),
@@ -131,14 +134,14 @@ class _AiToolsScreenState extends ConsumerState<AiToolsScreen> {
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.warning_amber_rounded, color: Colors.amber),
-                    SizedBox(width: 12),
+                    const Icon(Icons.warning_amber_rounded, color: Colors.amber),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'OCR skenovanie je dostupné v Android aplikácii.',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                        context.t(AppStr.aiToolsOcrWebWarning),
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
                       ),
                     ),
                   ],
@@ -152,7 +155,7 @@ class _AiToolsScreenState extends ConsumerState<AiToolsScreen> {
                       onPressed:
                           _isScanning ? null : () => _scan(ImageSource.camera),
                       icon: const Icon(Icons.camera_alt),
-                      label: const Text('Kamera'),
+                      label: Text(context.t(AppStr.aiToolsCamera)),
                       style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.all(16)),
                     ),
@@ -163,7 +166,7 @@ class _AiToolsScreenState extends ConsumerState<AiToolsScreen> {
                       onPressed:
                           _isScanning ? null : () => _scan(ImageSource.gallery),
                       icon: const Icon(Icons.photo_library),
-                      label: const Text('Galéria'),
+                      label: Text(context.t(AppStr.aiToolsGallery)),
                       style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.all(16)),
                     ),
@@ -184,34 +187,36 @@ class _AiToolsScreenState extends ConsumerState<AiToolsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Rozpoznané údaje:',
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+                      Text(
+                        context.t(AppStr.aiToolsScannedData),
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                      ),
                       const Divider(height: 24),
                       TextFormField(
                         controller: _amountController,
-                        decoration: const InputDecoration(
-                          labelText: 'Suma',
+                        decoration: InputDecoration(
+                          labelText: context.t(AppStr.expenseAmount),
                           suffixText: 'EUR',
                         ),
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _dateController,
-                        decoration: const InputDecoration(
-                          labelText: 'Dátum',
+                        decoration: InputDecoration(
+                          labelText: context.t(AppStr.expenseDate),
                           hintText: 'DD.MM.YYYY',
                         ),
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _vendorController,
-                        decoration: const InputDecoration(
-                          labelText: 'IČO / ID',
+                        decoration: InputDecoration(
+                          labelText: context.t(AppStr.icoLabel),
                         ),
                       ),
                       const SizedBox(height: 16),
                       ExpansionTile(
-                        title: const Text('Zobraziť celý text'),
+                        title: Text(context.t(AppStr.aiToolsShowFullText)),
                         tilePadding: EdgeInsets.zero,
                         children: [SelectableText(_receipt!.originalText)],
                       ),
@@ -223,7 +228,7 @@ class _AiToolsScreenState extends ConsumerState<AiToolsScreen> {
                             context.push('/create-expense',
                                 extra: _receipt!.originalText);
                           },
-                          child: const Text('Vytvoriť výdavok'),
+                          child: Text(context.t(AppStr.aiToolsCreateExpense)),
                         ),
                       ),
                     ],
@@ -265,13 +270,13 @@ class _AiToolsScreenState extends ConsumerState<AiToolsScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
-            'Skener Bločkov',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          Text(
+            context.t(AppStr.aiToolsScannerTitle),
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Odfote bloček a AI automaticky vyčíta údaje.',
+          Text(
+            context.t(AppStr.aiToolsScannerSubtitle),
             textAlign: TextAlign.center,
           ),
         ],

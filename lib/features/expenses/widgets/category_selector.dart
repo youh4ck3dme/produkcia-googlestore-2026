@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/i18n/app_strings.dart';
+import '../../../core/i18n/l10n.dart';
 import '../models/expense_category.dart';
 
 /// Widget pre výber kategórie výdavku
@@ -23,7 +26,7 @@ class CategorySelector extends StatefulWidget {
 
 class _CategorySelectorState extends State<CategorySelector> {
   String _searchQuery = '';
-  String? _selectedGroup;
+  AppStr? _selectedGroup;
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +43,7 @@ class _CategorySelectorState extends State<CategorySelector> {
         // Search Bar
         TextField(
           decoration: InputDecoration(
-            hintText: 'Hľadať kategóriu...',
+            hintText: context.t(AppStr.expenseCategorySearch),
             prefixIcon: const Icon(Icons.search),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -156,7 +159,7 @@ class _CategorySelectorState extends State<CategorySelector> {
         scrollDirection: Axis.horizontal,
         children: [
           FilterChip(
-            label: const Text('Všetko'),
+            label: Text(context.t(AppStr.expenseGroupAll)),
             selected: _selectedGroup == null,
             onSelected: (selected) {
               setState(() {
@@ -169,7 +172,7 @@ class _CategorySelectorState extends State<CategorySelector> {
             return Padding(
               padding: const EdgeInsets.only(right: 8),
               child: FilterChip(
-                label: Text(group),
+                label: Text(context.t(group)),
                 selected: _selectedGroup == group,
                 onSelected: (selected) {
                   setState(() {

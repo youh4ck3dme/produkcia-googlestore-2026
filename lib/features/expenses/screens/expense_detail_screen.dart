@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/i18n/app_strings.dart';
+import '../../../core/i18n/l10n.dart';
 import '../../../core/ui/biz_theme.dart';
 import '../models/expense_model.dart';
 import '../models/expense_category.dart';
@@ -20,7 +22,7 @@ class ExpenseDetailScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Detail výdavku'),
+        title: Text(context.t(AppStr.expenseDetailTitle)),
         actions: [
           IconButton(
             icon: const Icon(Icons.delete_outline),
@@ -206,16 +208,18 @@ class ExpenseDetailScreen extends ConsumerWidget {
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Zmazať výdavok?'),
-        content: Text('Naozaj chcete zmazať výdavok "${expense.vendorName}"?'),
+        title: Text(context.t(AppStr.expenseDeleteTitle)),
+        content: Text(context.t(AppStr.expenseDeleteBody, params: {
+          'vendor': expense.vendorName,
+        })),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Zrušiť')),
+              child: Text(context.t(AppStr.cancel))),
           TextButton(
               onPressed: () => Navigator.pop(context, true),
               style: TextButton.styleFrom(foregroundColor: BizTheme.nationalRed),
-              child: const Text('Zmazať')),
+              child: Text(context.t(AppStr.invoiceDeleteConfirm))),
         ],
       ),
     );

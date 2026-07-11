@@ -374,8 +374,8 @@ extension ExpenseCategoryExtension on ExpenseCategory {
     }
   }
 
-  /// Skupina kategórie (pre filtrovanie)
-  String get group {
+  /// Skupina kategórie (pre filtrovanie).
+  AppStr get groupKey {
     switch (this) {
       case ExpenseCategory.fuel:
       case ExpenseCategory.parking:
@@ -383,54 +383,85 @@ extension ExpenseCategoryExtension on ExpenseCategory {
       case ExpenseCategory.carWash:
       case ExpenseCategory.toll:
       case ExpenseCategory.taxi:
-        return 'Doprava';
+        return AppStr.expenseGroupTransport;
 
       case ExpenseCategory.officeSupplies:
       case ExpenseCategory.software:
       case ExpenseCategory.equipment:
       case ExpenseCategory.furniture:
-        return 'Kancelária';
+        return AppStr.expenseGroupOffice;
 
       case ExpenseCategory.phone:
       case ExpenseCategory.internet:
       case ExpenseCategory.postage:
-        return 'Komunikácia';
+        return AppStr.expenseGroupCommunication;
 
       case ExpenseCategory.accommodation:
       case ExpenseCategory.meals:
       case ExpenseCategory.flights:
       case ExpenseCategory.trainTickets:
       case ExpenseCategory.publicTransport:
-        return 'Cestovné';
+        return AppStr.expenseGroupTravel;
 
       case ExpenseCategory.healthInsurance:
       case ExpenseCategory.carInsurance:
       case ExpenseCategory.liabilityInsurance:
-        return 'Poistenie';
+        return AppStr.expenseGroupInsurance;
 
       case ExpenseCategory.accounting:
       case ExpenseCategory.legal:
       case ExpenseCategory.marketing:
       case ExpenseCategory.consulting:
-        return 'Služby';
+        return AppStr.expenseGroupServices;
 
       case ExpenseCategory.rent:
       case ExpenseCategory.electricity:
       case ExpenseCategory.water:
       case ExpenseCategory.heating:
-        return 'Prevádzkové náklady';
+        return AppStr.expenseGroupOperating;
 
       case ExpenseCategory.training:
       case ExpenseCategory.books:
       case ExpenseCategory.courses:
-        return 'Vzdelávanie';
+        return AppStr.expenseGroupEducation;
 
       case ExpenseCategory.clientMeals:
       case ExpenseCategory.gifts:
-        return 'Reprezentácia';
+        return AppStr.expenseGroupRepresentation;
 
       case ExpenseCategory.bankFees:
       case ExpenseCategory.other:
+        return AppStr.expenseGroupOther;
+    }
+  }
+
+  /// Lokalizovaný názov skupiny (preferovať v UI).
+  String groupLabel(BuildContext context) => context.t(groupKey);
+
+  /// Slovenský názov skupiny (pre služby bez BuildContext).
+  String get group {
+    switch (groupKey) {
+      case AppStr.expenseGroupTransport:
+        return 'Doprava';
+      case AppStr.expenseGroupOffice:
+        return 'Kancelária';
+      case AppStr.expenseGroupCommunication:
+        return 'Komunikácia';
+      case AppStr.expenseGroupTravel:
+        return 'Cestovné';
+      case AppStr.expenseGroupInsurance:
+        return 'Poistenie';
+      case AppStr.expenseGroupServices:
+        return 'Služby';
+      case AppStr.expenseGroupOperating:
+        return 'Prevádzkové náklady';
+      case AppStr.expenseGroupEducation:
+        return 'Vzdelávanie';
+      case AppStr.expenseGroupRepresentation:
+        return 'Reprezentácia';
+      case AppStr.expenseGroupOther:
+        return 'Ostatné';
+      default:
         return 'Ostatné';
     }
   }
@@ -449,15 +480,12 @@ ExpenseCategory? expenseCategoryFromString(String? value) {
 }
 
 /// Zoznam všetkých kategórií zoskupených podľa skupiny
-Map<String, List<ExpenseCategory>> get groupedCategories {
-  final Map<String, List<ExpenseCategory>> grouped = {};
+Map<AppStr, List<ExpenseCategory>> get groupedCategories {
+  final Map<AppStr, List<ExpenseCategory>> grouped = {};
 
   for (final category in ExpenseCategory.values) {
-    final group = category.group;
-    if (!grouped.containsKey(group)) {
-      grouped[group] = [];
-    }
-    grouped[group]!.add(category);
+    final group = category.groupKey;
+    grouped.putIfAbsent(group, () => []).add(category);
   }
 
   return grouped;

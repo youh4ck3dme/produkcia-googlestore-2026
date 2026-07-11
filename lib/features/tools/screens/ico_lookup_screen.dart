@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/i18n/app_strings.dart';
+import '../../../core/i18n/l10n.dart';
 import '../../../core/ui/biz_theme.dart';
 import '../../../core/services/company_lookup_service.dart';
 import '../../../core/models/ico_lookup_result.dart';
@@ -99,7 +102,7 @@ class _IcoLookupScreenState extends ConsumerState<IcoLookupScreen> {
       ref.read(billingProvider.notifier).refreshUsage();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Zadajte platné 8-miestne IČO')),
+        SnackBar(content: Text(context.t(AppStr.icoInvalidFormat))),
       );
     }
   }
@@ -137,7 +140,7 @@ class _IcoLookupScreenState extends ConsumerState<IcoLookupScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Overovanie firiem podľa IČO (základné údaje + prehľad signálov).',
+                      context.t(AppStr.icoLookupSubtitle),
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -180,7 +183,7 @@ class _IcoLookupScreenState extends ConsumerState<IcoLookupScreen> {
             maxLength: 8,
             style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
             decoration: InputDecoration(
-              hintText: 'Zadajte IČO (napr. 35742364)',
+              hintText: context.t(AppStr.icoLookupHint),
               counterText: '',
               prefixIcon: const Icon(Icons.search, color: BizTheme.slovakBlue),
               suffixIcon: IconButton(
@@ -207,7 +210,7 @@ class _IcoLookupScreenState extends ConsumerState<IcoLookupScreen> {
               return _buildEmptyState();
             }
             if (result.name.isEmpty) {
-              return _buildErrorState('Firma sa nenašla.');
+              return _buildErrorState(context.t(AppStr.icoNotFound));
             }
             if (result.isRateLimited) {
               return _buildRateLimitedState(result.resetIn);
@@ -227,7 +230,9 @@ class _IcoLookupScreenState extends ConsumerState<IcoLookupScreen> {
             // Better Offline / Error UX
             final msg = e.toString().toLowerCase();
             final isOffline = msg.contains('socket') || msg.contains('connection') || msg.contains('internet');
-            return _buildErrorState(isOffline ? 'Skontrolujte pripojenie na internet.' : 'Nepodarilo sa načítať údaje.');
+            return _buildErrorState(
+              isOffline ? context.t(AppStr.icoOffline) : context.t(AppStr.icoLoadFailed),
+            );
           },
         ),
       ],
@@ -238,7 +243,7 @@ class _IcoLookupScreenState extends ConsumerState<IcoLookupScreen> {
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
-        title: const Text('ICOatlas – Overovanie firiem'),
+        title: Text(context.t(AppStr.icoLookupTitle)),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(BizTheme.spacingLg),
@@ -389,7 +394,7 @@ class _IcoLookupScreenState extends ConsumerState<IcoLookupScreen> {
                       );
                     },
                     icon: const Icon(Icons.receipt_long, size: 18),
-                    label: const Text('VYSTAVIŤ FAKTÚRU'),
+                    label: Text(context.t(AppStr.icoCreateInvoice)),
                   ),
                 ),
               ],
@@ -401,11 +406,11 @@ class _IcoLookupScreenState extends ConsumerState<IcoLookupScreen> {
                 onPressed: () {
                   // Logic to add to contacts would go here
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Firma bola pridaná do kontaktov')),
+                    SnackBar(content: Text(context.t(AppStr.icoAddedToContacts))),
                   );
                 },
                 icon: const Icon(Icons.person_add_outlined, size: 18),
-                label: const Text('PRIDAŤ DO KONTAKTOV'),
+                label: Text(context.t(AppStr.icoAddToContacts)),
               ),
             ),
           ],
@@ -437,14 +442,14 @@ class _IcoLookupScreenState extends ConsumerState<IcoLookupScreen> {
                 const Icon(Icons.lock_outline, color: BizTheme.slovakBlue, size: 18),
                 const SizedBox(width: 8),
                 Text(
-                  'Detail firmy (Pro)',
+                  context.t(AppStr.icoPremiumTitle),
                   style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                 ),
               ],
             ),
             const SizedBox(height: BizTheme.spacingSm),
             Text(
-              'Zobraziť viac údajov ako na icoatlas.sk: právna forma, registrácia, predmety činnosti, prepojenia a ďalšie.',
+              context.t(AppStr.icoPremiumDesc),
               style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: BizTheme.spacingMd),
@@ -481,7 +486,7 @@ class _IcoLookupScreenState extends ConsumerState<IcoLookupScreen> {
           children: [
             const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
             const SizedBox(width: 12),
-            Text('Načítavam rozšírené údaje…', style: theme.textTheme.bodyMedium),
+            Text(context.t(AppStr.icoPremiumLoading), style: theme.textTheme.bodyMedium),
           ],
         ),
       ),
@@ -494,7 +499,7 @@ class _IcoLookupScreenState extends ConsumerState<IcoLookupScreen> {
           border: Border.all(color: BizTheme.nationalRed.withValues(alpha: 0.15)),
         ),
         child: Text(
-          'Rozšírené údaje sa nepodarilo načítať.',
+          context.t(AppStr.icoPremiumLoadFailed),
           style: theme.textTheme.bodyMedium?.copyWith(color: BizTheme.nationalRed),
         ),
       ),
@@ -509,7 +514,7 @@ class _IcoLookupScreenState extends ConsumerState<IcoLookupScreen> {
               border: Border.all(color: theme.colorScheme.outlineVariant),
             ),
             child: Text(
-              'Rozšírené údaje nie sú k dispozícii pre túto firmu.',
+              context.t(AppStr.icoPremiumUnavailable),
               style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
           );
@@ -531,16 +536,16 @@ class _IcoLookupScreenState extends ConsumerState<IcoLookupScreen> {
                   const Icon(Icons.workspace_premium, color: BizTheme.slovakBlue, size: 18),
                   const SizedBox(width: 8),
                   Text(
-                    'Rozšírený profil firmy',
+                    context.t(AppStr.icoPremiumProfileTitle),
                     style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
               const SizedBox(height: BizTheme.spacingMd),
-              _kv(theme, 'Právna forma', profile.legalForm),
-              _kv(theme, 'Dátum registrácie', profile.registrationDate),
-              _kv(theme, 'SK NACE', profile.nace),
-              _kv(theme, 'Doplňujúca správa', profile.message),
+              _kv(theme, context.t(AppStr.icoLegalForm), profile.legalForm),
+              _kv(theme, context.t(AppStr.icoRegistrationDate), profile.registrationDate),
+              _kv(theme, context.t(AppStr.icoNace), profile.nace),
+              _kv(theme, context.t(AppStr.icoSupplementaryReport), profile.message),
             ],
           ),
         );
@@ -590,15 +595,15 @@ class _IcoLookupScreenState extends ConsumerState<IcoLookupScreen> {
           const Icon(Icons.lock_person_outlined, size: 48, color: BizTheme.slovakBlue),
           const SizedBox(height: BizTheme.spacingMd),
           Text(
-            'IČO detail (Pro)',
+            context.t(AppStr.icoPaymentRequiredTitle),
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
               color: BizTheme.slovakBlue,
             ),
           ),
           const SizedBox(height: BizTheme.spacingSm),
-          const Text(
-            'Váš aktuálny plán nepovoľuje neobmedzené lookupy cez bezpečný gateway.',
+          Text(
+            context.t(AppStr.icoPaymentRequiredBody),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: BizTheme.spacingXl),
@@ -606,7 +611,7 @@ class _IcoLookupScreenState extends ConsumerState<IcoLookupScreen> {
             width: double.infinity,
             child: FilledButton(
               onPressed: () {},
-              child: const Text('AKTIVOVAŤ SOLO/GROWTH PLÁN'),
+              child: Text(context.t(AppStr.icoActivatePlan)),
             ),
           ),
         ],
@@ -630,7 +635,7 @@ class _IcoLookupScreenState extends ConsumerState<IcoLookupScreen> {
           const Icon(Icons.speed_rounded, size: 48, color: Colors.orange),
           const SizedBox(height: BizTheme.spacingMd),
           Text(
-            'Limit dosiahnutý',
+            context.t(AppStr.icoRateLimitTitle),
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
               color: Colors.orange[900],
@@ -638,7 +643,7 @@ class _IcoLookupScreenState extends ConsumerState<IcoLookupScreen> {
           ),
           const SizedBox(height: BizTheme.spacingSm),
           Text(
-            'Bezplatný limit pre verejné vyhľadávanie je 10 dopytov za 10 minút.',
+            context.t(AppStr.icoRateLimitBody),
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyMedium?.copyWith(color: Colors.orange[800]),
           ),
@@ -651,7 +656,7 @@ class _IcoLookupScreenState extends ConsumerState<IcoLookupScreen> {
                 borderRadius: BorderRadius.circular(BizTheme.radiusXl),
               ),
               child: Text(
-                'Skúste to znova o ${resetIn ~/ 60} minút',
+                context.t(AppStr.icoRateLimitRetry, params: {'minutes': '${resetIn ~/ 60}'}),
                 style: theme.textTheme.labelMedium?.copyWith(
                   fontWeight: FontWeight.bold, 
                   color: Colors.orange[900],
@@ -667,7 +672,7 @@ class _IcoLookupScreenState extends ConsumerState<IcoLookupScreen> {
               style: FilledButton.styleFrom(
                 backgroundColor: Colors.orange[700],
               ),
-              child: const Text('PREJSŤ NA PREMIUM (BEZ LIMITOV)'),
+              child: Text(context.t(AppStr.icoGoPremium)),
             ),
           ),
         ],
@@ -684,7 +689,7 @@ class _IcoLookupScreenState extends ConsumerState<IcoLookupScreen> {
             const Icon(Icons.business_center_outlined, size: 80),
             const SizedBox(height: BizTheme.spacingMd),
             Text(
-              'Zadajte IČO pre okamžité overenie',
+              context.t(AppStr.icoEmptyPrompt),
               style: Theme.of(context).textTheme.bodyMedium,
             ),
           ],

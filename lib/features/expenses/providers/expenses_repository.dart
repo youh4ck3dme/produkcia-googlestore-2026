@@ -89,6 +89,19 @@ class ExpensesRepository {
 
   Future<void> deleteExpense(String userId, String expenseId) async {
     await _persistence.deleteExpense(expenseId);
+
+    if (SupabaseConfig.isReady) {
+      final res = await SupabaseConfig.client.functions.invoke(
+        'delete-expense',
+        body: {'expenseId': expenseId},
+      );
+      final data = res.data;
+      if (data is Map && data['ok'] == true) return;
+      if (data is Map && data['error'] != null) {
+        throw Exception(data['error']);
+      }
+    }
+
     await _store?.delete(
       _table,
       eq: {'id': expenseId, 'user_id': userId},

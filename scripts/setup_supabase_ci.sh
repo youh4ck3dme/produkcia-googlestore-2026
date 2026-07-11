@@ -55,14 +55,21 @@ supabase link --project-ref "$PROJECT_REF" 2>/dev/null || true
 echo "==> db push"
 supabase db push
 
-echo "==> deploy generate-content"
-if ! supabase functions deploy generate-content --project-ref "$PROJECT_REF"; then
-  echo "WARN: deploy generate-content zlyhal (Docker/CLI) — preskakujem ak funkcia už beží na remote."
-  supabase functions list --project-ref "$PROJECT_REF" | rg -q generate-content || {
-    echo "ERROR: generate-content nie je nasadená."
-    exit 1
-  }
-fi
+deploy_function() {
+  local name=$1
+  echo "==> deploy $name"
+  if ! supabase functions deploy "$name" --project-ref "$PROJECT_REF"; then
+    echo "WARN: deploy $name zlyhal (Docker/CLI) — preskakujem ak funkcia už beží na remote."
+    supabase functions list --project-ref "$PROJECT_REF" | rg -q "$name" || {
+      echo "ERROR: $name nie je nasadená."
+      exit 1
+    }
+  fi
+}
+
+for fn in delete-account generate-content delete-invoice delete-expense delete-receipt; do
+  deploy_function "$fn"
+done
 
 SERVICE_ROLE=$(supabase projects api-keys --project-ref "$PROJECT_REF" -o json | python3 -c "
 import json,sys

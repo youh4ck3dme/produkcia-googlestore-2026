@@ -41,3 +41,12 @@ verify_jwt = true
 
 [functions.delete-account]
 verify_jwt = true
+
+[functions.delete-invoice]
+verify_jwt = true
+
+[functions.delete-expense]
+verify_jwt = true
+
+[functions.delete-receipt]
+verify_jwt = true

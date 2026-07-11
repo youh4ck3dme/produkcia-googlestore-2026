@@ -43,12 +43,12 @@ jobs:
 
       - name: Generate Supabase dart defines for CI
         env:
-          SUPABASE_TEST_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_TEST_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          SUPABASE_TEST_URL: ${{ secrets.SUPABASE_TEST_URL }}
+          SUPABASE_TEST_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_TEST_PUBLISHABLE_KEY }}
           GOOGLE_WEB_CLIENT_ID: ${{ env.GOOGLE_WEB_CLIENT_ID }}
         run: |
           if [[ -z "${SUPABASE_TEST_URL:-}" || -z "${SUPABASE_TEST_PUBLISHABLE_KEY:-}" ]]; then
-            echo "::error::Chýbajú GitHub secrets SUPABASE_URL a SUPABASE_PUBLISHABLE_KEY"
+            echo "::error::Chýbajú GitHub secrets SUPABASE_TEST_URL a SUPABASE_TEST_PUBLISHABLE_KEY"
             exit 1
           fi
           bash scripts/generate_supabase_ci_defines.sh dart_defines/supabase.ci.json

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as path;
 
 import '../../auth/providers/auth_repository.dart';
+import '../../../core/supabase/supabase_config.dart';
 import '../../../core/supabase/supabase_storage_client.dart';
 
 final receiptStorageServiceProvider = Provider<ReceiptStorageService>((ref) {
@@ -47,6 +48,15 @@ class ReceiptStorageService {
 
   Future<void> deleteReceipt(String downloadUrl) async {
     try {
+      if (SupabaseConfig.isReady) {
+        final res = await SupabaseConfig.client.functions.invoke(
+          'delete-receipt',
+          body: {'urls': [downloadUrl]},
+        );
+        final data = res.data;
+        if (data is Map && data['ok'] == true) return;
+      }
+
       await _storage.deleteReceipt(downloadUrl);
     } catch (e) {
       debugPrint('Error deleting receipt: $e');

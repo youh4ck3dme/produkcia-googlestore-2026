@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:bizagent/features/ai_tools/screens/ai_email_generator_screen.dart';
 import 'package:bizagent/features/ai_tools/providers/ai_email_service.dart';
+
+import '../../helpers/test_app.dart';
 
 class MockAiEmailService implements AiEmailService {
   @override
@@ -22,13 +23,11 @@ void main() {
   testWidgets('AiEmailGeneratorScreen generates text on button press',
       (WidgetTester tester) async {
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
+      testApp(
+        child: const AiEmailGeneratorScreen(),
+        extraOverrides: [
           aiEmailServiceProvider.overrideWithValue(MockAiEmailService()),
         ],
-        child: const MaterialApp(
-          home: AiEmailGeneratorScreen(),
-        ),
       ),
     );
 
@@ -54,13 +53,11 @@ void main() {
   testWidgets('AiEmailGeneratorScreen validates empty context',
       (WidgetTester tester) async {
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
+      testApp(
+        child: const AiEmailGeneratorScreen(),
+        extraOverrides: [
           aiEmailServiceProvider.overrideWithValue(MockAiEmailService()),
         ],
-        child: const MaterialApp(
-          home: AiEmailGeneratorScreen(),
-        ),
       ),
     );
 

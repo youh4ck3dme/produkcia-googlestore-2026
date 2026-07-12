@@ -1,21 +1,21 @@
 import 'package:bizagent/core/config/play_release_scope.dart';
-import 'package:bizagent/core/ui/biz_theme.dart';
 import 'package:bizagent/features/auth/models/user_model.dart';
 import 'package:bizagent/features/auth/providers/auth_repository.dart';
 import 'package:bizagent/features/expenses/screens/create_expense_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../helpers/layout_test_helpers.dart';
 import '../../../helpers/memory_local_persistence.dart';
 import '../../../helpers/in_memory_supabase_store.dart';
+import '../../../helpers/test_app.dart';
 import 'package:bizagent/features/expenses/providers/expenses_repository.dart';
 
 Widget createExpenseTestApp() {
-  return ProviderScope(
-    overrides: [
+  return testApp(
+    child: const CreateExpenseScreen(),
+    extraOverrides: [
       authStateProvider.overrideWith(
         (ref) => Stream.value(
           const UserModel(
@@ -30,10 +30,6 @@ Widget createExpenseTestApp() {
         ExpensesRepository(InMemorySupabaseStore(), MemoryLocalPersistenceService()),
       ),
     ],
-    child: MaterialApp(
-      theme: BizTheme.light(),
-      home: const CreateExpenseScreen(),
-    ),
   );
 }
 

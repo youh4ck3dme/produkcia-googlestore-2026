@@ -25,7 +25,15 @@ void main() {
     test('Gemini Service Model Configuration', () {
       expect(GeminiService.modelName, isNotEmpty);
       expect(
-        ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash'],
+        [
+          'qwen-plus',
+          'qwen-turbo',
+          'qwen-max',
+          'mistral-small-latest',
+          'gemini-1.5-flash',
+          'gemini-1.5-pro',
+          'gemini-2.0-flash',
+        ],
         contains(GeminiService.modelName),
       );
     });

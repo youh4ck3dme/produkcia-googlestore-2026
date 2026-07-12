@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:bizagent/features/ai_tools/screens/ai_tools_screen.dart';
 import 'package:bizagent/core/services/ocr_service.dart';
 import 'package:image_picker/image_picker.dart';
+
+import '../../helpers/test_app.dart';
 
 // Mock OcrService
 class MockOcrService extends OcrService {
@@ -22,13 +22,11 @@ void main() {
   testWidgets('AiToolsScreen displays parsed receipt data',
       (WidgetTester tester) async {
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
+      testApp(
+        child: const AiToolsScreen(),
+        extraOverrides: [
           ocrServiceProvider.overrideWithValue(MockOcrService()),
         ],
-        child: const MaterialApp(
-          home: AiToolsScreen(),
-        ),
       ),
     );
 

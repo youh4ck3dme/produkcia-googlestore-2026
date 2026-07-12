@@ -5,7 +5,20 @@ import '../services/expense_insights_service.dart';
 
 final expenseInsightsProvider =
     FutureProvider<List<ExpenseInsight>>((ref) async {
-  final expenses = await ref.watch(expensesProvider.future);
+  ref.watch(expensesProvider);
+  await Future<void>.delayed(Duration.zero);
+
+  final expensesAsync = ref.read(expensesProvider);
+  if (expensesAsync.hasError) {
+    Error.throwWithStackTrace(
+      expensesAsync.error!,
+      expensesAsync.stackTrace ?? StackTrace.empty,
+    );
+  }
+
+  final expenses = expensesAsync.hasValue
+      ? expensesAsync.requireValue
+      : await ref.read(expensesProvider.future);
   final service = ref.watch(expenseInsightsServiceProvider);
 
   // Sort expenses by date to give context

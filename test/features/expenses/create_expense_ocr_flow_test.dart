@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'package:bizagent/core/services/local_persistence_service.dart';
+import 'package:bizagent/core/services/ai_consent_service.dart';
 import 'package:bizagent/core/services/ai_ocr_service.dart';
 import 'package:bizagent/core/services/analytics_service.dart';
 import 'package:bizagent/core/services/expense_autopilot_service.dart';
@@ -34,6 +35,11 @@ const _testUser = UserModel(
   id: 'test-user-ocr',
   email: 'ocr@test.example.com',
 );
+
+class _GrantedAiConsentService extends AiConsentService {
+  @override
+  Future<bool> hasConsent() async => true;
+}
 
 class FakeAuthRepository implements AuthRepository {
   @override
@@ -241,6 +247,7 @@ void main() {
         expenseAutopilotServiceProvider.overrideWithValue(
           PendingReviewAutopilot(),
         ),
+        aiConsentServiceProvider.overrideWith((ref) => _GrantedAiConsentService()),
       ];
     }
 

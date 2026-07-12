@@ -14,9 +14,9 @@ class SmartDashboardEmptyState extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final settings = ref.watch(settingsProvider).valueOrNull;
-    final invoices = ref.watch(invoicesProvider).valueOrNull ?? [];
-    final expenses = ref.watch(expensesProvider).valueOrNull ?? [];
+    final settings = ref.watch(settingsProvider).value;
+    final invoices = ref.watch(invoicesProvider).value ?? [];
+    final expenses = ref.watch(expensesProvider).value ?? [];
 
     final isSettingsCompleted = settings != null &&
         settings.companyName.isNotEmpty &&

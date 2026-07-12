@@ -18,10 +18,8 @@ class BiometricService {
     try {
       return await _auth.authenticate(
         localizedReason: localizedReason,
-        options: const AuthenticationOptions(
-          stickyAuth: true,
-          biometricOnly: false, // Allows PIN/Pattern fallback if biometrics fail
-        ),
+        biometricOnly: false,
+        persistAcrossBackgrounding: true,
       );
     } catch (e) {
       return false;

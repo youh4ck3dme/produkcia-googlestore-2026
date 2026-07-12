@@ -63,8 +63,9 @@ class MockFirebaseAnalytics extends Fake implements FirebaseAnalytics {
   @override
   Future<void> logEvent({
     required String name,
-    Map<String, Object?>? parameters,
+    Map<String, Object>? parameters,
     AnalyticsCallOptions? callOptions,
+    List<AnalyticsEventItem>? items,
   }) async {}
   
   @override
@@ -75,9 +76,9 @@ class MockFirebaseAnalytics extends Fake implements FirebaseAnalytics {
 }
 
 class TestInitializationService extends InitializationService {
-  TestInitializationService(super.ref) {
-    state = const InitState(progress: 1.0, message: 'Hotovo!', isCompleted: true);
-  }
+  @override
+  InitState build() =>
+      const InitState(progress: 1.0, message: 'Hotovo!', isCompleted: true);
 
   @override
   Future<void> initializeApp() async {}
@@ -137,9 +138,9 @@ void main() {
               .overrideWithValue(MockAuthRepository(const Stream.empty())),
           authStateProvider.overrideWith((ref) => const Stream.empty()),
           onboardingProvider
-              .overrideWith((ref) => OnboardingNotifier.test(ref, seen: true)),
+              .overrideWith(() => OnboardingNotifier.test(seen: true)),
           initializationServiceProvider
-              .overrideWith((ref) => TestInitializationService(ref)),
+              .overrideWith(() => TestInitializationService()),
           firebaseAnalyticsProvider.overrideWithValue(mockAnalytics),
           analyticsServiceProvider
               .overrideWithValue(AnalyticsService(mockAnalytics)),
@@ -193,9 +194,9 @@ void main() {
               .overrideWithValue(MockAuthRepository(Stream.value(null))),
           authStateProvider.overrideWith((ref) => Stream.value(null)),
             onboardingProvider
-              .overrideWith((ref) => OnboardingNotifier.test(ref, seen: false)),
+              .overrideWith(() => OnboardingNotifier.test(seen: false)),
           initializationServiceProvider
-              .overrideWith((ref) => TestInitializationService(ref)),
+              .overrideWith(() => TestInitializationService()),
           firebaseAnalyticsProvider.overrideWithValue(mockAnalytics),
           analyticsServiceProvider
               .overrideWithValue(AnalyticsService(mockAnalytics)),
@@ -252,9 +253,9 @@ void main() {
               .overrideWithValue(MockAuthRepository(Stream.value(null))),
           authStateProvider.overrideWith((ref) => Stream.value(null)),
             onboardingProvider
-              .overrideWith((ref) => OnboardingNotifier.test(ref, seen: true)),
+              .overrideWith(() => OnboardingNotifier.test(seen: true)),
           initializationServiceProvider
-              .overrideWith((ref) => TestInitializationService(ref)),
+              .overrideWith(() => TestInitializationService()),
           firebaseAnalyticsProvider.overrideWithValue(mockAnalytics),
           analyticsServiceProvider
               .overrideWithValue(AnalyticsService(mockAnalytics)),
@@ -310,9 +311,9 @@ void main() {
               .overrideWithValue(MockAuthRepository(Stream.value(user))),
           authStateProvider.overrideWith((ref) => Stream.value(user)),
             onboardingProvider
-              .overrideWith((ref) => OnboardingNotifier.test(ref, seen: true)),
+              .overrideWith(() => OnboardingNotifier.test(seen: true)),
           initializationServiceProvider
-              .overrideWith((ref) => TestInitializationService(ref)),
+              .overrideWith(() => TestInitializationService()),
           invoicesProvider.overrideWith((ref) => Stream.value([])),
           expensesProvider.overrideWith((ref) => Stream.value([])),
           settingsProvider

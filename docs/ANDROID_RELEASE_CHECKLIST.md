@@ -30,10 +30,10 @@ Ak všetko prebehne úspešne, nájdete súbor tu:
 - [ ] **App Name:** BizAgent
 - [ ] **Short Description:** AI Asistent pre SZČO
 - [ ] **Full Description:** (Popíšte funkcie OCR, AI Email, Faktúry...)
-- [ ] **Graphics:**
-    - Ikona: `google_play_assets/icon/hi-res-icon.png` (512x512)
-    - Feature Graphic: `google_play_assets/feature_graphic.png` (1024x500 - *treba vytvoriť*)
-    - Screenshots: `google_play_assets/screenshots/` (Phone & Tablet).
+- [ ] **Graphics** (regenerovať: `./scripts/export_google_play_assets.sh`):
+    - Ikona: `google_play_assets/icon/hi-res-icon-512.png` (512×512)
+    - Feature Graphic: `google_play_assets/feature-graphic-1024x500.png` (1024×500)
+    - Screenshots: `google_play_assets/screenshots/phone/` (4× 1080×1920)
 
 ### Data Safety (Dôležité!)
 Google sa bude pýtať na dáta. Odpovede:

@@ -55,7 +55,7 @@ void main() {
     // Keep provider alive
     container.listen(revenueMetricsProvider, (_, __) {});
 
-    final metrics = await container.read(revenueMetricsProvider.future);
+    final metrics = (await container.read(revenueMetricsProvider.future))!;
 
     expect(metrics.totalRevenue, 0.0);
     expect(metrics.thisMonthRevenue, 0.0);
@@ -105,7 +105,7 @@ void main() {
     // Keep provider alive
     container.listen(revenueMetricsProvider, (_, __) {});
 
-    final metrics = await container.read(revenueMetricsProvider.future);
+    final metrics = (await container.read(revenueMetricsProvider.future))!;
 
     expect(metrics.totalRevenue, 600.0);
     expect(metrics.thisMonthRevenue, 100.0);
@@ -169,7 +169,7 @@ void main() {
     // Keep provider alive
     container.listen(revenueMetricsProvider, (_, __) {});
 
-    final metrics = await container.read(revenueMetricsProvider.future);
+    final metrics = (await container.read(revenueMetricsProvider.future))!;
 
     // Unpaid = Sent + Overdue = 200 + 300 + 400 = 900
     expect(metrics.unpaidAmount, 900.0);

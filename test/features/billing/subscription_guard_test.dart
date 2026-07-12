@@ -29,7 +29,7 @@ void main() {
   ProviderContainer containerFor(BillingState state) {
     return ProviderContainer(
       overrides: [
-        billingProvider.overrideWith((ref) => BillingService.forTest(state, testLimiter)),
+        billingProvider.overrideWith(() => BillingService.forTest(state, testLimiter)),
       ],
     );
   }

@@ -114,8 +114,8 @@ Widget _app(
       authStateProvider.overrideWith(
         (ref) => loggedIn ? Stream.value(MockUser()) : mockAuth.authStateChanges,
       ),
-      onboardingProvider.overrideWith((ref) => OnboardingNotifier.test(ref, seen: seen)),
-      initializationServiceProvider.overrideWith((ref) => TestInitializationService(ref)),
+      onboardingProvider.overrideWith(() => OnboardingNotifier.test(seen: seen)),
+      initializationServiceProvider.overrideWith(() => TestInitializationService()),
       invoicesProvider.overrideWith((ref) => Stream.value([])),
       expensesProvider.overrideWith((ref) => Stream.value([])),
       settingsProvider.overrideWith((ref) => Stream.value(UserSettingsModel.empty())),
@@ -163,9 +163,9 @@ class MockFirebaseAnalytics extends Fake implements FirebaseAnalytics {
 }
 
 class TestInitializationService extends InitializationService {
-  TestInitializationService(super.ref) {
-    state = const InitState(progress: 1.0, message: 'Hotovo!', isCompleted: true);
-  }
+  @override
+  InitState build() =>
+      const InitState(progress: 1.0, message: 'Hotovo!', isCompleted: true);
 
   @override
   Future<void> initializeApp() async {}

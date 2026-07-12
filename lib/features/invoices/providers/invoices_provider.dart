@@ -6,57 +6,54 @@ import '../../../core/services/local_persistence_service.dart';
 import '../../../core/demo_mode/demo_mode_service.dart';
 
 final invoicesProvider = StreamProvider<List<InvoiceModel>>((ref) {
-  final user = ref.watch(authStateProvider).valueOrNull;
+  final user = ref.watch(authStateProvider).value;
   if (user == null) return Stream.value([]);
   return ref.watch(invoicesRepositoryProvider).watchInvoices(user.id);
 });
 
 final invoicesControllerProvider =
-    StateNotifierProvider<InvoicesController, AsyncValue<void>>((ref) {
-  return InvoicesController(ref);
-});
+    NotifierProvider<InvoicesController, AsyncValue<void>>(InvoicesController.new);
 
-class InvoicesController extends StateNotifier<AsyncValue<void>> {
-  final Ref _ref;
-
-  InvoicesController(this._ref) : super(const AsyncValue.data(null));
+class InvoicesController extends Notifier<AsyncValue<void>> {
+  @override
+  AsyncValue<void> build() => const AsyncValue.data(null);
 
   Future<void> addInvoice(InvoiceModel invoice) async {
-    final user = _ref.read(authStateProvider).valueOrNull;
+    final user = ref.read(authStateProvider).value;
     if (user == null) return;
 
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() =>
-        _ref.read(invoicesRepositoryProvider).addInvoice(user.id, invoice));
+        ref.read(invoicesRepositoryProvider).addInvoice(user.id, invoice));
   }
 
   Future<void> updateInvoice(InvoiceModel invoice) async {
-    final user = _ref.read(authStateProvider).valueOrNull;
+    final user = ref.read(authStateProvider).value;
     if (user == null) return;
 
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() =>
-        _ref.read(invoicesRepositoryProvider).updateInvoice(user.id, invoice));
+        ref.read(invoicesRepositoryProvider).updateInvoice(user.id, invoice));
   }
 
   Future<void> updateStatus(String invoiceId, InvoiceStatus status) async {
-    final user = _ref.read(authStateProvider).valueOrNull;
+    final user = ref.read(authStateProvider).value;
     if (user == null) return;
 
     state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() => _ref
+    state = await AsyncValue.guard(() => ref
         .read(invoicesRepositoryProvider)
         .updateInvoiceStatus(user.id, invoiceId, status));
   }
 
   Future<void> softDeleteInvoice(String invoiceId, {String? reason}) async {
-    final user = _ref.read(authStateProvider).valueOrNull;
+    final user = ref.read(authStateProvider).value;
     if (user == null) return;
 
     state = const AsyncValue.loading();
     if (DemoModeService.instance.isDemoMode) {
       state = await AsyncValue.guard(() async {
-        final persistence = _ref.read(localPersistenceServiceProvider);
+        final persistence = ref.read(localPersistenceServiceProvider);
         final localData = persistence.getInvoices();
         final index = localData.indexWhere((inv) => inv['id'] == invoiceId);
         if (index != -1) {
@@ -66,20 +63,20 @@ class InvoicesController extends StateNotifier<AsyncValue<void>> {
         }
       });
     } else {
-      state = await AsyncValue.guard(() => _ref
+      state = await AsyncValue.guard(() => ref
           .read(invoicesRepositoryProvider)
           .softDeleteInvoice(user.id, invoiceId, reason: reason));
     }
   }
 
   Future<void> deleteInvoices(List<String> invoiceIds, {String? reason}) async {
-    final user = _ref.read(authStateProvider).valueOrNull;
+    final user = ref.read(authStateProvider).value;
     if (user == null) return;
 
     state = const AsyncValue.loading();
     if (DemoModeService.instance.isDemoMode) {
       state = await AsyncValue.guard(() async {
-        final persistence = _ref.read(localPersistenceServiceProvider);
+        final persistence = ref.read(localPersistenceServiceProvider);
         final localData = persistence.getInvoices();
         for (final id in invoiceIds) {
           final index = localData.indexWhere((inv) => inv['id'] == id);
@@ -92,7 +89,7 @@ class InvoicesController extends StateNotifier<AsyncValue<void>> {
       });
     } else {
       state = await AsyncValue.guard(() async {
-        final repository = _ref.read(invoicesRepositoryProvider);
+        final repository = ref.read(invoicesRepositoryProvider);
         for (final id in invoiceIds) {
           await repository.softDeleteInvoice(user.id, id, reason: reason);
         }

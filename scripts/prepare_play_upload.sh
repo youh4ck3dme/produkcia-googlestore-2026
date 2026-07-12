@@ -62,10 +62,20 @@ Privacy URL:  https://bizagent.sk/privacy-policy.html
 Deletion URL: https://bizagent.sk/delete-account.html
 Supabase:     kpsnwpuydqqojwmrnkdy
 
+Play graphics (upload to Store listing):
+  Icon:     google_play_assets/icon/hi-res-icon-512.png
+  Feature:  google_play_assets/feature-graphic-1024x500.png
+  Screens:  google_play_assets/screenshots/phone/01-dashboard.png
+            google_play_assets/screenshots/phone/02-invoices.png
+            google_play_assets/screenshots/phone/03-expenses-ocr.png
+            google_play_assets/screenshots/phone/04-ai-tools.png
+  ZIP copy: GooglePlay_Release_Content/graphics/
+
 Play Console checklist:
   [ ] Create app sk.bizagent.app (new listing)
   [ ] Internal testing track
   [ ] Upload AAB above
+  [ ] Upload graphics from google_play_assets/
   [ ] Privacy policy URL
   [ ] Account deletion URL
   [ ] Demo credentials for review

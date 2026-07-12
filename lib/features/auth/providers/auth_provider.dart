@@ -2,14 +2,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'auth_repository.dart';
 
 final authControllerProvider =
-    StateNotifierProvider<AuthController, AsyncValue<void>>((ref) {
-  return AuthController(ref.read(authRepositoryProvider));
-});
+    NotifierProvider<AuthController, AsyncValue<void>>(AuthController.new);
 
-class AuthController extends StateNotifier<AsyncValue<void>> {
-  final AuthRepository _authRepository;
+class AuthController extends Notifier<AsyncValue<void>> {
+  late final AuthRepository _authRepository;
 
-  AuthController(this._authRepository) : super(const AsyncValue.data(null));
+  @override
+  AsyncValue<void> build() {
+    _authRepository = ref.read(authRepositoryProvider);
+    return const AsyncValue.data(null);
+  }
 
   Future<void> signIn(String email, String password) async {
     state = const AsyncValue.loading();

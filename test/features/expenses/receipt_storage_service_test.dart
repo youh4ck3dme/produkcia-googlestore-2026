@@ -52,6 +52,7 @@ void main() {
           ],
         );
         addTearDown(container.dispose);
+        container.listen(authStateProvider, (_, __) {});
 
         final service = container.read(receiptStorageServiceProvider);
 
@@ -74,8 +75,13 @@ void main() {
           ],
         );
         addTearDown(container.dispose);
+        container.listen(authStateProvider, (_, __) {});
+        await Future.doWhile(() async {
+          if (container.read(authStateProvider).hasValue) return false;
+          await Future<void>.delayed(Duration.zero);
+          return true;
+        });
 
-        await container.read(authStateProvider.future);
         final service = container.read(receiptStorageServiceProvider);
 
         await expectLater(
@@ -97,8 +103,13 @@ void main() {
           ],
         );
         addTearDown(container.dispose);
+        container.listen(authStateProvider, (_, __) {});
+        await Future.doWhile(() async {
+          if (container.read(authStateProvider).hasValue) return false;
+          await Future<void>.delayed(Duration.zero);
+          return true;
+        });
 
-        await container.read(authStateProvider.future);
         final service = container.read(receiptStorageServiceProvider);
 
         await expectLater(
@@ -122,8 +133,8 @@ void main() {
           ],
         );
         addTearDown(container.dispose);
+        container.listen(authStateProvider, (_, __) {});
 
-        await container.read(authStateProvider.future);
         final tempDir = await Directory.systemTemp.createTemp('receipt_test');
         addTearDown(() => tempDir.deleteSync(recursive: true));
         final file = File('${tempDir.path}/receipt.jpg');
@@ -146,8 +157,8 @@ void main() {
           ],
         );
         addTearDown(container.dispose);
+        container.listen(authStateProvider, (_, __) {});
 
-        await container.read(authStateProvider.future);
         final tempDir = await Directory.systemTemp.createTemp('receipt_test');
         addTearDown(() => tempDir.deleteSync(recursive: true));
         final file = File('${tempDir.path}/receipt.jpg');
@@ -170,6 +181,7 @@ void main() {
           ],
         );
         addTearDown(container.dispose);
+        container.listen(authStateProvider, (_, __) {});
 
         final service = container.read(receiptStorageServiceProvider);
 
@@ -186,6 +198,7 @@ void main() {
           ],
         );
         addTearDown(container.dispose);
+        container.listen(authStateProvider, (_, __) {});
 
         final service = container.read(receiptStorageServiceProvider);
 
@@ -202,6 +215,7 @@ void main() {
           ],
         );
         addTearDown(container.dispose);
+        container.listen(authStateProvider, (_, __) {});
 
         final service = container.read(receiptStorageServiceProvider);
 

@@ -41,17 +41,38 @@ import '../../features/tools/screens/icoatlas_home_screen.dart';
 import '../../shared/widgets/scaffold_with_navbar.dart';
 import '../../shared/widgets/biz_auth_required.dart';
 import '../../core/config/play_release_scope.dart';
+import '../../core/debug/perf_probe.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final firebaseAnalyticsProvider = Provider((ref) => FirebaseAnalytics.instance);
 
+/// Notifies [GoRouter] to re-run redirects without recreating the router instance.
+class GoRouterRefresh extends ChangeNotifier {
+  GoRouterRefresh(this._ref) {
+    _ref.listen(authStateProvider, (_, __) => notifyListeners());
+    _ref.listen(onboardingProvider, (_, __) => notifyListeners());
+    _ref.listen(initializationServiceProvider, (_, __) => notifyListeners());
+  }
+
+  final Ref _ref;
+}
+
+final goRouterRefreshProvider = Provider<GoRouterRefresh>((ref) {
+  final refresh = GoRouterRefresh(ref);
+  ref.onDispose(refresh.dispose);
+  return refresh;
+});
+
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authStateProvider);
-  final onboardingState = ref.watch(onboardingProvider);
+  final refresh = ref.watch(goRouterRefreshProvider);
   final analytics = ref.watch(firebaseAnalyticsProvider);
-  final init = ref.watch(initializationServiceProvider);
+
+  // #region agent log
+  perfProbe('A', 'app_router.dart:routerProvider', 'go_router_created');
+  // #endregion
 
   return GoRouter(
+    refreshListenable: refresh,
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/login',
     observers: [
@@ -59,16 +80,12 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
     redirect: (context, state) {
       final path = state.uri.path;
+      final authState = ref.read(authStateProvider);
+      final onboardingState = ref.read(onboardingProvider);
+      final init = ref.read(initializationServiceProvider);
 
-      // OAuth návrat: ?code= v URL (pred vyčistením) — nepresmerovávaj preč z login
-      if (kIsWeb && Uri.base.queryParameters.containsKey('code')) {
-        return path == '/login' ? null : '/login';
-      }
-
-      // 1. Loading / initialization — drž sa login/onboarding, žiadny splash
-      if (authState.isLoading ||
-          onboardingState.isLoading ||
-          !init.isCompleted) {
+      // 1. Auth / onboarding stream ešte nenačítané
+      if (authState.isLoading || onboardingState.isLoading) {
         if (path == '/login' || path == '/onboarding') return null;
         return '/login';
       }
@@ -81,18 +98,29 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isLoggedIn = authState.value != null;
       final seenOnboarding = onboardingState.value ?? false;
 
-      // 3. Onboarding Flow
+      // OAuth návrat: ?code= v URL — drž login len kým nemáme session
+      if (kIsWeb && Uri.base.queryParameters.containsKey('code') && !isLoggedIn) {
+        return path == '/login' ? null : '/login';
+      }
+
+      // 3. Init (kozmetický splash) — neblokuj prihláseného používateľa
+      if (!init.isCompleted && !isLoggedIn) {
+        if (path == '/login' || path == '/onboarding') return null;
+        return '/login';
+      }
+
+      // 4. Onboarding Flow
       if (!seenOnboarding) {
         return path == '/onboarding' ? null : '/onboarding';
       }
 
-      // 4. Not Logged In
+      // 5. Not Logged In
       if (!isLoggedIn) {
         if (path == '/login' || path == '/onboarding') return null;
         return '/login';
       }
 
-      // 5. Already Logged In
+      // 6. Already Logged In
       if (path == '/login' || path == '/onboarding') {
         return '/dashboard';
       }

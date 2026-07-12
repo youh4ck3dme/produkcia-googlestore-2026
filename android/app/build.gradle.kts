@@ -27,7 +27,7 @@ val hasReleaseKeystore =
 
 android {
     namespace = "sk.bizagent.app"
-    compileSdk = 36
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -98,4 +98,7 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    // integration_test is dev-only (not packaged in release) but still referenced in
+    // GeneratedPluginRegistrant.java — needs compile classpath for release builds.
+    releaseCompileOnly(project(":integration_test"))
 }

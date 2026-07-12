@@ -36,52 +36,76 @@ class BillingState {
 }
 
 // Provider
-final billingProvider = StateNotifierProvider<BillingService, BillingState>((ref) {
-  final usageLimiter = ref.watch(usageLimiterProvider);
-  return BillingService(usageLimiter);
-});
+final billingProvider = NotifierProvider<BillingService, BillingState>(() => BillingService());
 
-class BillingService extends StateNotifier<BillingState> {
+class BillingService extends Notifier<BillingState> {
   late final InAppPurchase _iap;
-  final UsageLimiter _usageLimiter;
-  late StreamSubscription<List<PurchaseDetails>> _subscription;
+  late UsageLimiter _usageLimiter;
+  StreamSubscription<List<PurchaseDetails>>? _subscription;
+  bool _testMode = false;
 
-  BillingService(this._usageLimiter) : super(BillingState(entitlements: UserEntitlements.free())) {
+  BillingService();
+
+  @override
+  BillingState build() {
+    ref.onDispose(() => _subscription?.cancel());
+
+    if (_testMode) {
+      return _testState!;
+    }
+
+    _usageLimiter = ref.watch(usageLimiterProvider);
     _iap = InAppPurchase.instance;
     _init();
+    return BillingState(entitlements: UserEntitlements.free());
   }
 
+  BillingState? _testState;
+
   /// Test-only: fixed state, no IAP or async init. Caller must provide a UsageLimiter (e.g. from mock prefs).
-  BillingService.forTest(super.state, this._usageLimiter) {
+  /// Uses a no-op stream subscription so dispose cleanup matches production.
+  BillingService.forTest(BillingState state, UsageLimiter usageLimiter) {
+    _testMode = true;
+    _testState = state;
+    _usageLimiter = usageLimiter;
     _subscription = const Stream<List<PurchaseDetails>>.empty().listen((_) {});
   }
 
   Future<void> _init() async {
-    final available = await _iap.isAvailable();
-    if (!available) {
-      state = state.copyWith(errorMessage: "Store not available");
-      return;
+    try {
+      final available = await _iap.isAvailable();
+      if (!ref.mounted) return;
+      if (!available) {
+        state = state.copyWith(errorMessage: "Store not available");
+        return;
+      }
+
+      // Listen to purchase updates
+      final purchaseUpdated = _iap.purchaseStream;
+      _subscription = purchaseUpdated.listen(
+        (purchaseDetailsList) {
+          _listenToPurchaseUpdated(purchaseDetailsList);
+        },
+        onDone: () {
+          _subscription?.cancel();
+        },
+        onError: (error) {
+          if (!ref.mounted) return;
+          state = state.copyWith(errorMessage: error.toString());
+        },
+      );
+
+      await _usageLimiter.checkAndResetMonthly();
+      if (!ref.mounted) return;
+      _updateEntitlementsWithUsage();
+
+      await loadProducts();
+      if (!ref.mounted) return;
+      await restorePurchases();
+    } catch (e) {
+      if (!ref.mounted) return;
+      state = state.copyWith(errorMessage: e.toString());
     }
-
-    // Listen to purchase updates
-    final purchaseUpdated = _iap.purchaseStream;
-    _subscription = purchaseUpdated.listen(
-      (purchaseDetailsList) {
-        _listenToPurchaseUpdated(purchaseDetailsList);
-      },
-      onDone: () {
-        _subscription.cancel();
-      },
-      onError: (error) {
-        state = state.copyWith(errorMessage: error.toString());
-      },
-    );
-
-    await _usageLimiter.checkAndResetMonthly();
-    _updateEntitlementsWithUsage();
-
-    await loadProducts();
-    await restorePurchases();
   }
 
   void refreshUsage() {
@@ -93,8 +117,17 @@ class BillingService extends StateNotifier<BillingState> {
       entitlements: state.entitlements.copyWith(
         invoiceCount: _usageLimiter.invoiceCount,
         icoLookupsCount: _usageLimiter.icoCount,
+        aiRequestsCount: _usageLimiter.aiRequestCount,
       ),
     );
+  }
+
+  /// Po úspešnom BizBot / AI dotaze (free tier limit).
+  Future<void> recordAiRequest() async {
+    if (_testMode) return;
+    await _usageLimiter.incrementAiRequest();
+    if (!ref.mounted) return;
+    _updateEntitlementsWithUsage();
   }
 
   Future<void> loadProducts() async {
@@ -186,11 +219,5 @@ class BillingService extends StateNotifier<BillingState> {
         activePlanId: id,
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _subscription.cancel();
-    super.dispose();
   }
 }

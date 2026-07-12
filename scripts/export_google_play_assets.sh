@@ -71,14 +71,36 @@ if [ "$TOTAL_KB" -gt 15360 ]; then
   fi
 fi
 
-for f in \
-  "$OUT_DIR/icon/hi-res-icon-512.png" \
-  "$OUT_DIR/feature-graphic-1024x500.png" \
-  "$OUT_DIR"/screenshots/phone/*.png; do
+validate_dims() {
+  local f="$1" ew="$2" eh="$3"
+  local w h
   w=$(sips -g pixelWidth "$f" 2>/dev/null | awk '/pixelWidth/ {print $2}')
   h=$(sips -g pixelHeight "$f" 2>/dev/null | awk '/pixelHeight/ {print $2}')
   echo "  $f -> ${w}x${h}"
+  if [ "$w" != "$ew" ] || [ "$h" != "$eh" ]; then
+    echo "Error: $f expected ${ew}x${eh}, got ${w}x${h}" >&2
+    exit 1
+  fi
+}
+
+validate_dims "$OUT_DIR/icon/hi-res-icon-512.png" 512 512
+validate_dims "$OUT_DIR/feature-graphic-1024x500.png" 1024 500
+for f in "$OUT_DIR"/screenshots/phone/*.png; do
+  validate_dims "$f" 1080 1920
 done
 
 echo "Total size: $(du -sh "$OUT_DIR" | cut -f1)"
+
+RELEASE_GRAPHICS="GooglePlay_Release_Content/graphics"
+echo "Syncing to $RELEASE_GRAPHICS ..."
+mkdir -p "$RELEASE_GRAPHICS"
+rm -rf "$RELEASE_GRAPHICS/icon" "$RELEASE_GRAPHICS/screenshots"
+cp -R "$OUT_DIR/icon" "$RELEASE_GRAPHICS/"
+cp "$OUT_DIR/feature-graphic-1024x500.png" "$RELEASE_GRAPHICS/"
+cp -R "$OUT_DIR/screenshots" "$RELEASE_GRAPHICS/"
+
 echo "Done."
+echo "Play Console upload paths:"
+echo "  $RELEASE_GRAPHICS/icon/hi-res-icon-512.png"
+echo "  $RELEASE_GRAPHICS/feature-graphic-1024x500.png"
+echo "  $RELEASE_GRAPHICS/screenshots/phone/*.png"

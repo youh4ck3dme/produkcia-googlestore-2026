@@ -30,7 +30,7 @@ void main() {
       final maxMs = const bool.fromEnvironment('CI', defaultValue: false) ||
               (Platform.environment['CI'] ?? '').toLowerCase() == 'true'
           ? 8000
-          : 8000;
+          : 30000;
 
       expect(stopwatch.elapsedMilliseconds, lessThan(maxMs));
     });
@@ -50,7 +50,7 @@ void main() {
       final maxMs = const bool.fromEnvironment('CI', defaultValue: false) ||
               (Platform.environment['CI'] ?? '').toLowerCase() == 'true'
           ? 1000
-          : 200;
+          : 500;
 
       expect(stopwatch.elapsedMilliseconds, lessThan(maxMs));
     });

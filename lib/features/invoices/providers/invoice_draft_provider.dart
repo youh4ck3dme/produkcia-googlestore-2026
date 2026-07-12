@@ -18,17 +18,16 @@ class InvoiceDraftState {
 final taxServiceProvider = Provider((_) => TaxCalculationService());
 
 final invoiceDraftProvider =
-    StateNotifierProvider<InvoiceDraftController, InvoiceDraftState>(
-  (ref) => InvoiceDraftController(ref),
+    NotifierProvider<InvoiceDraftController, InvoiceDraftState>(
+  InvoiceDraftController.new,
 );
 
-class InvoiceDraftController extends StateNotifier<InvoiceDraftState> {
-  InvoiceDraftController(this._ref) : super(InvoiceDraftState(items: []));
-
-  final Ref _ref;
+class InvoiceDraftController extends Notifier<InvoiceDraftState> {
+  @override
+  InvoiceDraftState build() => InvoiceDraftState(items: []);
 
   TaxTotals get totals {
-    final tax = _ref.read(taxServiceProvider);
+    final tax = ref.read(taxServiceProvider);
     final lines = state.items.map((it) => it.toTaxLine(tax));
     return tax.calcTotals(lines);
   }

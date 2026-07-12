@@ -31,7 +31,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
   @override
   void initState() {
     super.initState();
-    final settings = ref.read(settingsProvider).valueOrNull ?? UserSettingsModel.empty();
+    final settings = ref.read(settingsProvider).value ?? UserSettingsModel.empty();
     _nameController = TextEditingController(text: settings.companyName);
     _addressController = TextEditingController(text: settings.companyAddress);
     _icoController = TextEditingController(text: settings.companyIco);
@@ -92,7 +92,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
 
   void _save() async {
     if (_formKey.currentState!.validate()) {
-      final current = ref.read(settingsProvider).valueOrNull ?? UserSettingsModel.empty();
+      final current = ref.read(settingsProvider).value ?? UserSettingsModel.empty();
       final updated = current.copyWith(
         companyName: _nameController.text,
         companyAddress: _addressController.text,
@@ -116,7 +116,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final settings = ref.watch(settingsProvider).valueOrNull ?? UserSettingsModel.empty();
+    final settings = ref.watch(settingsProvider).value ?? UserSettingsModel.empty();
 
     return Scaffold(
       appBar: AppBar(

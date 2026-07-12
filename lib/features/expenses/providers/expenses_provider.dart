@@ -4,36 +4,35 @@ import '../models/expense_model.dart';
 import 'expenses_repository.dart';
 
 final expensesProvider = StreamProvider<List<ExpenseModel>>((ref) {
-  final user = ref.watch(authStateProvider).valueOrNull;
+  final user = ref.watch(authStateProvider).value;
   if (user == null) return Stream.value([]);
   return ref.watch(expensesRepositoryProvider).watchExpenses(user.id);
 });
 
 final expensesControllerProvider =
-    StateNotifierProvider<ExpensesController, AsyncValue<void>>((ref) {
-  return ExpensesController(ref);
-});
+    NotifierProvider<ExpensesController, AsyncValue<void>>(ExpensesController.new);
 
-class ExpensesController extends StateNotifier<AsyncValue<void>> {
-  final Ref _ref;
-
-  ExpensesController(this._ref) : super(const AsyncValue.data(null));
+class ExpensesController extends Notifier<AsyncValue<void>> {
+  @override
+  AsyncValue<void> build() => const AsyncValue.data(null);
 
   Future<void> addExpense(ExpenseModel expense) async {
-    final user = _ref.read(authStateProvider).valueOrNull;
+    final user = ref.read(authStateProvider).value ??
+        ref.read(authRepositoryProvider).currentUser;
     if (user == null) return;
 
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() =>
-        _ref.read(expensesRepositoryProvider).addExpense(user.id, expense));
+        ref.read(expensesRepositoryProvider).addExpense(user.id, expense));
   }
 
   Future<void> deleteExpense(String expenseId) async {
-    final user = _ref.read(authStateProvider).valueOrNull;
+    final user = ref.read(authStateProvider).value ??
+        ref.read(authRepositoryProvider).currentUser;
     if (user == null) return;
 
     state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() => _ref
+    state = await AsyncValue.guard(() => ref
         .read(expensesRepositoryProvider)
         .deleteExpense(user.id, expenseId));
   }

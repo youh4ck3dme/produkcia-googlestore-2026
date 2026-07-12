@@ -5,10 +5,10 @@ import 'package:bizagent/core/i18n/l10n.dart';
 
 Widget testApp({
   required Widget child,
-  List<Override> overrides = const [],
+  Iterable extraOverrides = const [],
 }) {
   return ProviderScope(
-    overrides: overrides,
+    overrides: [...extraOverrides],
     child: MaterialApp(
       home: L10n(locale: AppLocale.sk, child: child),
     ),

@@ -30,26 +30,28 @@ class ExpenseInsightsService {
         .toList();
 
     final prompt = '''
-Analyze these business expenses for a Slovak SZČO (self-employed) and provide actionable insights.
-Focus on identifying:
-1. Reoccurring spending patterns.
-2. Savings opportunities.
-3. Sudden anomalies.
-4. Tax optimization tips based on categories.
+Analyzuj výdavky slovenského SZČO / živnostníka a navrhni praktické postrehy.
+Zameraj sa na:
+1. Opakujúce sa vzory výdavkov.
+2. Možnosti úspory.
+3. Anomálie oproti bežnému mesiacu.
+4. Orientačné daňové tipy podľa kategórií (informatívne, nie záväzné poradenstvo).
 
-Expenses:
+Výdavky (JSON):
 ${jsonEncode(expenseData)}
 
-Output MUST be a JSON array of objects with these fields:
-- id: unique string
-- title: concise Slovak title
-- description: detailed Slovak explanation
-- icon: one of [trending_up, trending_down, warning, lightbulb, savings, shopping_cart]
-- color: one of [red, green, orange, blue, purple]
-- potentialSavings: estimated monthly savings in EUR (number or null)
-- priority: one of [low, medium, high]
-- category: one of [optimization, anomaly, trend]
-- createdAt: current ISO date
+Výstup MUSÍ byť JSON pole objektov s poliami:
+- id: unikátny reťazec
+- title: stručný slovenský názov
+- description: slovenské vysvetlenie
+- icon: jedna z [trending_up, trending_down, warning, lightbulb, savings, shopping_cart]
+- color: jedna z [red, green, orange, blue, purple]
+- potentialSavings: odhad mesačnej úspory v EUR (číslo alebo null)
+- priority: jedna z [low, medium, high]
+- category: jedna z [optimization, anomaly, trend]
+- createdAt: aktuálny ISO dátum
+
+Vráť IBA platný JSON bez markdown.
 ''';
 
     try {

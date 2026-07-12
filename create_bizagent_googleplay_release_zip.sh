@@ -81,6 +81,14 @@ trap "rm -rf '$TMP_DIR'" EXIT
 cp "$AAB" "$TMP_DIR/"
 cp -r "$CONTENT_DIR" "$TMP_DIR/"
 
+# Graphics pre Play Console (ak export existuje, sync do release content)
+if [ -d "google_play_assets" ]; then
+  mkdir -p "$TMP_DIR/GooglePlay_Release_Content/graphics"
+  cp -R google_play_assets/icon "$TMP_DIR/GooglePlay_Release_Content/graphics/" 2>/dev/null || true
+  cp google_play_assets/feature-graphic-1024x500.png "$TMP_DIR/GooglePlay_Release_Content/graphics/" 2>/dev/null || true
+  cp -R google_play_assets/screenshots "$TMP_DIR/GooglePlay_Release_Content/graphics/" 2>/dev/null || true
+fi
+
 # Vytvor zip v root projekte (cesty v zip: app-release.aab, GooglePlay_Release_Content/...)
 ZIP_PATH="$(pwd)/$ZIP_NAME"
 (cd "$TMP_DIR" && zip -r -q "$ZIP_PATH" .)
@@ -91,6 +99,6 @@ echo -e "${GREEN}   Veľkosť: $SIZE${NC}"
 echo ""
 echo "Obsah zipu:"
 echo "  - app-release.aab"
-echo "  - GooglePlay_Release_Content/ (STORE_LISTING_SK.md, prompty, checklist, ...)"
+echo "  - GooglePlay_Release_Content/ (STORE_LISTING_SK.md, graphics/, checklist, ...)"
 echo ""
 echo -e "${GREEN}🎉 Release balík je pripravený. Nahraj AAB do Google Play Console a použij texty z GooglePlay_Release_Content.${NC}"

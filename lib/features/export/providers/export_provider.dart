@@ -6,16 +6,13 @@ import '../../../core/supabase/supabase_providers.dart';
 import 'supabase_export_data_source.dart';
 
 final exportProvider =
-    StateNotifierProvider<ExportController, ExportState>((ref) {
-  return ExportController(ref);
-});
+    NotifierProvider<ExportController, ExportState>(ExportController.new);
 
 // ... exportPeriodsProvider remains the same ...
 
-class ExportController extends StateNotifier<ExportState> {
-  ExportController(this._ref) : super(ExportState.idle());
-
-  final Ref _ref;
+class ExportController extends Notifier<ExportState> {
+  @override
+  ExportState build() => ExportState.idle();
 
   Future<void> run({
     required String uid,
@@ -34,7 +31,7 @@ class ExportController extends StateNotifier<ExportState> {
         throw StateError('Supabase nie je inicializovaný — export nie je dostupný');
       }
       final dataSource = SupabaseExportDataSource(
-        _ref.read(supabaseTableStoreProvider),
+        ref.read(supabaseTableStoreProvider),
         uid,
       );
       final service = ExportService(dataSource);

@@ -35,4 +35,15 @@ class FakeBizBotHistoryRepository extends BizBotHistoryRepository {
     _messages.clear();
     _controller.add(const []);
   }
+
+  @override
+  Future<List<BizBotMessage>> fetchRecentMessages(
+    String uid, {
+    int limit = 8,
+  }) async {
+    if (_messages.length <= limit) {
+      return List.unmodifiable(_messages);
+    }
+    return List.unmodifiable(_messages.sublist(_messages.length - limit));
+  }
 }

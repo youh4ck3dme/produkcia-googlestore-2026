@@ -14,9 +14,8 @@ void main() {
     mockPlugin = MockFlutterLocalNotificationsPlugin();
     service = NotificationService(plugin: mockPlugin);
 
-    // Mock initialize
     when(mockPlugin.initialize(
-      any,
+      settings: anyNamed('settings'),
       onDidReceiveNotificationResponse:
           anyNamed('onDidReceiveNotificationResponse'),
     )).thenAnswer((_) async => true);
@@ -26,7 +25,7 @@ void main() {
     await service.init();
 
     verify(mockPlugin.initialize(
-      any,
+      settings: anyNamed('settings'),
       onDidReceiveNotificationResponse:
           anyNamed('onDidReceiveNotificationResponse'),
     )).called(1);
@@ -34,10 +33,10 @@ void main() {
 
   test('showNotification should call plugin show', () async {
     when(mockPlugin.show(
-      any,
-      any,
-      any,
-      any,
+      id: anyNamed('id'),
+      title: anyNamed('title'),
+      body: anyNamed('body'),
+      notificationDetails: anyNamed('notificationDetails'),
       payload: anyNamed('payload'),
     )).thenAnswer((_) async => {});
 
@@ -49,10 +48,10 @@ void main() {
     );
 
     verify(mockPlugin.show(
-      1,
-      'Test',
-      'Body',
-      any,
+      id: 1,
+      title: 'Test',
+      body: 'Body',
+      notificationDetails: anyNamed('notificationDetails'),
       payload: 'payload',
     )).called(1);
   });

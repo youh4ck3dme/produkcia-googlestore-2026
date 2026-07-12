@@ -12,6 +12,7 @@ import 'features/notifications/services/notification_scheduler.dart';
 import 'features/tools/services/monitoring_service.dart';
 import 'features/auth/providers/auth_repository.dart';
 import 'core/services/local_persistence_service.dart';
+import 'core/debug/perf_probe.dart';
 
 
 class BizAgentApp extends ConsumerStatefulWidget {
@@ -48,6 +49,10 @@ class _BizAgentAppState extends ConsumerState<BizAgentApp> {
 
   @override
   Widget build(BuildContext context) {
+    // #region agent log
+    perfProbe('A', 'app.dart:build', 'material_app_rebuild');
+    // #endregion
+
     ref.listen(authStateProvider, (previous, next) {
       if (next.value == null && previous?.value != null) {
         ref.read(localPersistenceServiceProvider).clearAll();

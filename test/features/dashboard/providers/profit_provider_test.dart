@@ -72,7 +72,7 @@ void main() {
     // Check that expenses are loaded
     await container.read(expensesProvider.future);
 
-    final metrics = await container.read(profitMetricsProvider.future);
+    final metrics = (await container.read(profitMetricsProvider.future))!;
 
     // Total Profit = Total Revenue (1000) - Total Expenses (200+300=500) = 500
     expect(metrics.profit, 500.0);
@@ -108,7 +108,7 @@ void main() {
     // Check that expenses are loaded
     await container.read(expensesProvider.future);
 
-    final metrics = await container.read(profitMetricsProvider.future);
+    final metrics = (await container.read(profitMetricsProvider.future))!;
 
     // This Month Profit = This Month Revenue (500) - This Month Expenses (100) = 400
     expect(metrics.thisMonthProfit, 400.0);
@@ -131,7 +131,7 @@ void main() {
     // Check that expenses are loaded
     await container.read(expensesProvider.future);
 
-    final metrics = await container.read(profitMetricsProvider.future);
+    final metrics = (await container.read(profitMetricsProvider.future))!;
 
     expect(metrics.profitMargin, 0.0);
   });

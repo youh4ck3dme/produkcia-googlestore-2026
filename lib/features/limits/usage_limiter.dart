@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class UsageLimiter {
   static const String _kInvoiceCount = 'usage_invoice_count';
   static const String _kIcoCount = 'usage_ico_count';
+  static const String _kAiRequestCount = 'usage_ai_request_count';
   static const String _kLastReset = 'usage_last_reset';
 
   final SharedPreferences prefs;
@@ -12,6 +13,7 @@ class UsageLimiter {
 
   int get invoiceCount => prefs.getInt(_kInvoiceCount) ?? 0;
   int get icoCount => prefs.getInt(_kIcoCount) ?? 0;
+  int get aiRequestCount => prefs.getInt(_kAiRequestCount) ?? 0;
 
   Future<void> incrementInvoice() async {
     await prefs.setInt(_kInvoiceCount, invoiceCount + 1);
@@ -19,6 +21,10 @@ class UsageLimiter {
 
   Future<void> incrementIco() async {
     await prefs.setInt(_kIcoCount, icoCount + 1);
+  }
+
+  Future<void> incrementAiRequest() async {
+    await prefs.setInt(_kAiRequestCount, aiRequestCount + 1);
   }
 
   Future<void> checkAndResetMonthly() async {
@@ -38,6 +44,7 @@ class UsageLimiter {
   Future<void> resetCounts() async {
     await prefs.setInt(_kInvoiceCount, 0);
     await prefs.setInt(_kIcoCount, 0);
+    await prefs.setInt(_kAiRequestCount, 0);
     await prefs.setString(_kLastReset, DateTime.now().toIso8601String());
   }
 }

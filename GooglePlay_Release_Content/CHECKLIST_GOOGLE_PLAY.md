@@ -21,8 +21,9 @@ Ak niečo z toho zlyhá, oprav to alebo pozri `TEST_STATUS_RELEASE.md` v root pr
 |-------|------|
 | `STORE_LISTING_SK.md` | Názov, krátky a úplný popis pre Store listing |
 | `PRIVACY_POLICY_URL.md` | Inštrukcie pre URL zásad ochrany súkromia |
-| `FEATURE_GRAPHIC_PROMPT.md` | Prompt pre Feature graphic 1024×500 |
-| `SCREENSHOTS_PROMPTS.md` | Prompty pre 4 Rich Screenshots |
+| `graphics/` | Hotové PNG pre Play Console (512 ikona, 1024×500 feature, 4× 1080×1920) |
+| `FEATURE_GRAPHIC_PROMPT.md` | Prompt pre regeneráciu feature graphic |
+| `SCREENSHOTS_PROMPTS.md` | Prompty pre regeneráciu screenshotov |
 | `CHECKLIST_GOOGLE_PLAY.md` | Tento checklist |
 
 ---
@@ -31,8 +32,10 @@ Ak niečo z toho zlyhá, oprav to alebo pozri `TEST_STATUS_RELEASE.md` v root pr
 
 - [ ] **Store listing:** Skopíruj texty z `STORE_LISTING_SK.md`.
 - [ ] **Privacy policy:** Pridaj verejnú URL podľa `PRIVACY_POLICY_URL.md`.
-- [ ] **Feature graphic:** 1024×500 – vygeneruj podľa `FEATURE_GRAPHIC_PROMPT.md`.
-- [ ] **Screenshots:** 4 obrázky podľa `SCREENSHOTS_PROMPTS.md`.
+- [ ] **App icon:** `graphics/icon/hi-res-icon-512.png` (512×512)
+- [ ] **Feature graphic:** `graphics/feature-graphic-1024x500.png` (1024×500)
+- [ ] **Screenshots:** `graphics/screenshots/phone/01-dashboard.png` … `04-ai-tools.png` (1080×1920)
+- [ ] **Regenerovať:** `./scripts/export_google_play_assets.sh` → skopíruj do `graphics/`
 - [ ] **App access:** Demo účet `bizbizagent@bizbizagent.com` / heslo podľa `GOOGLE_PLAY_UPLOAD_CHECKLIST.md`.
 - [ ] **Data Safety:** Podľa hlavného checklistu v root projekte.
 

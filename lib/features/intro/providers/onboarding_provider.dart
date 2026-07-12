@@ -3,20 +3,26 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/services/gemini_service.dart';
 
 final onboardingProvider =
-    StateNotifierProvider<OnboardingNotifier, AsyncValue<bool>>((ref) {
-  return OnboardingNotifier(ref);
-});
+    NotifierProvider<OnboardingNotifier, AsyncValue<bool>>(() => OnboardingNotifier());
 
-class OnboardingNotifier extends StateNotifier<AsyncValue<bool>> {
-  OnboardingNotifier(this.ref) : super(const AsyncValue.loading()) {
-    _loadStatus();
+class OnboardingNotifier extends Notifier<AsyncValue<bool>> {
+  static const _key = 'seen_onboarding';
+  bool? _testSeen;
+
+  OnboardingNotifier();
+
+  OnboardingNotifier.test({required bool seen}) {
+    _testSeen = seen;
   }
 
-  OnboardingNotifier.test(this.ref, {required bool seen})
-      : super(AsyncValue.data(seen));
-
-  final Ref ref;
-  static const _key = 'seen_onboarding';
+  @override
+  AsyncValue<bool> build() {
+    if (_testSeen != null) {
+      return AsyncValue.data(_testSeen!);
+    }
+    _loadStatus();
+    return const AsyncValue.loading();
+  }
 
   Future<void> _loadStatus() async {
     try {
@@ -40,14 +46,14 @@ class OnboardingNotifier extends StateNotifier<AsyncValue<bool>> {
 }
 
 // New provider for onboarding demo data
-final onboardingDemoProvider = StateNotifierProvider<OnboardingDemoNotifier, AsyncValue<OnboardingDemoData?>>((ref) {
-  return OnboardingDemoNotifier(ref);
-});
+final onboardingDemoProvider =
+    NotifierProvider<OnboardingDemoNotifier, AsyncValue<OnboardingDemoData?>>(
+  OnboardingDemoNotifier.new,
+);
 
-class OnboardingDemoNotifier extends StateNotifier<AsyncValue<OnboardingDemoData?>> {
-  OnboardingDemoNotifier(this.ref) : super(const AsyncValue.data(null));
-
-  final Ref ref;
+class OnboardingDemoNotifier extends Notifier<AsyncValue<OnboardingDemoData?>> {
+  @override
+  AsyncValue<OnboardingDemoData?> build() => const AsyncValue.data(null);
 
   Future<void> generateDemoInvoice(String businessType) async {
     state = const AsyncValue.loading();

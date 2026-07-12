@@ -1,6 +1,5 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter/scheduler.dart'; // For SchedulerBinding
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -28,6 +27,7 @@ import '../../../shared/widgets/biz_glass_appbar.dart';
 import '../../../core/config/play_release_scope.dart';
 import '../../billing/subscription_guard.dart';
 import '../../billing/paywall_flow.dart';
+import '../../../core/debug/perf_probe.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -93,6 +93,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // #region agent log
+    perfProbe('B', 'dashboard_screen.dart:build', 'dashboard_rebuild');
+    // #endregion
+
     final user = ref.watch(authStateProvider).value;
     final invoicesAsync = ref.watch(invoicesProvider);
     final expensesAsync = ref.watch(expensesProvider);
@@ -164,10 +168,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
-                      ).animate().fade().moveY(begin: 10, duration: 400.ms),
+                      ),
                       const SizedBox(height: 4),
                       Text(context.t(AppStr.dashboardGreetingHint),
-                          style: Theme.of(context).textTheme.bodySmall).animate().fade(delay: 100.ms),
+                          style: Theme.of(context).textTheme.bodySmall),
                       const SizedBox(height: 24),
 
                       // First-run banner
@@ -178,14 +182,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         Padding(
                           padding: const EdgeInsets.only(bottom: 24.0),
                           child: SmartDashboardEmptyState(key: _dashboardKey),
-                        ).animate().fade(),
+                        ),
 
                       // Overdue Alerts
                       if (invoicesAsync.value != null)
-                        _buildOverdueAlert(context, invoicesAsync.value!)
-                            .animate()
-                            .fade(delay: 200.ms)
-                            .slideX(begin: 0.1),
+                        _buildOverdueAlert(context, invoicesAsync.value!),
 
                       // Financial Summary (Responsive Grid)
                       if (revenueAsync.isLoading || profitAsync.isLoading)
@@ -199,17 +200,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           profitAsync.value!,
                           expensesAsync.value ?? [],
                           crossAxisCount: crossAxisCount, // Dynamic Column Count
-                        ).animate().fade(delay: 300.ms),
+                        ),
 
                       const SizedBox(height: 24),
                       if (PlayReleaseScope.showSmartInsights)
-                        const SmartInsightsWidget().animate().fade(delay: 400.ms),
+                        const SmartInsightsWidget(),
                       if (PlayReleaseScope.showSmartInsights) const SizedBox(height: 16),
                       if (PlayReleaseScope.showBizBotCard)
-                        _buildBizBotCard(context).animate().fade(delay: 450.ms),
+                        _buildBizBotCard(context),
                       if (PlayReleaseScope.showBizBotCard) const SizedBox(height: 16),
                       if (PlayReleaseScope.showTaxWidget)
-                        const DashboardTaxWidget().animate().fade(delay: 500.ms),
+                        const DashboardTaxWidget(),
                       if (PlayReleaseScope.showTaxWidget) const SizedBox(height: 32),
                       if (!PlayReleaseScope.showSmartInsights &&
                           !PlayReleaseScope.showBizBotCard &&
@@ -217,9 +218,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         const SizedBox(height: 8),
 
                       // Quick Actions
-                      BizSectionHeader(title: context.t(AppStr.quickActions))
-                          .animate()
-                          .fade(delay: 600.ms),
+                      BizSectionHeader(title: context.t(AppStr.quickActions)),
                       const SizedBox(height: 16),
                       
                       // Using Wrap for responsive Quick Actions on large screens
@@ -234,7 +233,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             if (PlayReleaseScope.showMagicScanQuickAction)
                               SizedBox(width: 300, child: _buildActionTile(context, title: context.t(AppStr.magicScan), subtitle: context.t(AppStr.magicScanSubtitle), icon: Icons.auto_awesome, color: BizTheme.blueDark, onTap: () => context.push('/ai-tools'), widgetKey: _scanKey)),
                           ],
-                        ).animate().fade(delay: 700.ms)
+                        )
                       else
                         Column(
                           children: [
@@ -273,12 +272,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                 onTap: () => context.push('/ai-tools'),
                                 widgetKey: _scanKey,
                               ),
-                          ].animate(interval: 50.ms).fade(duration: 300.ms).slideX(begin: 0.1),
+                          ],
                         ),
 
                       const SizedBox(height: 32),
                       // Recent Invoices
-                      BizSectionHeader(title: context.t(AppStr.dashboardRecentInvoices)).animate().fade(delay: 900.ms),
+                      BizSectionHeader(title: context.t(AppStr.dashboardRecentInvoices)),
                       const SizedBox(height: 16),
                       if (invoicesAsync.value != null)
                          ...invoicesAsync.value!.take(5).map((invoice) => 
@@ -290,7 +289,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               status: invoice.status.label(context),
                               statusColor: invoice.status.color(context),
                               onTap: () => context.push('/invoices/detail', extra: invoice),
-                            ).animate().fade().slideY(begin: 0.2)
+                            )
                          ),
                     ],
                   ),
@@ -575,6 +574,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
         ),
       ),
-    ).animate().scale(duration: 200.ms, curve: Curves.easeOut);
+    );
   }
 }

@@ -16,18 +16,18 @@ class GoogleAuthService {
   static const _iosClientId =
       '90348815049-lh9qppoqpadudei1sgp3di4450jbsin7.apps.googleusercontent.com';
 
-  GoogleSignIn _nativeGoogleSignIn() {
+  static bool _nativeInitialized = false;
+
+  Future<void> _ensureNativeInitialized() async {
+    if (_nativeInitialized || kIsWeb) return;
+
     final webClientId = SupabaseConfig.googleWebClientId;
-    return GoogleSignIn(
+    await GoogleSignIn.instance.initialize(
       serverClientId:
-          !kIsWeb && defaultTargetPlatform == TargetPlatform.android
-              ? webClientId
-              : null,
-      clientId: !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS
-          ? _iosClientId
-          : null,
-      scopes: const ['email', 'profile'],
+          defaultTargetPlatform == TargetPlatform.android ? webClientId : null,
+      clientId: defaultTargetPlatform == TargetPlatform.iOS ? _iosClientId : null,
     );
+    _nativeInitialized = true;
   }
 
   bool get isConfigured {
@@ -44,7 +44,6 @@ class GoogleAuthService {
     }
 
     if (kIsWeb) {
-      // Web: rovnaké okno (_self) — externalApplication rozbije PKCE callback.
       await _client.auth.signInWithOAuth(
         OAuthProvider.google,
         redirectTo: _webRedirectTo,
@@ -55,22 +54,26 @@ class GoogleAuthService {
           : userModelFromSupabase(_client.auth.currentUser!);
     }
 
-    final google = _nativeGoogleSignIn();
-    final account = await google.signIn();
-    if (account == null) return null;
+    await _ensureNativeInitialized();
+    final account = await GoogleSignIn.instance.authenticate(
+      scopeHint: const ['email', 'profile'],
+    );
 
-    final googleAuth = await account.authentication;
-    final idToken = googleAuth.idToken;
+    final idToken = account.authentication.idToken;
     if (idToken == null || idToken.isEmpty) {
-      throw AuthException(
+      throw const AuthException(
         'Google nevrátil ID token — over SHA-1 a Web Client ID.',
       );
     }
 
+    final authz = await account.authorizationClient.authorizationForScopes(
+      const ['email', 'profile'],
+    );
+
     final response = await _client.auth.signInWithIdToken(
       provider: OAuthProvider.google,
       idToken: idToken,
-      accessToken: googleAuth.accessToken,
+      accessToken: authz?.accessToken,
     );
 
     final user = response.user;
@@ -80,7 +83,7 @@ class GoogleAuthService {
   Future<void> signOutNative() async {
     if (kIsWeb) return;
     try {
-      await _nativeGoogleSignIn().signOut();
+      await GoogleSignIn.instance.signOut();
     } catch (_) {}
   }
 

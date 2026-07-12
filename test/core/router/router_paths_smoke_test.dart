@@ -122,8 +122,9 @@ class _MockFirebaseAnalytics extends Fake implements FirebaseAnalytics {
   @override
   Future<void> logEvent({
     required String name,
-    Map<String, Object?>? parameters,
+    Map<String, Object>? parameters,
     AnalyticsCallOptions? callOptions,
+    List<AnalyticsEventItem>? items,
   }) async {}
 
   @override
@@ -134,9 +135,9 @@ class _MockFirebaseAnalytics extends Fake implements FirebaseAnalytics {
 }
 
 class _TestInitializationService extends InitializationService {
-  _TestInitializationService(super.ref) {
-    state = const InitState(progress: 1.0, message: 'Hotovo!', isCompleted: true);
-  }
+  @override
+  InitState build() =>
+      const InitState(progress: 1.0, message: 'Hotovo!', isCompleted: true);
 
   @override
   Future<void> initializeApp() async {}
@@ -203,7 +204,7 @@ class _MockPdfService implements PdfService {
       Uint8List.fromList(const [0x25, 0x50, 0x44, 0x46]); // %PDF stub
 }
 
-List<Override> _authenticatedRouterOverrides() {
+List _authenticatedRouterOverrides() {
   final mockAnalytics = _MockFirebaseAnalytics();
   return [
     authRepositoryProvider.overrideWithValue(
@@ -211,9 +212,9 @@ List<Override> _authenticatedRouterOverrides() {
     ),
     authStateProvider.overrideWith((ref) => Stream.value(_testUser)),
     onboardingProvider
-        .overrideWith((ref) => OnboardingNotifier.test(ref, seen: true)),
+        .overrideWith(() => OnboardingNotifier.test(seen: true)),
     initializationServiceProvider
-        .overrideWith((ref) => _TestInitializationService(ref)),
+        .overrideWith(() => _TestInitializationService()),
     invoicesProvider.overrideWith((ref) => Stream.value([])),
     expensesProvider.overrideWith((ref) => Stream.value([])),
     settingsProvider
@@ -254,7 +255,7 @@ List<Override> _authenticatedRouterOverrides() {
 }
 
 ProviderContainer _createAuthenticatedContainer() {
-  return ProviderContainer(overrides: _authenticatedRouterOverrides());
+  return ProviderContainer(overrides: [..._authenticatedRouterOverrides()]);
 }
 
 Future<void> _pumpRouterApp(WidgetTester tester, ProviderContainer container) async {

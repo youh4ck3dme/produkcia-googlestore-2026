@@ -41,6 +41,34 @@ class BizBotHistoryRepository {
     });
   }
 
+  /// Posledné správy pre AI kontext (chronologicky, bez aktuálnej odpovede bota).
+  Future<List<BizBotMessage>> fetchRecentMessages(
+    String uid, {
+    int limit = 8,
+  }) async {
+    final client = _client;
+    if (client == null) return const [];
+
+    try {
+      final rows = await client
+          .from(_table)
+          .select()
+          .eq('user_id', uid)
+          .eq('thread_id', _thread)
+          .order('created_at', ascending: false)
+          .limit(limit);
+
+      final list = (rows as List)
+          .map((r) => BizBotMessage.fromRow(Map<String, dynamic>.from(r as Map)))
+          .toList()
+        ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+
+      return list;
+    } catch (_) {
+      return const [];
+    }
+  }
+
   Future<void> clearThread(String uid) async {
     await _client
         ?.from(_table)
@@ -57,7 +85,7 @@ final bizBotHistoryRepositoryProvider = Provider<BizBotHistoryRepository>((ref) 
 });
 
 final bizBotMessagesProvider = StreamProvider<List<BizBotMessage>>((ref) {
-  final user = ref.watch(authStateProvider).valueOrNull;
+  final user = ref.watch(authStateProvider).value;
   if (user == null) return Stream.value(const <BizBotMessage>[]);
   final repo = ref.watch(bizBotHistoryRepositoryProvider);
   return repo.streamMessages(user.id);

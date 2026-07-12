@@ -40,6 +40,8 @@ Thumbs.db
 # Android Signing Keys (SECURE)
 android/key.properties
 android/app/upload-keystore.jks
+upload_certificate.pem
+**/*-certificate.pem
 android/KEYSTORE_SECRETS.txt
 key.properties
 **/*.jks

@@ -76,8 +76,10 @@ void main() {
   test(
       'NotificationScheduler should schedule alerts for sent invoices and tax deadlines',
       () async {
-    // Ensure data is loaded
-    await container.read(invoicesProvider.future);
+    // Riverpod 3: StreamProvider.future môže visieť pri override — počkaj na hasValue.
+    container.listen(invoicesProvider, (_, __) {});
+    await Future<void>.delayed(Duration.zero);
+    expect(container.read(invoicesProvider).hasValue, isTrue);
 
     final scheduler = container.read(notificationSchedulerProvider);
 

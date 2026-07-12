@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb, debugPrint;
+import 'package:supabase_flutter/supabase_flutter.dart' show AuthException;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -46,8 +47,10 @@ void main() async {
   if (kIsWeb) {
     try {
       await recoverOAuthSessionFromBrowserUrl();
-    } catch (_) {
-      // Router nechá používateľa na /login; chyba sa zobrazí v UI.
+    } on AuthException catch (e) {
+      debugPrint('OAuth callback failed: ${e.message}');
+    } catch (e, st) {
+      debugPrint('OAuth callback error: $e\n$st');
     }
   }
 

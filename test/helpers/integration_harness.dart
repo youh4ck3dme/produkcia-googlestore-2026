@@ -33,20 +33,19 @@ Future<void> setUpIntegrationHarness({
 
 Widget integrationApp({
   required Widget child,
-  List<Override> overrides = const [],
+  Iterable extraOverrides = const [],
   UserModel? user,
 }) {
-  final defaults = <Override>[
-    authStateProvider.overrideWith((ref) => Stream.value(user)),
-    invoicesProvider.overrideWith((ref) => Stream.value([])),
-    expensesProvider.overrideWith((ref) => Stream.value([])),
-    settingsProvider.overrideWith((ref) => Stream.value(UserSettingsModel.empty())),
-    monitoringServiceProvider.overrideWithValue(FakeMonitoringService()),
-    notificationServiceProvider.overrideWithValue(FakeNotificationService()),
-  ];
-
   return ProviderScope(
-    overrides: [...defaults, ...overrides],
+    overrides: [
+      authStateProvider.overrideWith((ref) => Stream.value(user)),
+      invoicesProvider.overrideWith((ref) => Stream.value([])),
+      expensesProvider.overrideWith((ref) => Stream.value([])),
+      settingsProvider.overrideWith((ref) => Stream.value(UserSettingsModel.empty())),
+      monitoringServiceProvider.overrideWithValue(FakeMonitoringService()),
+      notificationServiceProvider.overrideWithValue(FakeNotificationService()),
+      ...extraOverrides,
+    ],
     child: MaterialApp(
       theme: BizTheme.light(),
       darkTheme: BizTheme.dark(),

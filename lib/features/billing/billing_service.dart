@@ -1,23 +1,30 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/config.dart';
+import '../auth/providers/auth_repository.dart';
 import '../entitlements/user_entitlements.dart';
 import '../limits/usage_limiter.dart';
 
-// Provider state
+/// Lokálny plan id pre UI — nie je Google Play product.
+const kSuperAdminPlanId = 'super_admin';
+
 class BillingState {
   final UserEntitlements entitlements;
   final List<ProductDetails> products;
   final bool isLoading;
   final String? errorMessage;
+  final bool purchaseSuccess;
 
   const BillingState({
     required this.entitlements,
     this.products = const [],
     this.isLoading = false,
     this.errorMessage,
+    this.purchaseSuccess = false,
   });
 
   BillingState copyWith({
@@ -25,17 +32,18 @@ class BillingState {
      List<ProductDetails>? products,
      bool? isLoading,
      String? errorMessage,
+     bool? purchaseSuccess,
   }) {
     return BillingState(
       entitlements: entitlements ?? this.entitlements,
       products: products ?? this.products,
       isLoading: isLoading ?? this.isLoading,
-      errorMessage: errorMessage, // Nullable to clear error
+      errorMessage: errorMessage,
+      purchaseSuccess: purchaseSuccess ?? this.purchaseSuccess,
     );
   }
 }
 
-// Provider
 final billingProvider = NotifierProvider<BillingService, BillingState>(() => BillingService());
 
 class BillingService extends Notifier<BillingState> {
@@ -56,19 +64,43 @@ class BillingService extends Notifier<BillingState> {
 
     _usageLimiter = ref.watch(usageLimiterProvider);
     _iap = InAppPurchase.instance;
+
+    final cached = _loadCachedEntitlements();
     _init();
-    return BillingState(entitlements: UserEntitlements.free());
+    return BillingState(entitlements: cached ?? UserEntitlements.free());
   }
 
   BillingState? _testState;
 
-  /// Test-only: fixed state, no IAP or async init. Caller must provide a UsageLimiter (e.g. from mock prefs).
-  /// Uses a no-op stream subscription so dispose cleanup matches production.
   BillingService.forTest(BillingState state, UsageLimiter usageLimiter) {
     _testMode = true;
     _testState = state;
     _usageLimiter = usageLimiter;
     _subscription = const Stream<List<PurchaseDetails>>.empty().listen((_) {});
+  }
+
+  UserEntitlements? _loadCachedEntitlements() {
+    try {
+      final prefs = ref.read(sharedPrefsProvider);
+      final raw = prefs.getString(UserEntitlements.spKey);
+      final cached = UserEntitlements.fromSpString(raw);
+      if (cached != null && cached.isExpired) {
+        prefs.remove(UserEntitlements.spKey);
+        return null;
+      }
+      return cached;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _cacheEntitlements(UserEntitlements e) async {
+    try {
+      final prefs = ref.read(sharedPrefsProvider);
+      await prefs.setString(UserEntitlements.spKey, e.toSpString());
+    } catch (_) {
+      // Non-critical
+    }
   }
 
   Future<void> _init() async {
@@ -80,7 +112,6 @@ class BillingService extends Notifier<BillingState> {
         return;
       }
 
-      // Listen to purchase updates
       final purchaseUpdated = _iap.purchaseStream;
       _subscription = purchaseUpdated.listen(
         (purchaseDetailsList) {
@@ -98,10 +129,13 @@ class BillingService extends Notifier<BillingState> {
       await _usageLimiter.checkAndResetMonthly();
       if (!ref.mounted) return;
       _updateEntitlementsWithUsage();
+      _applySuperAdminEntitlements();
 
       await loadProducts();
       if (!ref.mounted) return;
       await restorePurchases();
+      if (!ref.mounted) return;
+      _applySuperAdminEntitlements();
     } catch (e) {
       if (!ref.mounted) return;
       state = state.copyWith(errorMessage: e.toString());
@@ -110,6 +144,25 @@ class BillingService extends Notifier<BillingState> {
 
   void refreshUsage() {
     _updateEntitlementsWithUsage();
+    _applySuperAdminEntitlements();
+  }
+
+  bool get _isSuperAdmin =>
+      ref.read(authRepositoryProvider).currentUser?.isSuperAdmin == true;
+
+  /// Super-admin → Pro UI bez falošného Play purchase tokenu.
+  void _applySuperAdminEntitlements() {
+    if (!_isSuperAdmin) return;
+    if (state.entitlements.isPro &&
+        state.entitlements.activePlanId == kSuperAdminPlanId) {
+      return;
+    }
+    state = state.copyWith(
+      entitlements: state.entitlements.copyWith(
+        isPro: true,
+        activePlanId: kSuperAdminPlanId,
+      ),
+    );
   }
 
   void _updateEntitlementsWithUsage() {
@@ -122,7 +175,6 @@ class BillingService extends Notifier<BillingState> {
     );
   }
 
-  /// Po úspešnom BizBot / AI dotaze (free tier limit).
   Future<void> recordAiRequest() async {
     if (_testMode) return;
     await _usageLimiter.incrementAiRequest();
@@ -136,7 +188,6 @@ class BillingService extends Notifier<BillingState> {
       const Set<String> productIds = <String>{
         BizConfig.productProMonthly,
         BizConfig.productProYearly,
-        BizConfig.productBusinessMonthly,
         BizConfig.productOneTimeStarter,
       };
       
@@ -157,19 +208,17 @@ class BillingService extends Notifier<BillingState> {
 
   Future<void> purchaseProduct(ProductDetails product) async {
     final PurchaseParam purchaseParam = PurchaseParam(productDetails: product);
-    
-    // For subscriptions, we might need to handle upgrades/downgrades here
-    // But keeping it simple for now
-    
     if (BizConfig.allProducts.contains(product.id)) {
-        // Consumables vs Non-consumables handling
-        // Subscriptions are non-consumable in context of buying again immediately
-        await _iap.buyNonConsumable(purchaseParam: purchaseParam);
+      await _iap.buyNonConsumable(purchaseParam: purchaseParam);
     }
   }
 
   Future<void> restorePurchases() async {
     await _iap.restorePurchases();
+  }
+
+  void clearPurchaseSuccess() {
+    state = state.copyWith(purchaseSuccess: false);
   }
 
   void _listenToPurchaseUpdated(List<PurchaseDetails> purchaseDetailsList) {
@@ -193,31 +242,49 @@ class BillingService extends Notifier<BillingState> {
   }
 
   Future<void> _verifyAndDeliverProduct(PurchaseDetails purchaseDetails) async {
-    // Ideally, verify purchase with backend here (Cloud Function)
-    // For now, optimistic local grant
-    
-    bool isPro = false;
-    bool isBusiness = false;
-    
     final id = purchaseDetails.productID;
-    
-    if (id == BizConfig.productProMonthly || 
-        id == BizConfig.productProYearly || 
-        id == BizConfig.productOneTimeStarter) {
-      isPro = true;
-    } else if (id == BizConfig.productBusinessMonthly) {
-      isBusiness = true;
-      isPro = true; // Business includes Pro
+    DateTime? expiryDate;
+
+    // Try server-side verification
+    try {
+      final response = await Supabase.instance.client.functions.invoke(
+        'verify-purchase',
+        body: {
+          'purchaseToken': purchaseDetails.verificationData.serverVerificationData,
+          'productId': id,
+          'packageName': 'sk.bizagent.app',
+        },
+      );
+
+      if (response.status == 200) {
+        final data = response.data is String
+            ? jsonDecode(response.data as String) as Map<String, dynamic>
+            : response.data as Map<String, dynamic>;
+        if (data['valid'] == true) {
+          final expiryStr = data['expiryDate'] as String?;
+          if (expiryStr != null) expiryDate = DateTime.tryParse(expiryStr);
+        }
+      }
+    } catch (e) {
+      debugPrint('verify-purchase fallback to local grant: $e');
     }
 
-    // Update state
+    final isPro = id == BizConfig.productProMonthly ||
+        id == BizConfig.productProYearly ||
+        id == BizConfig.productOneTimeStarter;
+
+    final updated = state.entitlements.copyWith(
+      isPro: isPro,
+      activePlanId: id,
+      expiryDate: expiryDate,
+    );
+
     state = state.copyWith(
       isLoading: false,
-      entitlements: state.entitlements.copyWith(
-        isPro: isPro,
-        isBusiness: isBusiness,
-        activePlanId: id,
-      ),
+      purchaseSuccess: true,
+      entitlements: updated,
     );
+
+    await _cacheEntitlements(updated);
   }
 }

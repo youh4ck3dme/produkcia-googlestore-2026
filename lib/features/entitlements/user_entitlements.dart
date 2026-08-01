@@ -1,17 +1,16 @@
+import 'dart:convert';
+
 class UserEntitlements {
   final bool isPro;
-  final bool isBusiness;
   final String? activePlanId;
   final DateTime? expiryDate;
   
-  // Usage counters (would normally be synced with specific UsageService)
   final int invoiceCount;
   final int icoLookupsCount;
   final int aiRequestsCount;
 
   const UserEntitlements({
     this.isPro = false,
-    this.isBusiness = false,
     this.activePlanId,
     this.expiryDate,
     this.invoiceCount = 0,
@@ -21,9 +20,11 @@ class UserEntitlements {
 
   bool get isFree => !isPro;
 
+  bool get isExpired =>
+      expiryDate != null && expiryDate!.isBefore(DateTime.now());
+
   UserEntitlements copyWith({
     bool? isPro,
-    bool? isBusiness,
     String? activePlanId,
     DateTime? expiryDate,
     int? invoiceCount,
@@ -32,7 +33,6 @@ class UserEntitlements {
   }) {
     return UserEntitlements(
       isPro: isPro ?? this.isPro,
-      isBusiness: isBusiness ?? this.isBusiness,
       activePlanId: activePlanId ?? this.activePlanId,
       expiryDate: expiryDate ?? this.expiryDate,
       invoiceCount: invoiceCount ?? this.invoiceCount,
@@ -42,4 +42,34 @@ class UserEntitlements {
   }
 
   factory UserEntitlements.free() => const UserEntitlements();
+
+  Map<String, dynamic> toJson() => {
+        'isPro': isPro,
+        'activePlanId': activePlanId,
+        'expiryDate': expiryDate?.toIso8601String(),
+      };
+
+  factory UserEntitlements.fromJson(Map<String, dynamic> json) {
+    return UserEntitlements(
+      isPro: json['isPro'] as bool? ?? false,
+      activePlanId: json['activePlanId'] as String?,
+      expiryDate: json['expiryDate'] != null
+          ? DateTime.tryParse(json['expiryDate'] as String)
+          : null,
+    );
+  }
+
+  static const spKey = 'cached_entitlements';
+
+  String toSpString() => jsonEncode(toJson());
+
+  static UserEntitlements? fromSpString(String? raw) {
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      return UserEntitlements.fromJson(
+          jsonDecode(raw) as Map<String, dynamic>);
+    } catch (_) {
+      return null;
+    }
+  }
 }

@@ -4,15 +4,15 @@ class BizConfig {
   // Monetization Product IDs (Google Play)
   static const String productProMonthly = 'sub_pro_monthly';
   static const String productProYearly = 'sub_pro_year';
-  static const String productBusinessMonthly = 'sub_business_monthly';
   static const String productOneTimeStarter = 'one_time_starter';
   
   static const List<String> allProducts = [
     productProMonthly,
     productProYearly,
-    productBusinessMonthly,
     productOneTimeStarter,
   ];
+
+  static const int proAiUsageLimit = 50;
 
   // Feature Limits (Free Tier)
   static const int freeInvoiceLimitMonthly = 3;

@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/config.dart';
 import '../../core/remote_config.dart';
+import '../auth/providers/auth_repository.dart';
 import '../billing/billing_service.dart';
 import 'billing_copy.dart';
 
@@ -10,7 +12,7 @@ enum BizFeature {
   aiAnalysis,
   exportExcel,
   removeWatermark,
-  watchedCompanies, // New feature type
+  watchedCompanies,
 }
 
 class SubscriptionGuard {
@@ -18,12 +20,14 @@ class SubscriptionGuard {
 
   SubscriptionGuard(this.ref);
 
+  bool get _isSuperAdmin =>
+      ref.read(authRepositoryProvider).currentUser?.isSuperAdmin == true;
+
   bool canAccess(BizFeature feature) {
+    if (_isSuperAdmin) return true;
+
     final billingState = ref.read(billingProvider);
     final isPro = billingState.entitlements.isPro;
-    final isBusiness = billingState.entitlements.isBusiness;
-
-    if (isBusiness) return true; // Business has everything
 
     switch (feature) {
       case BizFeature.createInvoice:
@@ -33,16 +37,15 @@ class SubscriptionGuard {
         return billingState.entitlements.invoiceCount < remoteConfig.invoiceLimit;
         
       case BizFeature.icoLookup:
-         if (isPro) return true; // Pro has high limits, effectively unlimited for casual use
-         return billingState.entitlements.icoLookupsCount < 5;
+        if (isPro) return true;
+        return billingState.entitlements.icoLookupsCount < BizConfig.freeIcoLookupLimit;
 
       case BizFeature.icoPremiumProfile:
-        return isPro || isBusiness;
+        return isPro;
 
       case BizFeature.aiAnalysis:
-        if (isBusiness) return true;
-        if (isPro) return billingState.entitlements.aiRequestsCount < 50; 
-        return billingState.entitlements.aiRequestsCount < 1;
+        if (isPro) return billingState.entitlements.aiRequestsCount < BizConfig.proAiUsageLimit;
+        return billingState.entitlements.aiRequestsCount < BizConfig.freeAiUsageLimit;
 
       case BizFeature.exportExcel:
         return isPro;
@@ -51,31 +54,16 @@ class SubscriptionGuard {
         return isPro;
 
       case BizFeature.watchedCompanies:
-        if (isBusiness || isPro) return true;
-        // Limit for Free tier is 3. 
-        // We rely on the button/UI to check current count against this entitlement.
-        // BUT wait, the pattern here is checking if they are allowed to do X.
-        // For limits based features, we usually just return true if they are NOT capped by tier, 
-        // or we need to inject the current count.
-        // User requested `final canWatch = ref.read(subscriptionGuardProvider).canWatchCompanies;`
-        // which implies a property that returns bool.
-        // Let's implement that Specific getter as requested by user instructions.
-        return true; 
+        return isPro;
     }
   }
 
-  // Requested by user instruction: "final canWatch = ref.read(subscriptionGuardProvider).canWatchCompanies;"
-  // This likely means "Is the user ALLOWED to act on watched companies generally?" 
-  // OR "Is the user UNLIMITED?".
-  // Given the context of `_checkLimit` in button, the user wants us to replace:
-  // `if (entitlements.isPro)` with `if (guard.canWatchCompanies)`.
-  // So `canWatchCompanies` should basically mean "Is Pro / Unlimited".
   bool get canWatchCompanies {
+    if (_isSuperAdmin) return true;
     final billingState = ref.read(billingProvider);
-    return billingState.entitlements.isPro || billingState.entitlements.isBusiness;
+    return billingState.entitlements.isPro;
   }
 
-  /// Má UI zobraziť paywall namiesto tichého failu.
   bool shouldShowPaywallUi(BizFeature feature) {
     if (canAccess(feature)) return false;
     switch (feature) {

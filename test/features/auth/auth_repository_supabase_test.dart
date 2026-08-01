@@ -52,6 +52,44 @@ void main() {
       );
     });
 
+    test('signInWithGoogle returns user from backend', () async {
+      backend.signInWithGoogleResult = testUser;
+
+      final user = await repository.signInWithGoogle();
+
+      expect(backend.signInWithGoogleCalled, isTrue);
+      expect(user?.id, 'user-1');
+      expect(user?.email, 'test@example.com');
+    });
+
+    test('signInWithGoogle returns null when user cancels', () async {
+      backend.signInWithGoogleResult = null;
+
+      final user = await repository.signInWithGoogle();
+
+      expect(backend.signInWithGoogleCalled, isTrue);
+      expect(user, isNull);
+    });
+
+    test('signInWithGoogle rethrows backend error', () async {
+      backend.signInWithGoogleError = Exception('google failed');
+
+      await expectLater(
+        repository.signInWithGoogle(),
+        throwsA(isA<Exception>()),
+      );
+      expect(backend.signInWithGoogleCalled, isTrue);
+    });
+
+    test('signInWithGoogle throws when backend unavailable', () async {
+      repository = AuthRepository(UnavailableFakeAuthBackend());
+
+      await expectLater(
+        repository.signInWithGoogle(),
+        throwsA(isA<StateError>()),
+      );
+    });
+
     test('signOut delegates to backend', () async {
       await repository.signOut();
       expect(backend.signOutCalled, isTrue);
@@ -103,6 +141,42 @@ void main() {
       expect(model.email, 'mapped@example.com');
       expect(model.displayName, 'Full Name');
       expect(model.photoUrl, 'https://photo.test/a.jpg');
+      expect(model.isSuperAdmin, isFalse);
+    });
+
+    test('maps super_admin from app_metadata.role', () {
+      final user = User(
+        id: 'admin-1',
+        appMetadata: const {'role': 'super_admin'},
+        userMetadata: const {},
+        aud: 'authenticated',
+        createdAt: DateTime.now().toIso8601String(),
+        email: 'larsenevans@proton.me',
+      );
+
+      expect(userModelFromSupabase(user).isSuperAdmin, isTrue);
+    });
+
+    test('maps super_admin from app_metadata.is_super_admin', () {
+      final user = User(
+        id: 'admin-2',
+        appMetadata: const {'is_super_admin': true},
+        userMetadata: const {},
+        aud: 'authenticated',
+        createdAt: DateTime.now().toIso8601String(),
+        email: 'admin@example.com',
+      );
+
+      expect(userModelFromSupabase(user).isSuperAdmin, isTrue);
+    });
+
+    test('isSuperAdminFromAppMetadata helper', () {
+      expect(isSuperAdminFromAppMetadata(null), isFalse);
+      expect(isSuperAdminFromAppMetadata({}), isFalse);
+      expect(isSuperAdminFromAppMetadata({'role': 'user'}), isFalse);
+      expect(isSuperAdminFromAppMetadata({'role': 'super_admin'}), isTrue);
+      expect(isSuperAdminFromAppMetadata({'is_super_admin': true}), isTrue);
+      expect(isSuperAdminFromAppMetadata({'is_super_admin': 'true'}), isTrue);
     });
   });
 }

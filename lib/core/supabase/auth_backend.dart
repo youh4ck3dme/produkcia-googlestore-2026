@@ -29,12 +29,21 @@ abstract class AuthBackend {
   }
 }
 
+/// Super-admin z [User.appMetadata] (server-controlled; klient to nemôže meniť).
+bool isSuperAdminFromAppMetadata(Map<String, dynamic>? appMetadata) {
+  if (appMetadata == null || appMetadata.isEmpty) return false;
+  if (appMetadata['role'] == 'super_admin') return true;
+  final flag = appMetadata['is_super_admin'];
+  return flag == true || flag == 'true';
+}
+
 UserModel userModelFromSupabase(User u) => UserModel(
       id: u.id,
       email: u.email ?? '',
       displayName:
           (u.userMetadata?['full_name'] ?? u.userMetadata?['name']) as String?,
       photoUrl: u.userMetadata?['avatar_url'] as String?,
+      isSuperAdmin: isSuperAdminFromAppMetadata(u.appMetadata),
       isAnonymous: u.isAnonymous,
     );
 

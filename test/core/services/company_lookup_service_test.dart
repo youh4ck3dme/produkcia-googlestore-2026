@@ -94,4 +94,37 @@ void main() {
     final doc = await fakeDb.collection('companies').doc('12345678').get();
     expect(doc.exists, true);
   });
+
+  test('pads short IČO to 8 digits before lookup', () async {
+    when(() => mockRemote.publicLookup('01234567')).thenAnswer(
+      (_) async => IcoLookupResult(
+        ico: '01234567',
+        icoNorm: '01234567',
+        name: 'Padded Co',
+        status: 'Active',
+        city: 'BA',
+        cachedAt: DateTime.now(),
+      ),
+    );
+
+    final result = await service.lookupByIco('1234567');
+    expect(result.name, 'Padded Co');
+    verify(() => mockRemote.publicLookup('01234567')).called(1);
+  });
+
+  test('returns invalid for empty IČO', () async {
+    final result = await service.lookupByIco('abc');
+    expect(result.isValid, false);
+    expect(result.status, 'Neplatné dáta');
+    verifyZeroInteractions(mockRemote);
+  });
+
+  test('propagates offline from remote', () async {
+    when(() => mockRemote.publicLookup('12345678'))
+        .thenAnswer((_) async => IcoLookupResult.offline());
+
+    final result = await service.lookupByIco('12345678');
+    expect(result.isOffline, true);
+    expect(result.isValid, false);
+  });
 }

@@ -7,9 +7,9 @@ set -e
 
 echo "🚀 Starting BizAgent Web & AI Deployment..."
 
-# 1. Flutter Build
+# 1. Flutter Build (MUSÍ obsahovať Supabase dart defines — inak login na webe nefunguje)
 echo "📦 Building Flutter Web (Release)..."
-flutter build web --release --base-href "/"
+bash "$(dirname "$0")/scripts/build_web_release.sh"
 
 # 2. Cloud Functions
 echo "🛠️  Preparing Cloud Functions..."

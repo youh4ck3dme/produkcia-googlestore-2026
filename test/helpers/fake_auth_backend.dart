@@ -8,6 +8,7 @@ class FakeAuthBackend implements AuthBackend {
     this.isAvailable = true,
     this.currentUserValue,
     this.authStream,
+    this.signInWithGoogleResult,
   });
 
   @override

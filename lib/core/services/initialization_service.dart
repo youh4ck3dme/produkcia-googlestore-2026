@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../services/local_persistence_service.dart';
-import '../debug/perf_probe.dart';
 
 // Progress state class
 class InitState {
@@ -32,12 +31,6 @@ class InitializationService extends Notifier<InitState> {
   Future<void> initializeApp() async {
     // 1. Start
     state = const InitState(progress: 0.1, message: 'Štartujem BizAgenta...');
-    // #region agent log
-    perfProbe('D', 'initialization_service.dart', 'init_state_update', {
-      'progress': state.progress,
-      'isCompleted': state.isCompleted,
-    });
-    // #endregion
     await Future.delayed(const Duration(milliseconds: 500)); // Visual delay
 
     // 2. Connectivity Check (Simulating network stabilization)
@@ -62,12 +55,6 @@ class InitializationService extends Notifier<InitState> {
 
     // Done
     state = state.copyWith(progress: 1.0, message: 'Hotovo!', isCompleted: true);
-    // #region agent log
-    perfProbe('D', 'initialization_service.dart', 'init_state_update', {
-      'progress': state.progress,
-      'isCompleted': state.isCompleted,
-    });
-    // #endregion
   }
 }
 

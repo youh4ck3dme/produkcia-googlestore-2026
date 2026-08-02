@@ -8,6 +8,11 @@
 // Deploy: supabase functions deploy generate-content
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
+import {
+  filterModelOutput,
+  validatePrompt,
+  wrapPromptForSafety,
+} from "./safety.ts";
 
 const MISTRAL_API_URL = "https://api.mistral.ai/v1/chat/completions";
 const QWEN_API_URL = Deno.env.get("QWEN_API_BASE_URL") ||
@@ -53,7 +58,7 @@ async function runQwen(
         },
         body: JSON.stringify({
           model,
-          messages: [{ role: "user", content: prompt }],
+          messages: [{ role: "user", content: wrapPromptForSafety(prompt) }],
           temperature: 0.7,
           max_tokens: 2000,
         }),
@@ -64,7 +69,9 @@ async function runQwen(
         throw lastErr;
       }
       const data = await resp.json();
-      const text = data.choices?.[0]?.message?.content || "AI nevrátilo žiadny text.";
+      const text = filterModelOutput(
+        data.choices?.[0]?.message?.content || "AI nevrátilo žiadny text.",
+      );
       return { text, model: data.model || model, provider: "qwen" };
     } catch (e) {
       lastErr = e as Error;
@@ -92,7 +99,7 @@ async function runMistral(prompt: string): Promise<{ text: string; model: string
         },
         body: JSON.stringify({
           model: MISTRAL_MODEL,
-          messages: [{ role: "user", content: prompt }],
+          messages: [{ role: "user", content: wrapPromptForSafety(prompt) }],
           temperature: 0.7,
           max_tokens: 2000,
         }),
@@ -103,7 +110,9 @@ async function runMistral(prompt: string): Promise<{ text: string; model: string
         throw lastErr;
       }
       const data = await resp.json();
-      const text = data.choices?.[0]?.message?.content || "AI nevrátilo žiadny text.";
+      const text = filterModelOutput(
+        data.choices?.[0]?.message?.content || "AI nevrátilo žiadny text.",
+      );
       return { text, model: data.model || MISTRAL_MODEL, provider: "mistral" };
     } catch (e) {
       lastErr = e as Error;
@@ -124,14 +133,24 @@ async function runGemini(prompt: string): Promise<{ text: string; model: string;
       const resp = await fetch(GEMINI_API_URL(model, key), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: wrapPromptForSafety(prompt) }] }],
+          safetySettings: [
+            { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+            { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+            { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+            { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+          ],
+        }),
       });
       if (!resp.ok) {
         lastErr = new Error(`Gemini HTTP ${resp.status}`);
         continue;
       }
       const data = await resp.json();
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "AI nevrátilo žiadny text.";
+      const text = filterModelOutput(
+        data.candidates?.[0]?.content?.parts?.[0]?.text || "AI nevrátilo žiadny text.",
+      );
       return { text, model, provider: "gemini" };
     } catch (e) {
       lastErr = e as Error;
@@ -172,9 +191,17 @@ serve(async (req: Request) => {
       ? body.models.filter((m: unknown) => typeof m === "string")
       : [];
 
-    if (!prompt || typeof prompt !== "string" || prompt.length > 10000) {
+    if (!prompt || typeof prompt !== "string") {
       return new Response(
         JSON.stringify({ error: 'Parameter "prompt" je povinný (max 10 000 znakov).' }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const promptError = validatePrompt(prompt);
+    if (promptError) {
+      return new Response(
+        JSON.stringify({ error: promptError }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }

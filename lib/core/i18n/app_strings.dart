@@ -251,6 +251,9 @@ enum AppStr {
   settingsCompanyNotFound,
   settingsCompanyFound,
   settingsLookupError,
+  settingsInvalidIco,
+  settingsLookupOffline,
+  settingsLookupRateLimited,
   settingsLoadError,
   settingsRequired,
   settingsLookupTooltip,
@@ -368,6 +371,7 @@ enum AppStr {
   bizBotAuthRequired,
   bizBotUnavailable,
   bizBotDisclaimer,
+  aiGeneratedLabel,
   bizBotHistoryError,
   bizBotReportTitle,
   bizBotReportBody,
@@ -866,6 +870,10 @@ class AppStringsSK {
     AppStr.settingsCompanyNotFound: "Firma sa nenašla",
     AppStr.settingsCompanyFound: "Našli sme: {name}",
     AppStr.settingsLookupError: "Chyba pri hľadaní: {error}",
+    AppStr.settingsInvalidIco: "IČO musí mať 1–8 číslic (doplníme nuly)",
+    AppStr.settingsLookupOffline:
+        "Register firiem je nedostupný (timeout/offline). Skúste neskôr alebo nastavte ICOATLAS_BASE_URL.",
+    AppStr.settingsLookupRateLimited: "Limit vyhľadávania dosiahnutý. Skúste neskôr.",
     AppStr.settingsLoadError: "Nepodarilo sa načítať nastavenia",
     AppStr.settingsRequired: "Povinné",
     AppStr.settingsLookupTooltip: "Vyhľadať firmu (Automaticky)",
@@ -991,6 +999,7 @@ class AppStringsSK {
     AppStr.bizBotUnavailable: "AI dočasne nedostupné.",
     AppStr.bizBotDisclaimer:
         "ℹ️ Odpovede AI sú iba informatívne a nenahrádzajú účtovné, daňové ani právne poradenstvo.",
+    AppStr.aiGeneratedLabel: "Vygenerované AI",
     AppStr.bizBotHistoryError: "Nepodarilo sa načítať históriu chatu.",
     AppStr.bizBotReportTitle: "Nahlásiť odpoveď AI",
     AppStr.bizBotReportBody:
@@ -1112,12 +1121,12 @@ class AppStringsSK {
     AppStr.icoPaymentRequiredTitle: "IČO detail (Pro)",
     AppStr.icoPaymentRequiredBody:
         "Váš aktuálny plán nepovoľuje neobmedzené lookupy cez bezpečný gateway.",
-    AppStr.icoActivatePlan: "AKTIVOVAŤ SOLO/GROWTH PLÁN",
+    AppStr.icoActivatePlan: "Prejsť na Pro",
     AppStr.icoRateLimitTitle: "Limit dosiahnutý",
     AppStr.icoRateLimitBody:
         "Bezplatný limit pre verejné vyhľadávanie je 10 dopytov za 10 minút.",
     AppStr.icoRateLimitRetry: "Skúste to znova o {minutes} minút",
-    AppStr.icoGoPremium: "PREJSŤ NA PREMIUM (BEZ LIMITOV)",
+    AppStr.icoGoPremium: "Prejsť na Pro",
 
     // AI Tools hub
     AppStr.aiToolsHubTitle: "AI Nástroje",

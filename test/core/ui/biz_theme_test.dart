@@ -85,5 +85,10 @@ void main() {
       expect(shape?.side.color, BizTheme.gray200);
       expect(shape?.borderRadius, BorderRadius.circular(BizTheme.radiusLg));
     });
+
+    test('Text theme includes Noto Sans fallback for missing glyphs', () {
+      final body = BizTheme.light().textTheme.bodyMedium;
+      expect(body?.fontFamilyFallback, BizTheme.fontFallbacks);
+    });
   });
 }

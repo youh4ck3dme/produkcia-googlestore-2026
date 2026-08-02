@@ -18,6 +18,8 @@ import '../../../core/services/tax_calculation_service.dart';
 import '../../../core/models/ico_lookup_result.dart';
 import '../../limits/usage_limiter.dart';
 import '../../billing/billing_service.dart';
+import '../../billing/paywall_flow.dart';
+import '../../billing/subscription_guard.dart';
 
 class CreateInvoiceScreen extends ConsumerStatefulWidget {
   final Map<String, dynamic>? initialData;
@@ -104,9 +106,10 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   }
 
   void _onIcoChanged() {
-    final ico = _clientIcoController.text.trim();
-    if (ico.length == 8 && (_lookupResult == null || _lookupResult!.name.isEmpty)) {
-      _triggerLookup(ico);
+    final normalized = IcoAtlasService.normalizeIco(_clientIcoController.text);
+    if (normalized != null &&
+        (_lookupResult == null || _lookupResult!.name.isEmpty)) {
+      _triggerLookup(normalized);
     }
   }
 
@@ -209,13 +212,20 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   double get _grandTotal => _totalBeforeVat + _totalVat;
 
   Future<void> _saveInvoice() async {
+    if (!await PaywallFlow.ensureAccess(context, ref, BizFeature.createInvoice)) return;
     if (!_formKey.currentState!.validate()) return;
     if (_items.isEmpty) {
       BizSnackbar.showError(context, context.t(AppStr.createInvoiceMinOneItem));
       return;
     }
 
-    final user = ref.read(authStateProvider).value;
+    final user = ref.read(authStateProvider).value ??
+        ref.read(authRepositoryProvider).currentUser;
+    if (user == null) {
+      BizSnackbar.showError(context, context.t(AppStr.bizBotAuthRequired));
+      return;
+    }
+
     String number = _numberController.text.trim();
     if (_autoInvoiceNumber && user != null) {
       final result = await ref
@@ -230,7 +240,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
 
     final invoice = InvoiceModel(
       id: '',
-      userId: '',
+      userId: user.id,
       createdAt: DateTime.now(),
       number: number,
       clientName: _clientNameController.text,

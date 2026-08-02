@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class BizTheme {
+  /// Fallback pre znaky mimo Inter (emoji, symboly z AI odpovedí na webe).
+  static const List<String> fontFallbacks = ['Noto Sans'];
+
   // Spacing System (4px base)
   static const double spacingBase = 4;
   static const double spacingXs = 4;
@@ -146,6 +149,7 @@ class BizTheme {
     final interTextTheme = GoogleFonts.interTextTheme(materialTextTheme).apply(
       bodyColor: baseTextColor,
       displayColor: baseTextColor,
+      fontFamilyFallback: fontFallbacks,
     );
 
     final textTheme = interTextTheme.copyWith(

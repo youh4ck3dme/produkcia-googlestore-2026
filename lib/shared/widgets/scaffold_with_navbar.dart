@@ -9,7 +9,6 @@ import '../../core/ui/biz_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import '../../core/router/app_router.dart';
-import '../../core/debug/perf_probe.dart';
 
 enum _FabMode { bizbot, icoatlas }
 
@@ -54,9 +53,6 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
     _fabToggleTimer?.cancel();
     _fabToggleTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       if (!mounted) return;
-      // #region agent log
-      perfProbe('E', 'scaffold_with_navbar.dart', 'fab_timer_setstate');
-      // #endregion
       setState(() {
         _fabMode = _fabMode == _FabMode.bizbot ? _FabMode.icoatlas : _FabMode.bizbot;
       });
@@ -148,10 +144,6 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
 
   @override
   Widget build(BuildContext context) {
-    // #region agent log
-    perfProbe('E', 'scaffold_with_navbar.dart:build', 'shell_rebuild');
-    // #endregion
-
     final width = MediaQuery.of(context).size.width;
     final theme = Theme.of(context);
 

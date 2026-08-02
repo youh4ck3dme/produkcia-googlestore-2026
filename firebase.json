@@ -18,6 +18,10 @@
     ],
     "rewrites": [
       {
+        "source": "/.well-known/**",
+        "destination": "/.well-known/**"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

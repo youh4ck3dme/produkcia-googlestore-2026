@@ -29,11 +29,20 @@ import 'package:bizagent/features/tax/providers/tax_provider.dart';
 
 import '../helpers/fake_monitoring_service.dart';
 import '../helpers/fake_notification_service.dart';
+import '../helpers/test_supabase.dart';
 import '../core/router/app_router_test.dart' show MockFirebaseAnalytics, TestInitializationService;
 
 /// Live smoke: Supabase signIn → router presmeruje na dashboard.
+///
+/// Pozn.: `flutter test` VM mockuje HTTP → signInWithPassword vracia 400.
+/// Skutočný live smoke: `bash scripts/smoke_login_home.sh`
 @Tags(['live', 'smoke'])
 void main() {
+  const skipInVm = bool.fromEnvironment('RUN_FLUTTER_LIVE_SMOKE', defaultValue: false);
+  if (!skipInVm) {
+    test('live login → dashboard home', () {}, skip: 'Flutter test VM nepodporuje live HTTP. Použi: bash scripts/smoke_login_home.sh alebo --dart-define=RUN_FLUTTER_LIVE_SMOKE=true');
+    return;
+  }
   final email = const String.fromEnvironment(
     'PLAY_SMOKE_EMAIL',
     defaultValue: 'bizagent@bizagent.sk',
@@ -42,8 +51,7 @@ void main() {
   late MockFirebaseAnalytics mockAnalytics;
 
   setUpAll(() async {
-    TestWidgetsFlutterBinding.ensureInitialized();
-    await SupabaseConfig.initialize();
+    await ensureTestSupabase();
     mockAnalytics = MockFirebaseAnalytics();
 
     password = const String.fromEnvironment('PLAY_SMOKE_PASSWORD');

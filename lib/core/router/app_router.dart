@@ -41,7 +41,7 @@ import '../../features/tools/screens/icoatlas_home_screen.dart';
 import '../../shared/widgets/scaffold_with_navbar.dart';
 import '../../shared/widgets/biz_auth_required.dart';
 import '../../core/config/play_release_scope.dart';
-import '../../core/debug/perf_probe.dart';
+import 'oauth_login_hold.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final firebaseAnalyticsProvider = Provider((ref) => FirebaseAnalytics.instance);
@@ -66,10 +66,6 @@ final goRouterRefreshProvider = Provider<GoRouterRefresh>((ref) {
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ref.watch(goRouterRefreshProvider);
   final analytics = ref.watch(firebaseAnalyticsProvider);
-
-  // #region agent log
-  perfProbe('A', 'app_router.dart:routerProvider', 'go_router_created');
-  // #endregion
 
   return GoRouter(
     refreshListenable: refresh,
@@ -99,7 +95,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       final seenOnboarding = onboardingState.value ?? false;
 
       // OAuth návrat: ?code= v URL — drž login len kým nemáme session
-      if (kIsWeb && Uri.base.queryParameters.containsKey('code') && !isLoggedIn) {
+      if (shouldHoldLoginForOAuthCode(
+        isWeb: kIsWeb,
+        queryParameters: Uri.base.queryParameters,
+        isLoggedIn: isLoggedIn,
+      )) {
         return path == '/login' ? null : '/login';
       }
 

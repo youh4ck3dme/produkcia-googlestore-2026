@@ -5,6 +5,7 @@ import '../../../core/i18n/app_strings.dart';
 import '../../../core/i18n/l10n.dart';
 import '../services/ai_tax_assistant_service.dart';
 import '../../../shared/widgets/biz_card.dart';
+import '../../../shared/widgets/ai_generated_label.dart';
 import '../../../shared/widgets/biz_buttons.dart';
 import '../../../core/ui/biz_theme.dart';
 import '../../billing/subscription_guard.dart';
@@ -90,6 +91,11 @@ class _AiExpenseAnalysisScreenState extends ConsumerState<AiExpenseAnalysisScree
     return BizCard(
       child: Column(
         children: [
+          const Align(
+            alignment: Alignment.centerLeft,
+            child: AiGeneratedLabel(),
+          ),
+          const SizedBox(height: 12),
           Icon(
             result.isTaxDeductible ? Icons.check_circle : Icons.warning_amber_rounded,
             size: 64,

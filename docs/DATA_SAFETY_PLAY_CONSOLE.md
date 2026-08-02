@@ -306,7 +306,7 @@ Edge function [`delete-account`](../supabase/functions/delete-account/index.ts) 
 | Súbor | Riadky | Čo dokazuje |
 |---|---|---|
 | [`android/app/build.gradle.kts`](../android/app/build.gradle.kts) | L8–9 | Firebase Performance + Crashlytics pluginy |
-| [`android/app/src/main/AndroidManifest.xml`](../android/app/src/main/AndroidManifest.xml) | L7–8, L17–21, L71–73 | Camera permission; AD_ID a RECORD_AUDIO removed |
+| [`android/app/src/main/AndroidManifest.xml`](../android/app/src/main/AndroidManifest.xml) | L7–8, L17–21, L71–73 | Camera permission; AD_ID a RECORD_AUDIO removed; READ/WRITE_EXTERNAL_STORAGE removed (Photo Picker) |
 | [`lib/core/router/app_router.dart`](../lib/core/router/app_router.dart) | L56–58 | FirebaseAnalyticsObserver (screen_view) |
 | [`lib/core/services/ai_ocr_service.dart`](../lib/core/services/ai_ocr_service.dart) | L15–26 | OCR text → AI server |
 | [`lib/core/services/analytics_service.dart`](../lib/core/services/analytics_service.dart) | L13–65 | Všetky custom Analytics eventy |

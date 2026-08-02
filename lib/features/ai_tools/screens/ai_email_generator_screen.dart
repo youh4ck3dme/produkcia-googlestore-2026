@@ -6,6 +6,9 @@ import 'package:bizagent/features/ai_tools/providers/ai_email_service.dart';
 import '../../../core/i18n/app_strings.dart';
 import '../../../core/i18n/l10n.dart';
 import '../../../core/ui/biz_theme.dart';
+import '../../../shared/widgets/ai_generated_label.dart';
+import '../../billing/paywall_flow.dart';
+import '../../billing/subscription_guard.dart';
 
 class AiEmailGeneratorScreen extends ConsumerStatefulWidget {
   final String? initialType;
@@ -66,6 +69,7 @@ class _AiEmailGeneratorScreenState
   }
 
   Future<void> _generate() async {
+    if (!await PaywallFlow.ensureAccess(context, ref, BizFeature.aiAnalysis)) return;
     setState(() {
       _isLoading = true;
       _generatedEmail = '';
@@ -173,9 +177,16 @@ class _AiEmailGeneratorScreenState
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            context.t(AppStr.aiEmailResult),
-                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                context.t(AppStr.aiEmailResult),
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 6),
+                              const AiGeneratedLabel(),
+                            ],
                           ),
                           IconButton(
                             icon: const Icon(Icons.copy),

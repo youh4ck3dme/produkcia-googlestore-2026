@@ -56,7 +56,7 @@ for f in lib/core/supabase/oauth_callback_handler_web.dart lib/main.dart; do
   fi
 done
 
-if grep -q "queryParameters.containsKey('code')" lib/core/router/app_router.dart; then
+if grep -qE "queryParameters.containsKey\('code'\)|shouldHoldLoginForOAuthCode" lib/core/router/app_router.dart lib/core/router/oauth_login_hold.dart 2>/dev/null; then
   ok "Router má OAuth ?code= guard"
 else
   warn "Router nemá OAuth ?code= guard — môže presmerovať pred exchange"

@@ -63,7 +63,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
             ),
             _buildSection(
               '8. Predplatné a in-app nákupy',
-              'Aplikácia ponúka voliteľné platené plány (sub_pro_monthly, sub_pro_year, sub_business_monthly, one_time_starter) spracované cez Apple App Store alebo Google Play Billing. Platobné údaje spracúva výhradne platforma obchodu; BizAgent neukladá údaje o platobnej karte.',
+              'Aplikácia ponúka voliteľné platené plány (sub_pro_monthly, sub_pro_year, one_time_starter) spracované cez Apple App Store alebo Google Play Billing. Platobné údaje spracúva výhradne platforma obchodu; BizAgent neukladá údaje o platobnej karte.',
             ),
             _buildSection(
               '9. Vaše práva a vymazanie účtu',

@@ -4,6 +4,8 @@ import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart
     deferred as ml show TextRecognizer, TextRecognitionScript, InputImage;
 import 'package:image_picker/image_picker.dart';
 
+import 'receipt_image_picker.dart';
+
 final ocrServiceProvider = Provider<OcrService>((ref) {
   return OcrService();
 });
@@ -27,7 +29,7 @@ class ParsedReceipt {
 class OcrService {
   // Use dynamic to avoid "Deferred types can't be used in variable declarations" error
   dynamic _textRecognizer;
-  ImagePicker? _picker;
+  ReceiptImagePicker? _picker;
 
   Future<void> _ensureInitialized() async {
     if (_textRecognizer == null) {
@@ -35,7 +37,7 @@ class OcrService {
       _textRecognizer =
           ml.TextRecognizer(script: ml.TextRecognitionScript.latin);
     }
-    _picker ??= ImagePicker();
+    _picker ??= ReceiptImagePicker();
   }
 
   Future<ParsedReceipt?> scanReceipt(ImageSource source) async {
@@ -57,7 +59,7 @@ class OcrService {
     try {
       await _ensureInitialized();
 
-      final pickedFile = await _picker!.pickImage(source: source);
+      final pickedFile = await _picker!.pick(source);
       if (pickedFile == null) return null;
 
       final inputImage = ml.InputImage.fromFilePath(pickedFile.path);

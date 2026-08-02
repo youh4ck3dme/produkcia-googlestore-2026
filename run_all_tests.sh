@@ -31,7 +31,13 @@ echo ""
 # 1. Unit Tests (entire test/)
 echo -e "${BLUE}1️⃣  flutter test test/ (full suite)${NC}"
 echo "─────────────────────────────────"
-if flutter test --dart-define=PLAY_MVP=false --no-pub 2>&1 | tee /tmp/flutter_test_output.txt | grep -q "All tests passed"; then
+DEFINES="dart_defines/supabase.json"
+FLUTTER_TEST_FLAGS=(--dart-define=PLAY_MVP=false --no-pub)
+[[ -f "$DEFINES" ]] && FLUTTER_TEST_FLAGS+=(--dart-define-from-file="$DEFINES")
+# Live smoke voliteľne: flutter test --tags live ...
+FLUTTER_TEST_FLAGS+=(--exclude-tags=live)
+
+if flutter test "${FLUTTER_TEST_FLAGS[@]}" 2>&1 | tee /tmp/flutter_test_output.txt | grep -q "All tests passed"; then
     UNIT_PASSED=$(grep -o "[0-9]* passed" /tmp/flutter_test_output.txt | head -1)
     echo -e "${GREEN}✅ Full test/ suite passed: $UNIT_PASSED${NC}"
 else
@@ -46,7 +52,7 @@ echo ""
 # 2. Widget Tests (redundant check — kept for visibility)
 echo -e "${BLUE}2️⃣  widget_test.dart (explicit)${NC}"
 echo "─────────────────────────────────"
-if flutter test --dart-define=PLAY_MVP=false test/widget_test.dart --no-pub 2>&1 | tee /tmp/widget_test_output.txt | grep -q "All tests passed"; then
+if flutter test "${FLUTTER_TEST_FLAGS[@]}" test/widget_test.dart 2>&1 | tee /tmp/widget_test_output.txt | grep -q "All tests passed"; then
     echo -e "${GREEN}✅ widget_test.dart passed${NC}"
 else
     echo -e "${YELLOW}⚠️  widget_test.dart issues (see output)${NC}"

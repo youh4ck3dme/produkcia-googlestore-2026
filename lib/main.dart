@@ -14,9 +14,12 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'features/limits/usage_limiter.dart';
+import 'features/billing/billing_service.dart';
+import 'core/services/receipt_image_picker.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  configureAndroidPhotoPicker();
   
   if (kDebugMode && !kIsWeb) {
     try {
@@ -54,12 +57,19 @@ void main() async {
     }
   }
 
+  final container = ProviderContainer(
+    overrides: [
+      localPersistenceServiceProvider.overrideWithValue(persistenceService),
+      sharedPrefsProvider.overrideWithValue(sharedPrefs),
+    ],
+  );
+
+  // Eager IAP init — load cached entitlements + start restore
+  container.read(billingProvider);
+
   runApp(
-    ProviderScope(
-      overrides: [
-        localPersistenceServiceProvider.overrideWithValue(persistenceService),
-        sharedPrefsProvider.overrideWithValue(sharedPrefs),
-      ],
+    UncontrolledProviderScope(
+      container: container,
       child: const BizAgentApp(),
     ),
   );

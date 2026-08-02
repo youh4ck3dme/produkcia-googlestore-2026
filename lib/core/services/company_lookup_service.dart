@@ -109,8 +109,11 @@ class CompanyLookupService {
     return DateTime.now().difference(ts) > _ttl;
   }
 
+  /// Slovenské IČO: 1–8 číslic → doplní leading zeros na 8.
+  /// Prázdne alebo >8 číslic → neplatné.
   String _normalizeIco(String input) {
     final digits = input.replaceAll(RegExp(r'\D'), '');
-    return digits.length == 8 ? digits : '';
+    if (digits.isEmpty || digits.length > 8) return '';
+    return digits.padLeft(8, '0');
   }
 }

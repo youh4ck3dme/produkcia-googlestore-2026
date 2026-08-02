@@ -4,15 +4,18 @@
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     
-    <!-- Camera for document scanning -->
+    <!-- Camera for receipt OCR (gallery uses system Photo Picker — no storage permission) -->
     <uses-permission android:name="android.permission.CAMERA"/>
-    
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+
     <!-- Biometric authentication -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
-    
-    <!-- File access for document picks -->
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+
+    <!-- Strip legacy/transitive storage permissions (Photo Picker + content URIs only) -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:node="remove" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" tools:node="remove" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" tools:node="remove" />
 
     <!-- Explicitly remove AD_ID permission injected by dependencies -->
     <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove" />
@@ -47,6 +50,14 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+
+            <!-- Verified App Links (bizagent.sk) -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="bizagent.sk" />
             </intent-filter>
 
             <!-- Share Intent (Receive Images) -->

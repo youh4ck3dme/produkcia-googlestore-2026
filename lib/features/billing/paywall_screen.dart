@@ -8,13 +8,31 @@ import 'billing_service.dart';
 import 'billing_copy.dart';
 import 'package:go_router/go_router.dart';
 
-class PaywallScreen extends ConsumerWidget {
+class PaywallScreen extends ConsumerStatefulWidget {
   const PaywallScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PaywallScreen> createState() => _PaywallScreenState();
+}
+
+class _PaywallScreenState extends ConsumerState<PaywallScreen> {
+  @override
+  Widget build(BuildContext context) {
     final billingState = ref.watch(billingProvider);
     final remoteConfig = BizRemoteConfig();
+
+    if (billingState.purchaseSuccess) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(billingProvider.notifier).clearPurchaseSuccess();
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Pro je aktívne!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      });
+    }
 
     return Scaffold(
       body: Stack(
@@ -23,7 +41,7 @@ class PaywallScreen extends ConsumerWidget {
           Container(
             decoration: const BoxDecoration(
               image: DecorationImage(
-                image: AssetImage('assets/images/paywall_bg.webp'), // Placeholder
+                image: AssetImage('assets/images/background_fusion.webp'),
                 fit: BoxFit.cover,
               ),
             ),
@@ -162,20 +180,15 @@ class PaywallScreen extends ConsumerWidget {
     ];
   }
 
-  // Mock for development if store not connected
   ProductDetails _mockProduct(String id) {
      return ProductDetails(
        id: id,
        title: id.contains('year')
            ? "Pro ročne"
-           : (id.contains('one')
-               ? "Pro jednorazovo"
-               : id.contains('business')
-                   ? "Pro Business"
-                   : "Pro mesačne"),
-       description: "Description",
-       price: id.contains('year') ? "99.99 €" : (id.contains('one') ? "14.99 €" : "9.99 €"),
-       rawPrice: 10,
+           : (id.contains('one') ? "Pro jednorazovo" : "Pro mesačne"),
+       description: "",
+       price: "Načítava sa...",
+       rawPrice: 0,
        currencyCode: "EUR",
      );
   }

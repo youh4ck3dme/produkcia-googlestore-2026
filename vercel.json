@@ -4,7 +4,6 @@
   "framework": null,
   "buildCommand": "bash scripts/vercel_build.sh",
   "outputDirectory": "build/web",
-  "public": true,
   "env": {
     "FLUTTER_MODE": "release",
     "FLUTTER_WEB_USE_SKIA": "true"
@@ -18,7 +17,7 @@
   ],
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
   ],

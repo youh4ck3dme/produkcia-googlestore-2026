@@ -289,9 +289,15 @@ class _CreateExpenseScreenState extends ConsumerState<CreateExpenseScreen> {
         }
       }
 
+      final user = ref.read(authStateProvider).value ??
+          ref.read(authRepositoryProvider).currentUser;
+      if (user == null) {
+        throw StateError('User not authenticated');
+      }
+
       final expense = ExpenseModel(
         id: '',
-        userId: '',
+        userId: user.id,
         vendorName: _vendorController.text,
         description: _descController.text,
         amount:

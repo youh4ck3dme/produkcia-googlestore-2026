@@ -16,6 +16,10 @@ import '../../../core/services/local_persistence_service.dart';
 import '../../auth/providers/auth_repository.dart';
 import '../../billing/subscription_guard.dart';
 import '../../billing/paywall_flow.dart';
+import '../../billing/billing_service.dart';
+import '../../billing/paywall_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:intl/intl.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -99,10 +103,34 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       final company = await service.lookupByIco(ico);
 
       if (mounted) {
+        if (company.isOffline) {
+          BizSnackbar.showError(context, context.t(AppStr.settingsLookupOffline));
+          return;
+        }
+        if (company.isRateLimited) {
+          BizSnackbar.showError(
+              context, context.t(AppStr.settingsLookupRateLimited));
+          return;
+        }
+        if (company.status == 'Neplatné dáta' ||
+            company.name.isEmpty && company.icoNorm.isEmpty && company.ico.isEmpty) {
+          // invalid() factory — neprešlo normalizáciu
+          final digits = ico.replaceAll(RegExp(r'\D'), '');
+          if (digits.isEmpty || digits.length > 8) {
+            BizSnackbar.showError(context, context.t(AppStr.settingsInvalidIco));
+            return;
+          }
+        }
         if (company.name.isEmpty) {
           BizSnackbar.showError(context, context.t(AppStr.settingsCompanyNotFound));
           return;
         }
+
+        // Zapíš normalizované IČO späť do poľa
+        final norm = company.icoNorm.isNotEmpty
+            ? company.icoNorm
+            : ico.replaceAll(RegExp(r'\D'), '').padLeft(8, '0');
+        _icoController.text = norm;
 
         setState(() {
           _nameController.text = company.name;
@@ -289,6 +317,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 trailing: Text(context.t(AppStr.settingsLanguageSk)),
                 onTap: () {},
               ),
+              const Divider(height: 32),
+              _buildSubscriptionSection(context, ref),
               const Divider(height: 32),
               _buildSectionTitle(context.t(AppStr.settingsSectionExport)),
               ListTile(
@@ -498,6 +528,62 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           letterSpacing: 1.1,
         ),
       ),
+    );
+  }
+
+  Widget _buildSubscriptionSection(BuildContext context, WidgetRef ref) {
+    final billing = ref.watch(billingProvider);
+    final isPro = billing.entitlements.isPro;
+    final expiry = billing.entitlements.expiryDate;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionTitle('Predplatné'),
+        ListTile(
+          leading: Icon(
+            isPro ? Icons.workspace_premium : Icons.lock_outline,
+            color: isPro ? Colors.amber : null,
+          ),
+          title: Text(isPro ? 'BizAgent Pro' : 'Bezplatný plán'),
+          subtitle: isPro && expiry != null
+              ? Text('Platné do ${DateFormat('d. M. yyyy').format(expiry)}')
+              : isPro
+                  ? const Text('Aktívne')
+                  : const Text('Obmedené funkcie'),
+          trailing: isPro
+              ? null
+              : FilledButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const PaywallScreen()),
+                    );
+                  },
+                  child: const Text('Prejsť na Pro'),
+                ),
+        ),
+        if (isPro)
+          ListTile(
+            leading: const Icon(Icons.manage_accounts_outlined),
+            title: const Text('Spravovať v Play'),
+            onTap: () {
+              launchUrl(
+                Uri.parse('https://play.google.com/store/account/subscriptions?package=sk.bizagent.app'),
+                mode: LaunchMode.externalApplication,
+              );
+            },
+          ),
+        ListTile(
+          leading: const Icon(Icons.restore),
+          title: const Text('Obnoviť nákupy'),
+          onTap: () {
+            ref.read(billingProvider.notifier).restorePurchases();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Obnovovanie nákupov...')),
+            );
+          },
+        ),
+      ],
     );
   }
 }

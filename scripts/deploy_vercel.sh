@@ -24,9 +24,13 @@ NC='\033[0m'
 die() { echo -e "${RED}✗${NC} $*" >&2; exit 1; }
 ok() { echo -e "${GREEN}✓${NC} $*"; }
 
+DEFINES="${SUPABASE_DEFINES:-$ROOT/dart_defines/supabase.json}"
+[[ -f "$DEFINES" ]] || die "Chýba $DEFINES"
+
 FLUTTER_WEB_FLAGS=(
   --release
   --base-href "/"
+  --dart-define-from-file="$DEFINES"
   --dart-define=PLAY_MVP=true
   --web-resources-cdn
   --no-wasm-dry-run

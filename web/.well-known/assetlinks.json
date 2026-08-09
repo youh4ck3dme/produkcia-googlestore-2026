@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "sk.bizagent.app",
+      "sha256_cert_fingerprints": [
+        "B3:E1:6A:74:A4:C6:7E:4E:00:D7:EE:AC:50:6B:C0:42:74:01:7F:AD:00:5F:40:B0:93:F3:D0:96:17:47:93:E9"
+      ]
+    }
+  }
+]

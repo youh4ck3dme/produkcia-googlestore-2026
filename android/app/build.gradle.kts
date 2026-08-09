@@ -27,7 +27,8 @@ val hasReleaseKeystore =
 
 android {
     namespace = "sk.bizagent.app"
-    compileSdk = 37
+    // Dependencies (androidx.core 1.18) require compileSdk >= 36.
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

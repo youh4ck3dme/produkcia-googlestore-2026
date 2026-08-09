@@ -131,7 +131,7 @@ class IcoLookupResult {
   factory IcoLookupResult.paymentRequired() {
     return IcoLookupResult(
       name: '',
-      status: 'Premium feature',
+      status: 'Pro funkcia',
       city: '',
       isPaymentRequired: true,
     );

@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,12 +6,18 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show AuthException;
 import '../../../core/i18n/app_strings.dart';
 import '../../../core/i18n/l10n.dart';
+import '../../../core/supabase/google_auth_service.dart';
 import '../../../core/supabase/supabase_config.dart';
 import '../../../core/ui/biz_theme.dart';
+import '../../../shared/widgets/google_sign_in_button.dart';
 import '../providers/auth_repository.dart';
 
 class FirebaseLoginScreen extends ConsumerStatefulWidget {
   const FirebaseLoginScreen({super.key});
+
+  /// When set, overrides [GoogleAuthService.resolveIsConfigured] for widget tests.
+  @visibleForTesting
+  static bool? debugForceGoogleSignInAvailable;
 
   @override
   ConsumerState<FirebaseLoginScreen> createState() => _FirebaseLoginScreenState();
@@ -80,8 +86,12 @@ class _FirebaseLoginScreenState extends ConsumerState<FirebaseLoginScreen> {
   }
 
   bool get _googleSignInAvailable =>
-      SupabaseConfig.isReady &&
-      (kIsWeb || SupabaseConfig.googleWebClientId.isNotEmpty);
+      FirebaseLoginScreen.debugForceGoogleSignInAvailable ??
+      GoogleAuthService.resolveIsConfigured(
+        supabaseReady: SupabaseConfig.isReady,
+        isWeb: kIsWeb,
+        googleWebClientId: SupabaseConfig.googleWebClientId,
+      );
 
   Future<void> _signInWithGoogle() async {
     if (!_googleSignInAvailable) {
@@ -305,40 +315,12 @@ class _FirebaseLoginScreenState extends ConsumerState<FirebaseLoginScreen> {
 
                     const SizedBox(height: 24),
 
-                    // Google Sign-In
+                    // Google Sign-In (official white + multicolor G)
                     if (_googleSignInAvailable) ...[
-                      SizedBox(
-                        width: double.infinity,
-                        height: 52,
-                        child: OutlinedButton.icon(
-                          onPressed: _isLoading ? null : _signInWithGoogle,
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFF111827),
-                            side: BorderSide(
-                              color: Colors.grey.withValues(alpha: 0.35),
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                          icon: Image.network(
-                            'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg',
-                            width: 22,
-                            height: 22,
-                            errorBuilder: (_, __, ___) => const Icon(
-                              Icons.g_mobiledata_rounded,
-                              size: 28,
-                              color: Color(0xFF4285F4),
-                            ),
-                          ),
-                          label: Text(
-                            context.t(AppStr.authGoogleSignIn),
-                            style: GoogleFonts.inter(
-                              fontSize: 12.8,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
+                      GoogleSignInButton(
+                        label: context.t(AppStr.authGoogleSignIn),
+                        isLoading: _isLoading,
+                        onPressed: _isLoading ? null : _signInWithGoogle,
                       ),
                       const SizedBox(height: 16),
                       Row(

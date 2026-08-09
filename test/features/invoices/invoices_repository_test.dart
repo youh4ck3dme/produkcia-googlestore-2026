@@ -39,6 +39,30 @@ void main() {
       expect(local.first['clientName'], 'Test Client');
     });
 
+    test('addInvoice doplní userId aj keď model má prázdne userId', () async {
+      final withoutUser = InvoiceModel(
+        id: '',
+        userId: '',
+        createdAt: DateTime(2023, 10, 1),
+        number: '2023999',
+        clientName: 'Empty UserId Client',
+        dateIssued: DateTime(2023, 10, 1),
+        dateDue: DateTime(2023, 10, 15),
+        items: [
+          InvoiceItemModel(title: 'Service', amount: 50, vatRate: 0.2),
+        ],
+        totalAmount: 60,
+        status: InvoiceStatus.draft,
+      );
+
+      await repository.addInvoice(userId, withoutUser);
+
+      final results = await repository.getInvoices(userId);
+      expect(results, hasLength(1));
+      expect(results.first.userId, userId);
+      expect(results.first.clientName, 'Empty UserId Client');
+    });
+
     test('getInvoices vracia lokálne dáta bez Supabase', () async {
       await repository.addInvoice(userId, dummyInvoice);
 

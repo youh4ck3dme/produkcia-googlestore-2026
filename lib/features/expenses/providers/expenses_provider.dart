@@ -19,11 +19,18 @@ class ExpensesController extends Notifier<AsyncValue<void>> {
   Future<void> addExpense(ExpenseModel expense) async {
     final user = ref.read(authStateProvider).value ??
         ref.read(authRepositoryProvider).currentUser;
-    if (user == null) return;
+    if (user == null) {
+      throw StateError('User not authenticated');
+    }
 
     state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() =>
-        ref.read(expensesRepositoryProvider).addExpense(user.id, expense));
+    try {
+      await ref.read(expensesRepositoryProvider).addExpense(user.id, expense);
+      state = const AsyncValue.data(null);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      rethrow;
+    }
   }
 
   Future<void> deleteExpense(String expenseId) async {

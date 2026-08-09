@@ -27,7 +27,6 @@ import '../../../shared/widgets/biz_glass_appbar.dart';
 import '../../../core/config/play_release_scope.dart';
 import '../../billing/subscription_guard.dart';
 import '../../billing/paywall_flow.dart';
-import '../../../core/debug/perf_probe.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -93,10 +92,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // #region agent log
-    perfProbe('B', 'dashboard_screen.dart:build', 'dashboard_rebuild');
-    // #endregion
-
     final user = ref.watch(authStateProvider).value;
     final invoicesAsync = ref.watch(invoicesProvider);
     final expensesAsync = ref.watch(expensesProvider);

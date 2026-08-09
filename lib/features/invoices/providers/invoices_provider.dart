@@ -19,12 +19,20 @@ class InvoicesController extends Notifier<AsyncValue<void>> {
   AsyncValue<void> build() => const AsyncValue.data(null);
 
   Future<void> addInvoice(InvoiceModel invoice) async {
-    final user = ref.read(authStateProvider).value;
-    if (user == null) return;
+    final user = ref.read(authStateProvider).value ??
+        ref.read(authRepositoryProvider).currentUser;
+    if (user == null) {
+      throw StateError('User not authenticated');
+    }
 
     state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() =>
-        ref.read(invoicesRepositoryProvider).addInvoice(user.id, invoice));
+    try {
+      await ref.read(invoicesRepositoryProvider).addInvoice(user.id, invoice);
+      state = const AsyncValue.data(null);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      rethrow;
+    }
   }
 
   Future<void> updateInvoice(InvoiceModel invoice) async {

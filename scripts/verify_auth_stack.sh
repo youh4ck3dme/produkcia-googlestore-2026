@@ -151,6 +151,19 @@ else
   else
     warn "skontroluj callback URI v Google Cloud Web klientovi"
   fi
+
+  # Follow Google authorize URL — catch redirect_uri_mismatch (false green otherwise)
+  if [[ -n "$AUTH_LOC" ]]; then
+    FINAL_URL=$(curl -sS -L -o /dev/null -w "%{url_effective}" --max-time 20 "$AUTH_LOC" 2>/dev/null || echo "")
+    if [[ "$FINAL_URL" == *"redirect_uri_mismatch"* ]] || [[ "$FINAL_URL" == *"authError="* ]]; then
+      bad "Google OAuth redirect_uri_mismatch — v GCP Web klientovi pridaj: $SUPABASE_CALLBACK"
+      echo "    Spusti: bash scripts/setup_google_oauth_redirect.sh"
+    elif [[ "$FINAL_URL" == *"accounts.google.com"* ]] && [[ "$FINAL_URL" != *"oauth/error"* ]]; then
+      ok "Google OAuth authorize page dosiahnuteľná (redirect URI OK)"
+    else
+      warn "Google OAuth final URL: ${FINAL_URL:0:120}"
+    fi
+  fi
 fi
 echo ""
 

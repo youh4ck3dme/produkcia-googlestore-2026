@@ -1,13 +1,18 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../supabase/supabase_config.dart';
 import '../models/company_info.dart';
 import '../models/ico_lookup_result.dart';
 
-/// Company data source: ONLY https://icoatlas.sk (single source of truth).
-/// API key optional override via --dart-define=ICOATLAS_API_KEY=xxx.
+/// Company data source: icoatlas API (single source of truth).
+/// Override host via --dart-define=ICOATLAS_BASE_URL=https://ico.bizagent.sk
+/// API key optional via --dart-define=ICOATLAS_API_KEY=xxx.
 final icoAtlasServiceProvider = Provider<IcoAtlasService>((ref) {
-  const baseUrl = 'https://icoatlas.sk';
+  const baseUrl = String.fromEnvironment(
+    'ICOATLAS_BASE_URL',
+    defaultValue: 'https://icoatlas.sk',
+  );
 
   const apiKey = String.fromEnvironment(
     'ICOATLAS_API_KEY',
@@ -24,8 +29,8 @@ final icoAtlasServiceProvider = Provider<IcoAtlasService>((ref) {
 
   final dio = Dio(BaseOptions(
     baseUrl: baseUrl,
-    connectTimeout: const Duration(seconds: 15),
-    receiveTimeout: const Duration(seconds: 15),
+    connectTimeout: const Duration(seconds: 12),
+    receiveTimeout: const Duration(seconds: 12),
     headers: headers,
   ));
 
@@ -59,10 +64,25 @@ class IcoAtlasService {
   })  : _gatewayBaseUrl = gatewayBaseUrl,
         _gatewayDio = gatewayDio;
 
-  /// Company factual data – ONLY icoatlas.sk. Single source of truth.
+  /// Normalizuje IČO (iba číslice, pad na 8). Vráti null ak neplatné.
+  static String? normalizeIco(String input) {
+    final digits = input.replaceAll(RegExp(r'\D'), '');
+    if (digits.isEmpty || digits.length > 8) return null;
+    return digits.padLeft(8, '0');
+  }
+
+  /// Company factual data – icoatlas API (ICOATLAS_BASE_URL). Single source of truth.
   Future<IcoLookupResult?> publicLookup(String ico) async {
+    final normalized = normalizeIco(ico);
+    if (normalized == null) return IcoLookupResult.invalid();
+
+    if (kIsWeb && SupabaseConfig.isReady) {
+      final proxied = await _publicLookupViaSupabaseProxy(normalized);
+      if (proxied != null) return proxied;
+    }
+
     try {
-      final response = await _dio.get('/api/company/$ico');
+      final response = await _dio.get('/api/company/$normalized');
 
       if (response.statusCode == 200 && response.data != null) {
         final rawAny = response.data;
@@ -74,10 +94,16 @@ class IcoAtlasService {
 
         final data = raw['data'];
         if (data is Map<String, dynamic>) {
+          // Laravel ico-atlas: { data: {...}, meta } — name môže byť null → not found
+          if (data['source'] == 'not-found' ||
+              ((data['name'] == null || '${data['name']}'.trim().isEmpty) &&
+                  data['ico'] == null)) {
+            return IcoLookupResult.notFound();
+          }
           final parsed = await _enrichVatRegister(
             IcoLookupResult.fromIcoAtlasApi(data),
           );
-          return parsed.isValid ? parsed : null;
+          return parsed.isValid ? parsed : IcoLookupResult.notFound();
         }
 
         // Legacy test/back-compat: { ok: true, summary: { ico, name, status } }
@@ -90,22 +116,30 @@ class IcoAtlasService {
             status: (summary['status'] ?? '').toString(),
             city: '',
           );
-          return parsed.isValid ? parsed : null;
+          return parsed.isValid ? parsed : IcoLookupResult.notFound();
         }
 
         // Back-compat formats.
         final parsed = await _enrichVatRegister(
           IcoLookupResult.fromRealApi(raw),
         );
-        return parsed.isValid ? parsed : null;
+        return parsed.isValid ? parsed : IcoLookupResult.notFound();
       }
+      if (response.statusCode == 404) return IcoLookupResult.notFound();
       return null;
     } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        return IcoLookupResult.notFound();
+      }
       if (e.response?.statusCode == 429) {
         final resetIn = e.response?.data?['resetIn'];
         return IcoLookupResult.rateLimited(
           resetIn: resetIn != null ? int.tryParse(resetIn.toString()) : null,
         );
+      }
+      if (_isNetworkFailure(e)) {
+        debugPrint('IČO lookup offline/timeout: ${e.message}');
+        return IcoLookupResult.offline();
       }
       debugPrint('IČO lookup failed: ${e.message}');
       return null;
@@ -115,10 +149,18 @@ class IcoAtlasService {
     }
   }
 
-  /// Background refresh – same source (icoatlas.sk).
+  bool _isNetworkFailure(DioException e) {
+    return e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.sendTimeout ||
+        e.type == DioExceptionType.receiveTimeout ||
+        e.type == DioExceptionType.connectionError ||
+        e.type == DioExceptionType.unknown && e.error != null;
+  }
+
+  /// Background refresh – same source (ICOATLAS_BASE_URL).
   Future<IcoLookupResult> fetchByIco(String icoNorm) async {
     final result = await publicLookup(icoNorm);
-    if (result == null || result.isRateLimited) {
+    if (result == null || result.isRateLimited || !result.isValid) {
       throw Exception('Refresh failed');
     }
     return result;
@@ -217,6 +259,42 @@ class IcoAtlasService {
     } catch (e) {
       debugPrint('FS DPH register lookup failed: $e');
       return null;
+    }
+  }
+
+  /// Web: priamy fetch na icoatlas host blokuje CORS — proxy cez Supabase Edge Function.
+  Future<IcoLookupResult?> _publicLookupViaSupabaseProxy(String ico) async {
+    try {
+      final res = await SupabaseConfig.client.functions.invoke(
+        'ico-company',
+        body: {'ico': ico},
+      );
+
+      final rawAny = res.data;
+      if (rawAny is! Map<String, dynamic>) return null;
+      final raw = rawAny;
+
+      if (raw['ok'] == false) {
+        final err = raw['error']?.toString() ?? '';
+        if (err.contains('not_found')) return IcoLookupResult.notFound();
+        return null;
+      }
+
+      final data = raw['data'];
+      if (data is Map<String, dynamic>) {
+        final parsed = await _enrichVatRegister(
+          IcoLookupResult.fromIcoAtlasApi(data),
+        );
+        return parsed.isValid ? parsed : IcoLookupResult.notFound();
+      }
+
+      final parsed = await _enrichVatRegister(
+        IcoLookupResult.fromRealApi(raw),
+      );
+      return parsed.isValid ? parsed : IcoLookupResult.notFound();
+    } catch (e) {
+      debugPrint('IČO web proxy lookup failed: $e');
+      return IcoLookupResult.offline();
     }
   }
 

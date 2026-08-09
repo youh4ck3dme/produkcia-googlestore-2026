@@ -76,15 +76,28 @@ class ExpensesRepository {
     }
   }
 
+  ExpenseModel _stampUser(String userId, ExpenseModel expense, String id) {
+    return expense.copyWith(id: id, userId: userId);
+  }
+
+  Map<String, dynamic> _expenseData(String userId, ExpenseModel expense, String id) {
+    final data = expense.toMap();
+    data['id'] = id;
+    data['userId'] = userId;
+    return data;
+  }
+
   Future<void> addExpense(String userId, ExpenseModel expense) async {
     final id = expense.id.isEmpty
         ? DateTime.now().millisecondsSinceEpoch.toString()
         : expense.id;
-    final data = expense.toMap();
-    data['id'] = id;
-    await _persistence.saveExpense(id, data);
+    final stamped = _stampUser(userId, expense, id);
+    await _persistence.saveExpense(id, _expenseData(userId, stamped, id));
 
-    await _store?.upsert(_table, _expenseToRow(userId, expense, id));
+    final store = _store;
+    if (store == null || !store.isAvailable) return;
+
+    await store.upsert(_table, _expenseToRow(userId, stamped, id));
   }
 
   Future<void> deleteExpense(String userId, String expenseId) async {

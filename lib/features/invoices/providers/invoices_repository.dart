@@ -108,23 +108,41 @@ class InvoicesRepository {
     }
   }
 
+  InvoiceModel _stampUser(String userId, InvoiceModel invoice, String id) {
+    return invoice.copyWith(id: id, userId: userId);
+  }
+
+  Map<String, dynamic> _invoiceData(String userId, InvoiceModel invoice, String id) {
+    final data = invoice.toMap();
+    data['id'] = id;
+    data['userId'] = userId;
+    return data;
+  }
+
   Future<void> addInvoice(String userId, InvoiceModel invoice) async {
     final id = invoice.id.isEmpty
         ? DateTime.now().millisecondsSinceEpoch.toString()
         : invoice.id;
-    final data = invoice.toMap();
-    data['id'] = id;
-    await _persistence.saveInvoice(id, data);
+    final stamped = _stampUser(userId, invoice, id);
+    await _persistence.saveInvoice(id, _invoiceData(userId, stamped, id));
 
-    await _store?.upsert(_table, _invoiceToRow(userId, invoice, id));
+    final store = _store;
+    if (store == null || !store.isAvailable) return;
+
+    await store.upsert(_table, _invoiceToRow(userId, stamped, id));
   }
 
   Future<void> updateInvoice(String userId, InvoiceModel invoice) async {
-    final data = invoice.toMap();
-    data['id'] = invoice.id;
-    await _persistence.saveInvoice(invoice.id, data);
+    final stamped = _stampUser(userId, invoice, invoice.id);
+    await _persistence.saveInvoice(
+      invoice.id,
+      _invoiceData(userId, stamped, invoice.id),
+    );
 
-    await _store?.upsert(_table, _invoiceToRow(userId, invoice, invoice.id));
+    final store = _store;
+    if (store == null || !store.isAvailable) return;
+
+    await store.upsert(_table, _invoiceToRow(userId, stamped, invoice.id));
   }
 
   Future<void> updateInvoiceStatus(

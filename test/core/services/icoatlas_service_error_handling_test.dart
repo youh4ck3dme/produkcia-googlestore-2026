@@ -33,7 +33,8 @@ void main() {
         final result = await service.publicLookup('12345678');
 
         // Assert
-        expect(result, isNull);
+        expect(result, isNotNull);
+        expect(result!.isOffline, isTrue);
       });
 
       test('should handle connection errors', () async {
@@ -49,7 +50,8 @@ void main() {
         final result = await service.publicLookup('12345678');
 
         // Assert
-        expect(result, isNull);
+        expect(result, isNotNull);
+        expect(result!.isOffline, isTrue);
       });
 
       test('should handle rate limiting (429)', () async {
@@ -112,8 +114,10 @@ void main() {
         // Act
         final result = await service.publicLookup('99999999');
 
-        // Assert
-        expect(result, isNull);
+        // Assert — 404 mapujeme na notFound (nie null), aby UI vedelo rozlíšiť chyby
+        expect(result, isNotNull);
+        expect(result!.isValid, isFalse);
+        expect(result.status, 'Firma sa nenašla');
       });
 
       test('should handle 500 Internal Server Error', () async {
@@ -216,8 +220,10 @@ void main() {
         // Act
         final result = await service.publicLookup('12345678');
 
-        // Assert
-        expect(result, isNull);
+        // Assert — prázdny payload → notFound (nie null)
+        expect(result, isNotNull);
+        expect(result!.isValid, isFalse);
+        expect(result.status, 'Firma sa nenašla');
       });
 
       test('should handle generic exceptions', () async {
@@ -630,8 +636,9 @@ void main() {
         // Act
         final result = await realService.publicLookup('12345678');
 
-        // Assert
-        expect(result, isNull);
+        // Assert — timeout → offline (nie null)
+        expect(result, isNotNull);
+        expect(result!.isOffline, isTrue);
       });
 
       test('should handle 404 in real mode', () async {
@@ -648,7 +655,8 @@ void main() {
         final result = await realService.publicLookup('99999999');
 
         // Assert
-        expect(result, isNull);
+        expect(result, isNotNull);
+        expect(result!.status, 'Firma sa nenašla');
       });
 
       test('should handle null response data in real mode', () async {

@@ -15,6 +15,7 @@ import '../providers/bizbot_history_provider.dart';
 import '../../billing/billing_service.dart';
 import '../../billing/subscription_guard.dart';
 import '../../billing/paywall_flow.dart';
+import '../../../shared/widgets/ai_generated_label.dart';
 
 class BizBotScreen extends ConsumerStatefulWidget {
   const BizBotScreen({super.key});
@@ -283,6 +284,7 @@ class _BizBotScreenState extends ConsumerState<BizBotScreen> {
             color: msg.isUser ? Colors.white : Colors.black87,
             height: 1.5,
             fontSize: 15,
+            fontFamilyFallback: BizTheme.fontFallbacks,
           ),
         ),
       ).animate().fade().slideY(begin: 0.1, duration: 300.ms, curve: Curves.easeOut),
@@ -292,6 +294,10 @@ class _BizBotScreenState extends ConsumerState<BizBotScreen> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 4),
+            child: const AiGeneratedLabel(),
+          ),
           bubble,
           Padding(
             padding: const EdgeInsets.only(left: 4, top: 2),

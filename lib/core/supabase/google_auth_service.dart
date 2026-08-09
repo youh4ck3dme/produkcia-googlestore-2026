@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart'
-    show TargetPlatform, defaultTargetPlatform, kIsWeb;
+    show TargetPlatform, defaultTargetPlatform, kIsWeb, visibleForTesting;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -18,6 +18,18 @@ class GoogleAuthService {
 
   static bool _nativeInitialized = false;
 
+  /// Pure gate for Google Sign-In availability (unit-testable without SDK).
+  @visibleForTesting
+  static bool resolveIsConfigured({
+    required bool supabaseReady,
+    required bool isWeb,
+    required String googleWebClientId,
+  }) {
+    if (!supabaseReady) return false;
+    if (isWeb) return true;
+    return googleWebClientId.isNotEmpty;
+  }
+
   Future<void> _ensureNativeInitialized() async {
     if (_nativeInitialized || kIsWeb) return;
 
@@ -30,11 +42,11 @@ class GoogleAuthService {
     _nativeInitialized = true;
   }
 
-  bool get isConfigured {
-    if (!SupabaseConfig.isReady) return false;
-    if (kIsWeb) return true;
-    return SupabaseConfig.googleWebClientId.isNotEmpty;
-  }
+  bool get isConfigured => resolveIsConfigured(
+        supabaseReady: SupabaseConfig.isReady,
+        isWeb: kIsWeb,
+        googleWebClientId: SupabaseConfig.googleWebClientId,
+      );
 
   Future<UserModel?> signIn() async {
     if (!isConfigured) {
